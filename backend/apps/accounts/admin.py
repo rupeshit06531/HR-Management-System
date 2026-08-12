@@ -9,7 +9,6 @@ class CustomUserAdmin(UserAdmin):
     list_display = (
         "username",
         "email",
-        "employee_id",
         "role",
         "is_active",
     )
@@ -23,34 +22,33 @@ class CustomUserAdmin(UserAdmin):
     search_fields = (
         "username",
         "email",
-        "employee_id",
         "first_name",
         "last_name",
     )
 
     fieldsets = UserAdmin.fieldsets + (
         (
-            "HR Information",
+            "HR Access",
             {
                 "fields": (
-                    "employee_id",
                     "role",
                     "phone",
-                )
+                    "profile_image",
+                ),
             },
         ),
     )
 
     add_fieldsets = UserAdmin.add_fieldsets + (
         (
-            "HR Information",
+            "HR Access",
             {
                 "fields": (
                     "email",
-                    "employee_id",
                     "role",
                     "phone",
-                )
+                    "profile_image",
+                ),
             },
         ),
     )

@@ -10,8 +10,8 @@ class UserSerializer(serializers.ModelSerializer):
     """
     Secure serializer for HRMS user management.
 
-    Sensitive fields are validated according to the role
-    of the authenticated administrator performing the request.
+    Authentication data belongs to User while
+    employee-specific HR information belongs to Employee.
     """
 
     class Meta:
@@ -25,7 +25,6 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "role",
             "phone",
-            "employee_id",
             "profile_image",
             "is_active",
             "date_joined",
@@ -38,7 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         """
-        Normalize email addresses before saving.
+        Normalize email addresses and prevent duplicates.
         """
 
         value = value.strip().lower()
@@ -89,8 +88,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def validate_role(self, value):
         """
-        Prevent non-Super-Admin administrators from
-        creating or assigning Super Admin accounts.
+        Only a Super Admin can assign the Super Admin role.
         """
 
         request = self.context.get("request")
