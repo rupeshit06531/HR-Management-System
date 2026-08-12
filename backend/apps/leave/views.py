@@ -1,23 +1,17 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
-from django_filters.rest_framework import DjangoFilterBackend
+from apps.accounts.permissions import (
+    IsAdminOrSuperAdmin,
+    IsManagerOrAdmin,
+)
 
 from .models import Leave
 from .serializers import LeaveSerializer
-from apps.accounts.permissions import IsManagerOrAdmin
 
 
 class LeaveViewSet(viewsets.ModelViewSet):
-    queryset = Leave.objects.select_related(
-        "employee",
-        "employee__user",
-    ).all().order_by("-applied_at")
-
     serializer_class = LeaveSerializer
-
-    permission_classes = [
-        IsManagerOrAdmin,
-    ]
 
     filter_backends = [
         DjangoFilterBackend,
@@ -51,3 +45,61 @@ class LeaveViewSet(viewsets.ModelViewSet):
     ordering = [
         "-applied_at",
     ]
+
+    def get_permissions(self):
+        """
+        Read access:
+            HR / Super Admin / Manager
+
+        Write access:
+            HR / Super Admin only
+
+        Managers can review leave records but cannot
+        create, modify, or delete them.
+        """
+
+        if self.action in {
+            "create",
+            "update",
+            "partial_update",
+            "destroy",
+        }:
+            permission_classes = [
+                IsAdminOrSuperAdmin,
+            ]
+        else:
+            permission_classes = [
+                IsManagerOrAdmin,
+            ]
+
+        return [
+            permission()
+            for permission in permission_classes
+        ]
+
+    def get_queryset(self):
+        """
+        Return optimized leave records.
+
+        Only authenticated HRMS users with the required
+        role can access this queryset.
+        """
+
+        queryset = Leave.objects.select_related(
+            "employee",
+            "employee__user",
+        ).all()
+
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return queryset.none()
+
+        if user.role in {
+            user.Role.SUPER_ADMIN,
+            user.Role.HR,
+            user.Role.MANAGER,
+        }:
+            return queryset
+
+        return queryset.none()
