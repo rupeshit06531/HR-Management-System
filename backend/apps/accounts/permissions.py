@@ -17,100 +17,88 @@ class IsAuthenticatedUser(BasePermission):
         )
 
 
-class IsAdminOrSuperAdmin(BasePermission):
+class RolePermission(BasePermission):
+    """
+    Base permission for role-based access control.
+
+    Keeps role validation centralized so that all HRMS
+    APIs use the same authorization rules.
+    """
+
+    allowed_roles = set()
+
+    def has_permission(self, request, view):
+        user = request.user
+
+        return bool(
+            user
+            and user.is_authenticated
+            and user.is_active
+            and user.role in self.allowed_roles
+        )
+
+
+class IsAdminOrSuperAdmin(RolePermission):
     """
     Allows access to HR and Super Admin users.
-
-    The existing project uses HR as the administrative
-    role, so no unsupported ADMIN role is introduced.
     """
 
     message = "HR or Super Admin permission is required."
 
-    def has_permission(self, request, view):
-        return bool(
-            request.user
-            and request.user.is_authenticated
-            and request.user.role
-            in {
-                User.Role.HR,
-                User.Role.SUPER_ADMIN,
-            }
-        )
+    allowed_roles = {
+        User.Role.HR,
+        User.Role.SUPER_ADMIN,
+    }
 
 
-class IsManagerOrAdmin(BasePermission):
+class IsHROrSuperAdmin(RolePermission):
+    """
+    Allows access to HR and Super Admin users.
+    """
+
+    message = "HR or Super Admin permission is required."
+
+    allowed_roles = {
+        User.Role.HR,
+        User.Role.SUPER_ADMIN,
+    }
+
+
+class IsManagerOrAdmin(RolePermission):
     """
     Allows access to Manager, HR and Super Admin users.
     """
 
     message = "Manager, HR or Super Admin permission is required."
 
-    def has_permission(self, request, view):
-        return bool(
-            request.user
-            and request.user.is_authenticated
-            and request.user.role
-            in {
-                User.Role.MANAGER,
-                User.Role.HR,
-                User.Role.SUPER_ADMIN,
-            }
-        )
+    allowed_roles = {
+        User.Role.MANAGER,
+        User.Role.HR,
+        User.Role.SUPER_ADMIN,
+    }
 
 
-class IsHROrSuperAdmin(BasePermission):
-    """
-    Allows access to HR and Super Admin users.
-    """
-
-    message = "HR or Super Admin permission is required."
-
-    def has_permission(self, request, view):
-        return bool(
-            request.user
-            and request.user.is_authenticated
-            and request.user.role
-            in {
-                User.Role.HR,
-                User.Role.SUPER_ADMIN,
-            }
-        )
-
-
-class IsManagerOrHROrSuperAdmin(BasePermission):
+class IsManagerOrHROrSuperAdmin(RolePermission):
     """
     Allows access to Manager, HR and Super Admin users.
     """
 
-    message = (
-        "Manager, HR or Super Admin permission is required."
-    )
+    message = "Manager, HR or Super Admin permission is required."
 
-    def has_permission(self, request, view):
-        return bool(
-            request.user
-            and request.user.is_authenticated
-            and request.user.role
-            in {
-                User.Role.MANAGER,
-                User.Role.HR,
-                User.Role.SUPER_ADMIN,
-            }
-        )
+    allowed_roles = {
+        User.Role.MANAGER,
+        User.Role.HR,
+        User.Role.SUPER_ADMIN,
+    }
 
 
-class IsSuperAdmin(BasePermission):
+class IsSuperAdmin(RolePermission):
     """
     Allows access only to Super Admin users.
     """
 
     message = "Super Admin permission is required."
 
-    def has_permission(self, request, view):
-        return bool(
-            request.user
-            and request.user.is_authenticated
-            and request.user.role
-            == User.Role.SUPER_ADMIN
-        )
+    allowed_roles = {
+        User.Role.SUPER_ADMIN,
+    }
