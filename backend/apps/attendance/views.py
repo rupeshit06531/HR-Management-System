@@ -1,6 +1,7 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
-from django_filters.rest_framework import DjangoFilterBackend
+from apps.accounts.permissions import IsManagerOrAdmin
 
 from .models import Attendance
 from .serializers import AttendanceSerializer
@@ -13,6 +14,10 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     ).all()
 
     serializer_class = AttendanceSerializer
+
+    permission_classes = [
+        IsManagerOrAdmin,
+    ]
 
     filter_backends = [
         DjangoFilterBackend,
