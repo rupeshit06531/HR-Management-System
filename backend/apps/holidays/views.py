@@ -1,6 +1,10 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
-from django_filters.rest_framework import DjangoFilterBackend
+from apps.accounts.permissions import (
+    IsAdminOrSuperAdmin,
+    IsAuthenticatedUser,
+)
 
 from .models import Holiday
 from .serializers import HolidaySerializer
@@ -35,3 +39,23 @@ class HolidayViewSet(viewsets.ModelViewSet):
         "name",
         "created_at",
     ]
+
+    def get_permissions(self):
+        if self.action in {
+            "create",
+            "update",
+            "partial_update",
+            "destroy",
+        }:
+            permission_classes = [
+                IsAdminOrSuperAdmin,
+            ]
+        else:
+            permission_classes = [
+                IsAuthenticatedUser,
+            ]
+
+        return [
+            permission()
+            for permission in permission_classes
+        ]
