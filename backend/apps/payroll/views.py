@@ -1,10 +1,14 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
-from django_filters.rest_framework import DjangoFilterBackend
+from apps.accounts.permissions import (
+    IsAuthenticatedUser,
+    IsSuperAdmin,
+    IsHROrSuperAdmin,
+)
 
 from .models import Payroll
 from .serializers import PayrollSerializer
-from apps.accounts.permissions import IsAdminOrSuperAdmin
 
 
 class PayrollViewSet(viewsets.ModelViewSet):
@@ -14,10 +18,6 @@ class PayrollViewSet(viewsets.ModelViewSet):
     ).all()
 
     serializer_class = PayrollSerializer
-
-    permission_classes = [
-        IsAdminOrSuperAdmin,
-    ]
 
     filter_backends = [
         DjangoFilterBackend,
@@ -54,3 +54,31 @@ class PayrollViewSet(viewsets.ModelViewSet):
         "-month",
         "-created_at",
     ]
+
+    def get_permissions(self):
+        """
+        Read access:
+            HR and Super Admin
+
+        Write access:
+            Super Admin only
+        """
+
+        if self.action in {
+            "create",
+            "update",
+            "partial_update",
+            "destroy",
+        }:
+            permission_classes = [
+                IsSuperAdmin,
+            ]
+        else:
+            permission_classes = [
+                IsHROrSuperAdmin,
+            ]
+
+        return [
+            permission()
+            for permission in permission_classes
+        ]
