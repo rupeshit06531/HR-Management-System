@@ -1,10 +1,12 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
-from django_filters.rest_framework import DjangoFilterBackend
+from apps.accounts.permissions import (
+    IsManagerOrHROrSuperAdmin,
+)
 
 from .models import PerformanceReview
 from .serializers import PerformanceReviewSerializer
-from apps.accounts.permissions import IsManagerOrAdmin
 
 
 class PerformanceReviewViewSet(viewsets.ModelViewSet):
@@ -16,7 +18,7 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
     serializer_class = PerformanceReviewSerializer
 
     permission_classes = [
-        IsManagerOrAdmin,
+        IsManagerOrHROrSuperAdmin,
     ]
 
     filter_backends = [
