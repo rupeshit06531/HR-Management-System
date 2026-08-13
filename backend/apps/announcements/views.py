@@ -1,6 +1,10 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
-from django_filters.rest_framework import DjangoFilterBackend
+from apps.accounts.permissions import (
+    IsAdminOrSuperAdmin,
+    IsAuthenticatedUser,
+)
 
 from .models import Announcement
 from .serializers import AnnouncementSerializer
@@ -47,3 +51,23 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         "-publish_date",
         "-created_at",
     ]
+
+    def get_permissions(self):
+        if self.action in {
+            "create",
+            "update",
+            "partial_update",
+            "destroy",
+        }:
+            permission_classes = [
+                IsAdminOrSuperAdmin,
+            ]
+        else:
+            permission_classes = [
+                IsAuthenticatedUser,
+            ]
+
+        return [
+            permission()
+            for permission in permission_classes
+        ]
