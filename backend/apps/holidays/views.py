@@ -2,8 +2,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
 from apps.accounts.permissions import (
-    IsAdminOrSuperAdmin,
     IsAuthenticatedUser,
+    IsSuperAdmin,
 )
 
 from .models import Holiday
@@ -41,6 +41,14 @@ class HolidayViewSet(viewsets.ModelViewSet):
     ]
 
     def get_permissions(self):
+        """
+        Read access:
+            Authenticated HRMS users
+
+        Write access:
+            Super Admin only
+        """
+
         if self.action in {
             "create",
             "update",
@@ -48,7 +56,7 @@ class HolidayViewSet(viewsets.ModelViewSet):
             "destroy",
         }:
             permission_classes = [
-                IsAdminOrSuperAdmin,
+                IsSuperAdmin,
             ]
         else:
             permission_classes = [
