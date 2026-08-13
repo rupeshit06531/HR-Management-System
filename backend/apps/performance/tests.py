@@ -1,3 +1,4 @@
+
 from datetime import date
 
 from django.urls import reverse
@@ -23,6 +24,15 @@ class PerformanceReviewAPITestCase(APITestCase):
         cls.designation = Designation.objects.create(
             name="Performance Employee",
             department=cls.department,
+        )
+
+        cls.super_admin = User.objects.create_user(
+            username="performance_admin",
+            email="performance_admin@test.com",
+            password="TestPass@123",
+            first_name="Performance",
+            last_name="Admin",
+            role=User.Role.SUPER_ADMIN,
         )
 
         cls.manager_user = User.objects.create_user(
@@ -74,6 +84,30 @@ class PerformanceReviewAPITestCase(APITestCase):
             status.HTTP_401_UNAUTHORIZED,
         )
 
+    def test_super_admin_can_list_reviews(self):
+        self.authenticate(self.super_admin)
+
+        PerformanceReview.objects.create(
+            employee=self.employee,
+            review_period="Annual Review 2026",
+            strengths="Good communication",
+            areas_for_improvement="Time management",
+            manager_comments="Good overall performance",
+            review_date=date(2026, 8, 1),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["count"],
+            1,
+        )
+
     def test_manager_can_list_reviews(self):
         self.authenticate(self.manager_user)
 
@@ -98,8 +132,18 @@ class PerformanceReviewAPITestCase(APITestCase):
             1,
         )
 
-    def test_hr_can_create_review(self):
+    def test_hr_can_list_reviews(self):
         self.authenticate(self.hr_user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+    def test_manager_can_create_review(self):
+        self.authenticate(self.manager_user)
 
         payload = {
             "employee": self.employee.id,
@@ -125,6 +169,66 @@ class PerformanceReviewAPITestCase(APITestCase):
             PerformanceReview.objects.filter(
                 employee=self.employee,
                 review_period="Annual Review 2026",
+            ).exists()
+        )
+
+    def test_hr_can_create_review(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "employee": self.employee.id,
+            "review_period": "HR Review 2026",
+            "strengths": "Strong technical skills",
+            "areas_for_improvement": "Documentation",
+            "manager_comments": "Good progress",
+            "review_date": "2026-08-15",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            PerformanceReview.objects.filter(
+                employee=self.employee,
+                review_period="HR Review 2026",
+            ).exists()
+        )
+
+    def test_super_admin_can_create_review(self):
+        self.authenticate(self.super_admin)
+
+        payload = {
+            "employee": self.employee.id,
+            "review_period": "Admin Review 2026",
+            "strengths": "Excellent performance",
+            "areas_for_improvement": "None",
+            "manager_comments": "Approved",
+            "review_date": "2026-08-20",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            PerformanceReview.objects.filter(
+                employee=self.employee,
+                review_period="Admin Review 2026",
             ).exists()
         )
 
