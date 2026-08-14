@@ -4,26 +4,11 @@ import {
   Routes,
 } from "react-router-dom"
 
+import Attendance from "./pages/Attendance"
+import Dashboard from "./pages/Dashboard"
+import Employees from "./pages/Employees"
+import Leave from "./pages/Leave"
 import Login from "./pages/Login"
-
-function Dashboard() {
-  return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "column",
-        gap: "12px",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <h1>HR Management System</h1>
-      <p>Dashboard is working.</p>
-    </main>
-  )
-}
 
 function App() {
   return (
@@ -39,10 +24,25 @@ function App() {
       />
 
       <Route
+        path="/employees"
+        element={<Employees />}
+      />
+
+      <Route
+        path="/leave"
+        element={<Leave />}
+      />
+
+      <Route
+        path="/attendance"
+        element={<Attendance />}
+      />
+
+      <Route
         path="/"
         element={
           <Navigate
-            to="/login"
+            to="/dashboard"
             replace
           />
         }
@@ -52,7 +52,7 @@ function App() {
         path="*"
         element={
           <Navigate
-            to="/login"
+            to="/dashboard"
             replace
           />
         }
