@@ -8,6 +8,7 @@ import Attendance from "./pages/Attendance"
 import Dashboard from "./pages/Dashboard"
 import Departments from "./pages/Departments"
 import Employees from "./pages/Employees"
+import Holidays from "./pages/Holidays"
 import Leave from "./pages/Leave"
 import Login from "./pages/Login"
 
@@ -32,6 +33,11 @@ function App() {
       <Route
         path="/departments"
         element={<Departments />}
+      />
+
+      <Route
+        path="/holidays"
+        element={<Holidays />}
       />
 
       <Route
