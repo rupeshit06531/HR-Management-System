@@ -12,6 +12,7 @@ import Holidays from "./pages/Holidays"
 import Leave from "./pages/Leave"
 import Login from "./pages/Login"
 import Payroll from "./pages/Payroll"
+import Performance from "./pages/Performance"
 
 function App() {
   return (
@@ -54,6 +55,11 @@ function App() {
       <Route
         path="/payroll"
         element={<Payroll />}
+      />
+
+      <Route
+        path="/performance"
+        element={<Performance />}
       />
 
       <Route
