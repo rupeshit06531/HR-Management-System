@@ -14,6 +14,12 @@ class UserSerializer(serializers.ModelSerializer):
     employee-specific HR information belongs to Employee.
     """
 
+    password = serializers.CharField(
+        write_only=True,
+        required=False,
+        min_length=8,
+    )
+
     class Meta:
         model = User
 
@@ -25,7 +31,9 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "role",
             "phone",
+            "employee_id",
             "profile_image",
+            "password",
             "is_active",
             "date_joined",
         )
@@ -156,3 +164,43 @@ class UserSerializer(serializers.ModelSerializer):
             )
 
         return value
+
+    def create(self, validated_data):
+        """
+        Create a user with a properly hashed password.
+        """
+
+        password = validated_data.pop("password", None)
+
+        if not password:
+            raise serializers.ValidationError(
+                {
+                    "password": (
+                        "Password is required when creating a user."
+                    )
+                }
+            )
+
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+
+        return user
+
+    def update(self, instance, validated_data):
+        """
+        Update user information and properly hash a new password
+        when one is provided.
+        """
+
+        password = validated_data.pop("password", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+
+        return instance
