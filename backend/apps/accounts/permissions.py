@@ -78,6 +78,27 @@ class IsManagerOrAdmin(RolePermission):
     }
 
 
+class IsAttendanceViewer(RolePermission):
+    """
+    Allows authenticated active users with an HRMS role
+    to read attendance records.
+
+    AttendanceViewSet is responsible for limiting
+    Employee users to their own attendance records.
+    """
+
+    message = (
+        "Attendance access is required."
+    )
+
+    allowed_roles = {
+        User.Role.EMPLOYEE,
+        User.Role.MANAGER,
+        User.Role.HR,
+        User.Role.SUPER_ADMIN,
+    }
+
+
 class IsManagerOrHROrSuperAdmin(RolePermission):
     """
     Allows access to Manager, HR and Super Admin users.

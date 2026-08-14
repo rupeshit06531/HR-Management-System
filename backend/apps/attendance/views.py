@@ -1,23 +1,18 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
-from apps.accounts.permissions import IsManagerOrAdmin
+from apps.accounts.models import User
+from apps.accounts.permissions import (
+    IsAttendanceViewer,
+    IsManagerOrAdmin,
+)
 
 from .models import Attendance
 from .serializers import AttendanceSerializer
 
 
 class AttendanceViewSet(viewsets.ModelViewSet):
-    queryset = Attendance.objects.select_related(
-        "employee",
-        "employee__user",
-    ).all()
-
     serializer_class = AttendanceSerializer
-
-    permission_classes = [
-        IsManagerOrAdmin,
-    ]
 
     filter_backends = [
         DjangoFilterBackend,
@@ -49,3 +44,77 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         "-date",
         "-check_in",
     ]
+
+    def get_permissions(self):
+        """
+        Attendance access rules.
+
+        Read:
+            Employee / Manager / HR / Super Admin
+
+        Write:
+            Manager / HR / Super Admin
+
+        Employees can only view their own
+        attendance records.
+        """
+
+        if self.action in {
+            "create",
+            "update",
+            "partial_update",
+            "destroy",
+        }:
+            permission_classes = [
+                IsManagerOrAdmin,
+            ]
+        else:
+            permission_classes = [
+                IsAttendanceViewer,
+            ]
+
+        return [
+            permission()
+            for permission in permission_classes
+        ]
+
+    def get_queryset(self):
+        """
+        Scope attendance records according to
+        the authenticated user's role.
+
+        Super Admin / HR / Manager:
+            Can view attendance records.
+
+        Employee:
+            Can view only their own attendance.
+        """
+
+        queryset = Attendance.objects.select_related(
+            "employee",
+            "employee__user",
+        ).all()
+
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return queryset.none()
+
+        if user.role in {
+            User.Role.SUPER_ADMIN,
+            User.Role.HR,
+            User.Role.MANAGER,
+        }:
+            return queryset
+
+        if user.role == User.Role.EMPLOYEE:
+            try:
+                employee = user.employee_profile
+            except Exception:
+                return queryset.none()
+
+            return queryset.filter(
+                employee=employee,
+            )
+
+        return queryset.none()
