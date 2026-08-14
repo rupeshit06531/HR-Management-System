@@ -45,6 +45,18 @@ export async function login(
     credentials,
   )
 
+  const { access, refresh } = response.data
+
+  localStorage.setItem(
+    "access_token",
+    access,
+  )
+
+  localStorage.setItem(
+    "refresh_token",
+    refresh,
+  )
+
   return response.data
 }
 
@@ -56,16 +68,38 @@ export async function refreshToken(
     data,
   )
 
+  localStorage.setItem(
+    "access_token",
+    response.data.access,
+  )
+
+  if (response.data.refresh) {
+    localStorage.setItem(
+      "refresh_token",
+      response.data.refresh,
+    )
+  }
+
   return response.data
 }
 
 export async function logout(
   data: LogoutRequest,
 ): Promise<void> {
-  await apiClient.post(
-    "/logout/",
-    data,
-  )
+  try {
+    await apiClient.post(
+      "/logout/",
+      data,
+    )
+  } finally {
+    localStorage.removeItem(
+      "access_token",
+    )
+
+    localStorage.removeItem(
+      "refresh_token",
+    )
+  }
 }
 
 export async function getCurrentUser(): Promise<AuthUser> {
