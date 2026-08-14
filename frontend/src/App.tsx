@@ -7,6 +7,7 @@ import {
 import Attendance from "./pages/Attendance"
 import Dashboard from "./pages/Dashboard"
 import Departments from "./pages/Departments"
+import Documents from "./pages/Documents"
 import Employees from "./pages/Employees"
 import Holidays from "./pages/Holidays"
 import Leave from "./pages/Leave"
@@ -36,6 +37,11 @@ function App() {
       <Route
         path="/departments"
         element={<Departments />}
+      />
+
+      <Route
+        path="/documents"
+        element={<Documents />}
       />
 
       <Route
