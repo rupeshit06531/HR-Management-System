@@ -1,9 +1,10 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
+from apps.accounts.models import User
 from apps.accounts.permissions import (
     IsAdminOrSuperAdmin,
-    IsManagerOrAdmin,
+    IsLeaveViewer,
 )
 
 from .models import Leave
@@ -48,18 +49,19 @@ class LeaveViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         """
-        Read access:
-            HR / Super Admin / Manager
+        Leave access rules.
 
-        Write access:
-            HR / Super Admin only
+        Read:
+            Employee / Manager / HR / Super Admin
 
-        Managers can review leave records but cannot
-        create, modify, or delete them.
+        Create:
+            Employee / HR / Super Admin
+
+        Update / Delete:
+            HR / Super Admin
         """
 
         if self.action in {
-            "create",
             "update",
             "partial_update",
             "destroy",
@@ -67,9 +69,13 @@ class LeaveViewSet(viewsets.ModelViewSet):
             permission_classes = [
                 IsAdminOrSuperAdmin,
             ]
+        elif self.action == "create":
+            permission_classes = [
+                IsLeaveViewer,
+            ]
         else:
             permission_classes = [
-                IsManagerOrAdmin,
+                IsLeaveViewer,
             ]
 
         return [
@@ -79,10 +85,18 @@ class LeaveViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Return optimized leave records.
+        Scope leave records according to the
+        authenticated user's HRMS role.
 
-        Only authenticated HRMS users with the required
-        role can access this queryset.
+        Super Admin / HR:
+            Can view all leave records.
+
+        Manager:
+            Can view all leave records allowed
+            by the existing management workflow.
+
+        Employee:
+            Can view only their own leave records.
         """
 
         queryset = Leave.objects.select_related(
@@ -96,10 +110,46 @@ class LeaveViewSet(viewsets.ModelViewSet):
             return queryset.none()
 
         if user.role in {
-            user.Role.SUPER_ADMIN,
-            user.Role.HR,
-            user.Role.MANAGER,
+            User.Role.SUPER_ADMIN,
+            User.Role.HR,
+            User.Role.MANAGER,
         }:
             return queryset
 
+        if user.role == User.Role.EMPLOYEE:
+            try:
+                employee = user.employee_profile
+            except Exception:
+                return queryset.none()
+
+            return queryset.filter(
+                employee=employee,
+            )
+
         return queryset.none()
+
+    def perform_create(self, serializer):
+        """
+        Employees can create leave requests only
+        for their own employee profile.
+
+        HR / Super Admin may create a request
+        for another employee.
+        """
+
+        user = self.request.user
+
+        if user.role == User.Role.EMPLOYEE:
+            try:
+                employee = user.employee_profile
+            except Exception:
+                raise ValueError(
+                    "Employee profile does not exist."
+                )
+
+            serializer.save(
+                employee=employee,
+            )
+            return
+
+        serializer.save()

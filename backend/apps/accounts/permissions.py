@@ -98,6 +98,23 @@ class IsAttendanceViewer(RolePermission):
         User.Role.SUPER_ADMIN,
     }
 
+class IsLeaveViewer(RolePermission):
+    """
+    Allows active HRMS users to read leave records.
+
+    LeaveViewSet is responsible for restricting
+    Employee users to their own leave records.
+    """
+
+    message = "Leave access is required."
+
+    allowed_roles = {
+        User.Role.EMPLOYEE,
+        User.Role.MANAGER,
+        User.Role.HR,
+        User.Role.SUPER_ADMIN,
+    }
+
 
 class IsManagerOrHROrSuperAdmin(RolePermission):
     """
