@@ -11,6 +11,7 @@ import Employees from "./pages/Employees"
 import Holidays from "./pages/Holidays"
 import Leave from "./pages/Leave"
 import Login from "./pages/Login"
+import Payroll from "./pages/Payroll"
 
 function App() {
   return (
@@ -48,6 +49,11 @@ function App() {
       <Route
         path="/attendance"
         element={<Attendance />}
+      />
+
+      <Route
+        path="/payroll"
+        element={<Payroll />}
       />
 
       <Route
