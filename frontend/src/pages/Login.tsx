@@ -1,5 +1,10 @@
-import { useState, type FormEvent } from "react"
-import { Navigate, useNavigate } from "react-router-dom"
+
+import {
+  useEffect,
+  useState,
+  type FormEvent,
+} from "react"
+import { useNavigate } from "react-router-dom"
 
 import { useAuth } from "../context/AuthContext"
 
@@ -7,15 +12,60 @@ function Login() {
   const navigate = useNavigate()
 
   const {
-    login,
-    isAuthenticated,
+    user,
     isLoading,
+    login,
   } = useAuth()
 
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate("/dashboard", {
+        replace: true,
+      })
+    }
+  }, [
+    isLoading,
+    user,
+    navigate,
+  ])
+
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault()
+
+    if (!username.trim() || !password) {
+      setError(
+        "Username and password are required.",
+      )
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      setError("")
+
+      await login({
+        username: username.trim(),
+        password,
+      })
+
+      navigate("/dashboard", {
+        replace: true,
+      })
+    } catch {
+      setError(
+        "Invalid username or password.",
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -26,62 +76,16 @@ function Login() {
           alignItems: "center",
           justifyContent: "center",
           fontFamily: "Arial, sans-serif",
+          background: "#f5f7fb",
         }}
       >
-        <p>Checking authentication...</p>
+        <p>Loading...</p>
       </main>
     )
   }
 
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
-  }
-
-  const handleSubmit = async (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault()
-
-    setError("")
-    setIsSubmitting(true)
-
-    try {
-      await login({
-        username,
-        password,
-      })
-
-      navigate("/dashboard", {
-        replace: true,
-      })
-    } catch (error: unknown) {
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "response" in error
-      ) {
-        const response = (
-          error as {
-            response?: {
-              data?: {
-                detail?: string
-              }
-            }
-          }
-        ).response
-
-        setError(
-          response?.data?.detail ||
-            "Invalid username or password.",
-        )
-      } else {
-        setError(
-          "Unable to connect to the server.",
-        )
-      }
-    } finally {
-      setIsSubmitting(false)
-    }
+  if (user) {
+    return null
   }
 
   return (
@@ -91,9 +95,10 @@ function Login() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#f4f6f8",
         padding: "24px",
+        boxSizing: "border-box",
         fontFamily: "Arial, sans-serif",
+        background: "#f5f7fb",
       }}
     >
       <section
@@ -101,146 +106,130 @@ function Login() {
           width: "100%",
           maxWidth: "420px",
           background: "#ffffff",
-          padding: "36px",
+          padding: "32px",
           borderRadius: "12px",
-          boxShadow: "0 8px 30px rgba(0, 0, 0, 0.08)",
+          boxShadow:
+            "0 4px 16px rgba(0, 0, 0, 0.08)",
           boxSizing: "border-box",
         }}
       >
-        <div style={{ marginBottom: "28px" }}>
-          <h1
-            style={{
-              margin: "0 0 8px",
-              fontSize: "28px",
-              color: "#111827",
-            }}
-          >
-            HR Management System
-          </h1>
+        <h1
+          style={{
+            marginTop: 0,
+            marginBottom: "8px",
+            color: "#111827",
+          }}
+        >
+          HR Management System
+        </h1>
 
-          <p
+        <p
+          style={{
+            marginBottom: "28px",
+            color: "#6b7280",
+          }}
+        >
+          Sign in to continue
+        </p>
+
+        {error && (
+          <div
             style={{
-              margin: 0,
-              color: "#6b7280",
+              marginBottom: "20px",
+              padding: "12px",
+              borderRadius: "6px",
+              background: "#fee2e2",
+              color: "#991b1b",
+              fontSize: "14px",
             }}
           >
-            Sign in to continue
-          </p>
-        </div>
+            {error}
+          </div>
+        )}
 
         <form
           onSubmit={handleSubmit}
           style={{
-            display: "flex",
-            flexDirection: "column",
+            display: "grid",
             gap: "18px",
           }}
         >
-          <div>
-            <label
-              htmlFor="username"
-              style={{
-                display: "block",
-                marginBottom: "7px",
-                fontWeight: 600,
-                color: "#374151",
-              }}
-            >
-              Username
-            </label>
+          <label
+            style={{
+              display: "grid",
+              gap: "6px",
+            }}
+          >
+            <span>Username</span>
 
             <input
-              id="username"
               type="text"
               value={username}
               onChange={(event) =>
                 setUsername(event.target.value)
               }
               autoComplete="username"
-              placeholder="Enter your username"
-              required
+              placeholder="Enter username"
               style={{
                 width: "100%",
-                padding: "12px",
+                padding: "11px",
                 border: "1px solid #d1d5db",
-                borderRadius: "8px",
+                borderRadius: "6px",
                 boxSizing: "border-box",
-                fontSize: "15px",
+                fontSize: "14px",
               }}
             />
-          </div>
+          </label>
 
-          <div>
-            <label
-              htmlFor="password"
-              style={{
-                display: "block",
-                marginBottom: "7px",
-                fontWeight: 600,
-                color: "#374151",
-              }}
-            >
-              Password
-            </label>
+          <label
+            style={{
+              display: "grid",
+              gap: "6px",
+            }}
+          >
+            <span>Password</span>
 
             <input
-              id="password"
               type="password"
               value={password}
               onChange={(event) =>
                 setPassword(event.target.value)
               }
               autoComplete="current-password"
-              placeholder="Enter your password"
-              required
+              placeholder="Enter password"
               style={{
                 width: "100%",
-                padding: "12px",
+                padding: "11px",
                 border: "1px solid #d1d5db",
-                borderRadius: "8px",
+                borderRadius: "6px",
                 boxSizing: "border-box",
-                fontSize: "15px",
-              }}
-            />
-          </div>
-
-          {error && (
-            <p
-              role="alert"
-              style={{
-                margin: 0,
-                padding: "10px 12px",
-                background: "#fef2f2",
-                color: "#b91c1c",
-                borderRadius: "8px",
                 fontSize: "14px",
               }}
-            >
-              {error}
-            </p>
-          )}
+            />
+          </label>
 
           <button
             type="submit"
             disabled={isSubmitting}
             style={{
-              width: "100%",
+              marginTop: "6px",
               padding: "12px",
               border: "none",
-              borderRadius: "8px",
-              background: "#2563eb",
+              borderRadius: "6px",
+              background: isSubmitting
+                ? "#9ca3af"
+                : "#2563eb",
               color: "#ffffff",
-              fontSize: "16px",
-              fontWeight: 600,
               cursor: isSubmitting
                 ? "not-allowed"
                 : "pointer",
-              opacity: isSubmitting ? 0.7 : 1,
+              fontSize: "15px",
+              fontWeight: 600,
             }}
           >
             {isSubmitting
               ? "Signing in..."
-              : "Sign in"}
+              : "Login"}
           </button>
         </form>
       </section>
