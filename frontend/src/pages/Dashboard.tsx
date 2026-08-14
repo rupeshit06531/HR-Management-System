@@ -37,14 +37,7 @@ const menuItems: MenuItem[] = [
       "HR",
     ],
   },
-  {
-    label: "Designations",
-    path: "/designations",
-    roles: [
-      "SUPER_ADMIN",
-      "HR",
-    ],
-  },
+  
   {
     label: "Attendance",
     path: "/attendance",
@@ -122,14 +115,7 @@ const menuItems: MenuItem[] = [
       "EMPLOYEE",
     ],
   },
-  {
-    label: "Users",
-    path: "/users",
-    roles: [
-      "SUPER_ADMIN",
-      "HR",
-    ],
-  },
+  
 ]
 
 function Dashboard() {
