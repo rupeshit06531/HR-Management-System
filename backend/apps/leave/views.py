@@ -54,22 +54,19 @@ class LeaveViewSet(viewsets.ModelViewSet):
         Read:
             Employee / Manager / HR / Super Admin
 
-        Create:
-            Employee / HR / Super Admin
-
-        Update / Delete:
+        Write:
             HR / Super Admin
+
+        Employees can create and view only their own
+        leave requests.
         """
 
         if self.action in {
+            "create",
             "update",
             "partial_update",
             "destroy",
         }:
-            permission_classes = [
-                IsAdminOrSuperAdmin,
-            ]
-        elif self.action == "create":
             permission_classes = [
                 IsLeaveViewer,
             ]
@@ -92,8 +89,7 @@ class LeaveViewSet(viewsets.ModelViewSet):
             Can view all leave records.
 
         Manager:
-            Can view all leave records allowed
-            by the existing management workflow.
+            Can view leave records for their team.
 
         Employee:
             Can view only their own leave records.
@@ -112,9 +108,20 @@ class LeaveViewSet(viewsets.ModelViewSet):
         if user.role in {
             User.Role.SUPER_ADMIN,
             User.Role.HR,
-            User.Role.MANAGER,
         }:
             return queryset
+
+        if user.role == User.Role.MANAGER:
+            try:
+                manager_employee = user.employee_profile
+            except Exception:
+                return queryset.none()
+
+            return queryset.filter(
+                employee__manager=manager_employee,
+            ) | queryset.filter(
+                employee__user=user,
+            )
 
         if user.role == User.Role.EMPLOYEE:
             try:
@@ -130,11 +137,11 @@ class LeaveViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """
-        Employees can create leave requests only
-        for their own employee profile.
+        Automatically assign the logged-in employee
+        when an Employee creates a leave request.
 
-        HR / Super Admin may create a request
-        for another employee.
+        HR / Super Admin can provide an employee
+        explicitly when creating a leave record.
         """
 
         user = self.request.user
@@ -147,9 +154,7 @@ class LeaveViewSet(viewsets.ModelViewSet):
                     "Employee profile does not exist."
                 )
 
-            serializer.save(
-                employee=employee,
-            )
+            serializer.save(employee=employee)
             return
 
         serializer.save()
