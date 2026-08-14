@@ -17,6 +17,8 @@ import Payroll from "./pages/Payroll"
 import Performance from "./pages/Performance"
 import Recruitment from "./pages/Recruitment"
 
+import ProtectedRoute from "./components/ProtectedRoute"
+
 function App() {
   return (
     <Routes>
@@ -25,80 +27,82 @@ function App() {
         element={<Login />}
       />
 
-      <Route
-        path="/dashboard"
-        element={<Dashboard />}
-      />
+      <Route element={<ProtectedRoute />}>
+        <Route
+          path="/dashboard"
+          element={<Dashboard />}
+        />
 
-      <Route
-        path="/employees"
-        element={<Employees />}
-      />
+        <Route
+          path="/employees"
+          element={<Employees />}
+        />
 
-      <Route
-        path="/departments"
-        element={<Departments />}
-      />
+        <Route
+          path="/departments"
+          element={<Departments />}
+        />
 
-      <Route
-        path="/documents"
-        element={<Documents />}
-      />
+        <Route
+          path="/documents"
+          element={<Documents />}
+        />
 
-      <Route
-        path="/holidays"
-        element={<Holidays />}
-      />
+        <Route
+          path="/holidays"
+          element={<Holidays />}
+        />
 
-      <Route
-        path="/leave"
-        element={<Leave />}
-      />
+        <Route
+          path="/leave"
+          element={<Leave />}
+        />
 
-      <Route
-        path="/attendance"
-        element={<Attendance />}
-      />
+        <Route
+          path="/attendance"
+          element={<Attendance />}
+        />
 
-      <Route
-        path="/payroll"
-        element={<Payroll />}
-      />
+        <Route
+          path="/payroll"
+          element={<Payroll />}
+        />
 
-      <Route
-        path="/performance"
-        element={<Performance />}
-      />
+        <Route
+          path="/performance"
+          element={<Performance />}
+        />
 
-      <Route
-        path="/recruitment"
-        element={<Recruitment />}
-      />
+        <Route
+          path="/recruitment"
+          element={<Recruitment />}
+        />
 
-      <Route
-        path="/announcements"
-        element={<Announcements />}
-      />
+        <Route
+          path="/announcements"
+          element={<Announcements />}
+        />
 
-      <Route
-        path="/"
-        element={
-          <Navigate
-            to="/dashboard"
-            replace
-          />
-        }
-      />
+        <Route
+          path="/"
+          element={
+            <Navigate
+              to="/dashboard"
+              replace
+            />
+          }
+        />
 
-      <Route
-        path="*"
-        element={
-          <Navigate
-            to="/dashboard"
-            replace
-          />
-        }
-      />
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/dashboard"
+              replace
+            />
+          }
+        />
+      </Route>
     </Routes>
   )
 }
