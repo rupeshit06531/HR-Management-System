@@ -34,6 +34,25 @@ class LeaveSerializer(serializers.ModelSerializer):
             getattr(self.instance, "employee", None),
         )
 
+        if employee is None:
+            request = self.context.get("request")
+
+            if (
+                request
+                and request.user.is_authenticated
+                and request.user.role == "EMPLOYEE"
+            ):
+                try:
+                    employee = request.user.employee_profile
+                except Exception:
+                    raise serializers.ValidationError(
+                        {
+                            "employee": (
+                                "Employee profile does not exist."
+                            )
+                        }
+                    )
+
         start_date = attrs.get(
             "start_date",
             getattr(self.instance, "start_date", None),
