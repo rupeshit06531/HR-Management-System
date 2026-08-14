@@ -4,6 +4,7 @@ import {
   Routes,
 } from "react-router-dom"
 
+import Announcements from "./pages/Announcements"
 import Attendance from "./pages/Attendance"
 import Dashboard from "./pages/Dashboard"
 import Departments from "./pages/Departments"
@@ -72,6 +73,11 @@ function App() {
       <Route
         path="/recruitment"
         element={<Recruitment />}
+      />
+
+      <Route
+        path="/announcements"
+        element={<Announcements />}
       />
 
       <Route
