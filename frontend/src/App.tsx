@@ -13,6 +13,7 @@ import Leave from "./pages/Leave"
 import Login from "./pages/Login"
 import Payroll from "./pages/Payroll"
 import Performance from "./pages/Performance"
+import Recruitment from "./pages/Recruitment"
 
 function App() {
   return (
@@ -60,6 +61,11 @@ function App() {
       <Route
         path="/performance"
         element={<Performance />}
+      />
+
+      <Route
+        path="/recruitment"
+        element={<Recruitment />}
       />
 
       <Route
