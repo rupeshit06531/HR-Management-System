@@ -2,7 +2,9 @@ from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.models import update_last_login
 
 from rest_framework import status, viewsets
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .permissions import IsAdminOrSuperAdmin
@@ -93,6 +95,43 @@ class LoginViewSet(viewsets.ViewSet):
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
                 "user": UserSerializer(user).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class LogoutViewSet(viewsets.ViewSet):
+    """
+    Logout endpoint that blacklists the supplied refresh token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request):
+        refresh_token = request.data.get("refresh")
+
+        if not refresh_token:
+            return Response(
+                {
+                    "detail": "Refresh token is required."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except TokenError:
+            return Response(
+                {
+                    "detail": "Invalid or expired refresh token."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "detail": "Successfully logged out."
             },
             status=status.HTTP_200_OK,
         )
