@@ -55,8 +55,15 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         Write:
             Manager / HR / Super Admin
 
-        Employees can only view their own
-        attendance records.
+        Employees:
+            Can only view their own attendance.
+
+        Managers:
+            Can only access attendance belonging to
+            employees they manage.
+
+        HR / Super Admin:
+            Can access all attendance records.
         """
 
         if self.action in {
@@ -83,16 +90,26 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         Scope attendance records according to
         the authenticated user's role.
 
-        Super Admin / HR / Manager:
-            Can view attendance records.
+        Super Admin / HR:
+            Can access all attendance records.
+
+        Manager:
+            Can access attendance records for
+            employees managed by that manager.
 
         Employee:
-            Can view only their own attendance.
+            Can access only their own attendance.
+
+        Unauthenticated / unsupported users:
+            No records are returned.
         """
 
         queryset = Attendance.objects.select_related(
             "employee",
             "employee__user",
+            "employee__department",
+            "employee__designation",
+            "employee__manager",
         ).all()
 
         user = self.request.user
@@ -103,9 +120,18 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         if user.role in {
             User.Role.SUPER_ADMIN,
             User.Role.HR,
-            User.Role.MANAGER,
         }:
             return queryset
+
+        if user.role == User.Role.MANAGER:
+            try:
+                manager_employee = user.employee_profile
+            except Exception:
+                return queryset.none()
+
+            return queryset.filter(
+                employee__manager=manager_employee,
+            )
 
         if user.role == User.Role.EMPLOYEE:
             try:

@@ -71,12 +71,21 @@ class AttendanceAPITestCase(APITestCase):
             role=User.Role.EMPLOYEE,
         )
 
+        cls.manager_employee = Employee.objects.create(
+            user=cls.manager_user,
+            employee_id="ATT-MGR-001",
+            department=cls.department,
+            designation=cls.designation,
+            joining_date=date(2026, 1, 1),
+        )
+
         cls.employee = Employee.objects.create(
             user=cls.employee_user,
             employee_id="ATT-EMP-001",
             department=cls.department,
             designation=cls.designation,
             joining_date=date(2026, 1, 1),
+            manager=cls.manager_employee,
         )
 
         cls.second_employee = Employee.objects.create(
@@ -86,6 +95,8 @@ class AttendanceAPITestCase(APITestCase):
             designation=cls.designation,
             joining_date=date(2026, 1, 1),
         )
+
+        
 
     def setUp(self):
         self.url = reverse("attendance-list")
