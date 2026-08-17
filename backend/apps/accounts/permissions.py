@@ -87,9 +87,7 @@ class IsAttendanceViewer(RolePermission):
     Employee users to their own attendance records.
     """
 
-    message = (
-        "Attendance access is required."
-    )
+    message = "Attendance access is required."
 
     allowed_roles = {
         User.Role.EMPLOYEE,
@@ -98,12 +96,16 @@ class IsAttendanceViewer(RolePermission):
         User.Role.SUPER_ADMIN,
     }
 
+
 class IsLeaveViewer(RolePermission):
     """
-    Allows active HRMS users to read leave records.
+    Allows authenticated active users to view leave records.
 
-    LeaveViewSet is responsible for restricting
-    Employee users to their own leave records.
+    LeaveViewSet is responsible for restricting:
+        Employee -> own leave records
+        Manager  -> team leave records
+        HR       -> all leave records
+        Super Admin -> all leave records
     """
 
     message = "Leave access is required."
@@ -111,6 +113,33 @@ class IsLeaveViewer(RolePermission):
     allowed_roles = {
         User.Role.EMPLOYEE,
         User.Role.MANAGER,
+        User.Role.HR,
+        User.Role.SUPER_ADMIN,
+    }
+
+
+class IsLeaveCreator(RolePermission):
+    """
+    Allows Employee, HR and Super Admin users to create
+    leave requests.
+
+    Employee:
+        Can create their own leave request.
+
+    HR / Super Admin:
+        Can create leave for employees.
+
+    Manager:
+        Cannot create leave requests.
+    """
+
+    message = (
+        "Employee, HR or Super Admin permission "
+        "is required to create leave."
+    )
+
+    allowed_roles = {
+        User.Role.EMPLOYEE,
         User.Role.HR,
         User.Role.SUPER_ADMIN,
     }

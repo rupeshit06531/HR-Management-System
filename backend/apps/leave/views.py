@@ -4,6 +4,7 @@ from rest_framework import filters, viewsets
 from apps.accounts.models import User
 from apps.accounts.permissions import (
     IsAdminOrSuperAdmin,
+    IsLeaveCreator,
     IsLeaveViewer,
 )
 
@@ -54,22 +55,27 @@ class LeaveViewSet(viewsets.ModelViewSet):
         Read:
             Employee / Manager / HR / Super Admin
 
-        Write:
-            HR / Super Admin
+        Create:
+            Employee / HR / Super Admin
 
-        Employees can create and view only their own
-        leave requests.
+        Update / Delete:
+            HR / Super Admin
         """
 
-        if self.action in {
-            "create",
+        if self.action == "create":
+            permission_classes = [
+                IsLeaveCreator,
+            ]
+
+        elif self.action in {
             "update",
             "partial_update",
             "destroy",
         }:
             permission_classes = [
-                IsLeaveViewer,
+                IsAdminOrSuperAdmin,
             ]
+
         else:
             permission_classes = [
                 IsLeaveViewer,
@@ -89,7 +95,8 @@ class LeaveViewSet(viewsets.ModelViewSet):
             Can view all leave records.
 
         Manager:
-            Can view leave records for their team.
+            Can view leave records for their team
+            and their own leave records.
 
         Employee:
             Can view only their own leave records.
