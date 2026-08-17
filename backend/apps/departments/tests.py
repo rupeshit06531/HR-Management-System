@@ -19,6 +19,33 @@ class DepartmentAPITestCase(APITestCase):
             role=User.Role.SUPER_ADMIN,
         )
 
+        cls.hr_user = User.objects.create_user(
+            username="department_hr",
+            email="department_hr@test.com",
+            password="TestPass@123",
+            first_name="Department",
+            last_name="HR",
+            role=User.Role.HR,
+        )
+
+        cls.manager_user = User.objects.create_user(
+            username="department_manager",
+            email="department_manager@test.com",
+            password="TestPass@123",
+            first_name="Department",
+            last_name="Manager",
+            role=User.Role.MANAGER,
+        )
+
+        cls.employee_user = User.objects.create_user(
+            username="department_employee",
+            email="department_employee@test.com",
+            password="TestPass@123",
+            first_name="Department",
+            last_name="Employee",
+            role=User.Role.EMPLOYEE,
+        )
+
         cls.department = Department.objects.create(
             name="Engineering",
             description="Engineering department",
@@ -340,4 +367,300 @@ class DepartmentAPITestCase(APITestCase):
                 name="Senior Manager",
                 department=self.department,
             ).exists()
+        )
+
+    def test_hr_can_list_departments(self):
+        self.client.force_authenticate(
+            user=self.hr_user,
+        )
+
+        response = self.client.get(
+            "/api/departments/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+    def test_hr_can_create_department(self):
+        self.client.force_authenticate(
+            user=self.hr_user,
+        )
+
+        payload = {
+            "name": "Finance",
+            "description": "Finance department",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            "/api/departments/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+    def test_manager_can_list_departments(self):
+        self.client.force_authenticate(
+            user=self.manager_user,
+        )
+
+        response = self.client.get(
+            "/api/departments/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+    def test_manager_cannot_create_department(self):
+        self.client.force_authenticate(
+            user=self.manager_user,
+        )
+
+        payload = {
+            "name": "Finance",
+            "description": "Finance department",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            "/api/departments/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertFalse(
+            Department.objects.filter(
+                name="Finance",
+            ).exists()
+        )
+
+    def test_manager_can_list_designations(self):
+        self.client.force_authenticate(
+            user=self.manager_user,
+        )
+
+        response = self.client.get(
+            "/api/designations/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+    def test_manager_cannot_create_designation(self):
+        self.client.force_authenticate(
+            user=self.manager_user,
+        )
+
+        payload = {
+            "name": "Engineering Manager",
+            "department": self.department.id,
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            "/api/designations/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertFalse(
+            Designation.objects.filter(
+                name="Engineering Manager",
+            ).exists()
+        )
+
+    def test_employee_cannot_list_departments(self):
+        self.client.force_authenticate(
+            user=self.employee_user,
+        )
+
+        response = self.client.get(
+            "/api/departments/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_employee_cannot_list_designations(self):
+        self.client.force_authenticate(
+            user=self.employee_user,
+        )
+
+        response = self.client.get(
+            "/api/designations/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_employee_cannot_create_department(self):
+        self.client.force_authenticate(
+            user=self.employee_user,
+        )
+
+        payload = {
+            "name": "Unauthorized Department",
+            "description": "Should not be created",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            "/api/departments/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_employee_cannot_create_designation(self):
+        self.client.force_authenticate(
+            user=self.employee_user,
+        )
+
+        payload = {
+            "name": "Unauthorized Designation",
+            "department": self.department.id,
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            "/api/designations/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_manager_cannot_update_department(self):
+        self.client.force_authenticate(
+            user=self.manager_user,
+        )
+
+        response = self.client.patch(
+            f"/api/departments/{self.department.id}/",
+            {
+                "description": "Unauthorized update",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_manager_cannot_delete_department(self):
+        self.client.force_authenticate(
+            user=self.manager_user,
+        )
+
+        response = self.client.delete(
+            f"/api/departments/{self.department.id}/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Department.objects.filter(
+                id=self.department.id,
+            ).exists()
+        )
+
+    def test_manager_cannot_update_designation(self):
+        self.client.force_authenticate(
+            user=self.manager_user,
+        )
+
+        response = self.client.patch(
+            f"/api/designations/{self.designation.id}/",
+            {
+                "name": "Unauthorized Update",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_manager_cannot_delete_designation(self):
+        self.client.force_authenticate(
+            user=self.manager_user,
+        )
+
+        response = self.client.delete(
+            f"/api/designations/{self.designation.id}/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Designation.objects.filter(
+                id=self.designation.id,
+            ).exists()
+        )
+
+    def test_employee_cannot_retrieve_department_detail(self):
+        self.client.force_authenticate(
+            user=self.employee_user,
+        )
+
+        response = self.client.get(
+            f"/api/departments/{self.department.id}/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_employee_cannot_retrieve_designation_detail(self):
+        self.client.force_authenticate(
+            user=self.employee_user,
+        )
+
+        response = self.client.get(
+            f"/api/designations/{self.designation.id}/",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
         )
