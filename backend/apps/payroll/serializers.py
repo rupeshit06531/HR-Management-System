@@ -54,7 +54,25 @@ class PayrollSerializer(serializers.ModelSerializer):
             + Decimal(obj.allowances)
         )
 
+    def validate_month(self, value):
+        if value.day != 1:
+            raise serializers.ValidationError(
+                "Payroll month must be the first day of the month."
+            )
+
+        return value
+
     def validate(self, attrs):
+        employee = attrs.get(
+            "employee",
+            getattr(self.instance, "employee", None),
+        )
+
+        month = attrs.get(
+            "month",
+            getattr(self.instance, "month", None),
+        )
+
         basic_salary = attrs.get(
             "basic_salary",
             getattr(self.instance, "basic_salary", None),
@@ -141,6 +159,27 @@ class PayrollSerializer(serializers.ModelSerializer):
                         "paid_at": (
                             "Paid at is required when "
                             "payment status is paid."
+                        )
+                    }
+                )
+
+        if employee is not None and month is not None:
+            duplicate_queryset = Payroll.objects.filter(
+                employee=employee,
+                month=month,
+            )
+
+            if self.instance is not None:
+                duplicate_queryset = duplicate_queryset.exclude(
+                    pk=self.instance.pk,
+                )
+
+            if duplicate_queryset.exists():
+                raise serializers.ValidationError(
+                    {
+                        "month": (
+                            "Payroll already exists for this "
+                            "employee and month."
                         )
                     }
                 )
