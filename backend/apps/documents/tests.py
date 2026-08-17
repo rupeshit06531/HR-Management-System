@@ -1,3 +1,4 @@
+
 from datetime import date
 from io import BytesIO
 
@@ -254,6 +255,64 @@ class DocumentAPITestCase(APITestCase):
         self.assertIn(
             "file",
             response.data,
+        )
+
+    def test_create_document_with_invalid_document_type_is_rejected(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "employee": self.employee.id,
+            "title": "Invalid Type Document",
+            "document_type": "invalid_type",
+            "description": "Invalid document type.",
+            "file": self.create_file("invalid-type.txt"),
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "document_type",
+            response.data,
+        )
+
+    def test_document_title_is_trimmed(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "employee": self.employee.id,
+            "title": "   Trimmed Contract   ",
+            "document_type": "contract",
+            "description": "Document title normalization test.",
+            "file": self.create_file("trimmed.txt"),
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        document = Document.objects.get(
+            employee=self.employee,
+        )
+
+        self.assertEqual(
+            document.title,
+            "Trimmed Contract",
         )
 
     def test_search_by_employee_id(self):
