@@ -4,10 +4,11 @@ from .views import DocumentViewSet
 
 
 router = DefaultRouter()
+
 router.register(
     "documents",
     DocumentViewSet,
-    basename="document",
+    basename="documents",
 )
 
 
