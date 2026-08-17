@@ -527,11 +527,11 @@ class AnnouncementAPITestCase(APITestCase):
         )
 
     def test_filter_by_target_audience(self):
-        self.authenticate(self.employee_user)
+        self.authenticate(self.manager_user)
 
         Announcement.objects.create(
             title="All Employees",
-            message="For everyone.",
+            message="Company-wide announcement.",
             created_by=self.hr_user,
             target_audience="ALL",
             publish_date=timezone.now(),
@@ -539,7 +539,7 @@ class AnnouncementAPITestCase(APITestCase):
 
         Announcement.objects.create(
             title="Managers Only",
-            message="For managers.",
+            message="Management announcement.",
             created_by=self.hr_user,
             target_audience="MANAGERS",
             publish_date=timezone.now(),
@@ -563,6 +563,127 @@ class AnnouncementAPITestCase(APITestCase):
         )
 
         self.assertEqual(
+            results[0]["title"],
+            "Managers Only",
+        )
+
+        self.assertEqual(
             results[0]["target_audience"],
             "MANAGERS",
+        )
+
+
+    def test_employee_cannot_see_manager_announcement(self):
+        self.authenticate(self.employee_user)
+
+        Announcement.objects.create(
+            title="Managers Only",
+            message="Management announcement.",
+            created_by=self.hr_user,
+            target_audience="MANAGERS",
+            publish_date=timezone.now(),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["count"],
+            0,
+        )
+
+    def test_manager_can_see_manager_announcement(self):
+        self.authenticate(self.manager_user)
+
+        Announcement.objects.create(
+            title="Managers Only",
+            message="Management announcement.",
+            created_by=self.hr_user,
+            target_audience="MANAGERS",
+            publish_date=timezone.now(),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["count"],
+            1,
+        )
+
+    def test_employee_can_see_all_announcement(self):
+        self.authenticate(self.employee_user)
+
+        Announcement.objects.create(
+            title="All Employees",
+            message="Company-wide announcement.",
+            created_by=self.hr_user,
+            target_audience="ALL",
+            publish_date=timezone.now(),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["count"],
+            1,
+        )
+
+    def test_manager_can_see_all_announcement(self):
+        self.authenticate(self.manager_user)
+
+        Announcement.objects.create(
+            title="All Employees",
+            message="Company-wide announcement.",
+            created_by=self.hr_user,
+            target_audience="ALL",
+            publish_date=timezone.now(),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["count"],
+            1,
+        )
+
+    def test_employee_cannot_retrieve_manager_announcement_detail(self):
+        self.authenticate(self.employee_user)
+
+        announcement = Announcement.objects.create(
+            title="Managers Only",
+            message="Management announcement.",
+            created_by=self.hr_user,
+            target_audience="MANAGERS",
+            publish_date=timezone.now(),
+        )
+
+        response = self.client.get(
+            reverse(
+                "announcement-detail",
+                kwargs={"pk": announcement.id},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
         )
