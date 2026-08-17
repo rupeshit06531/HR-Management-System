@@ -37,12 +37,16 @@ export function AuthProvider({
   children,
 }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null)
-  const [accessToken, setAccessToken] = useState<string | null>(
-    () => localStorage.getItem("access_token"),
-  )
+
+  const [accessToken, setAccessToken] = useState<
+    string | null
+  >(() => localStorage.getItem("access_token"))
+
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    let isMounted = true
+
     const initializeAuth = async () => {
       const storedAccessToken =
         localStorage.getItem("access_token")
@@ -51,54 +55,93 @@ export function AuthProvider({
         localStorage.getItem("refresh_token")
 
       if (!storedAccessToken && !storedRefreshToken) {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
+
         return
       }
 
       try {
         if (storedAccessToken) {
-          const currentUser = await getCurrentUser()
+          try {
+            const currentUser = await getCurrentUser()
 
-          setUser(currentUser)
-          setAccessToken(storedAccessToken)
+            if (!isMounted) {
+              return
+            }
+
+            setUser(currentUser)
+            setAccessToken(storedAccessToken)
+
+            return
+          } catch {
+            if (!storedRefreshToken) {
+              throw new Error(
+                "Stored access token is invalid and no refresh token is available.",
+              )
+            }
+          }
+        }
+
+        const latestRefreshToken =
+          localStorage.getItem("refresh_token")
+
+        if (!latestRefreshToken) {
+          throw new Error(
+            "Refresh token is missing.",
+          )
+        }
+
+        const response = await refreshToken({
+          refresh: latestRefreshToken,
+        })
+
+        localStorage.setItem(
+          "access_token",
+          response.access,
+        )
+
+        if (response.refresh) {
+          localStorage.setItem(
+            "refresh_token",
+            response.refresh,
+          )
+        }
+
+        if (!isMounted) {
           return
         }
 
-        if (storedRefreshToken) {
-          const response = await refreshToken({
-            refresh: storedRefreshToken,
-          })
+        setAccessToken(response.access)
 
-          localStorage.setItem(
-            "access_token",
-            response.access,
-          )
+        const currentUser = await getCurrentUser()
 
-          if (response.refresh) {
-            localStorage.setItem(
-              "refresh_token",
-              response.refresh,
-            )
-          }
-
-          setAccessToken(response.access)
-
-          const currentUser = await getCurrentUser()
-
-          setUser(currentUser)
+        if (!isMounted) {
+          return
         }
+
+        setUser(currentUser)
       } catch {
         localStorage.removeItem("access_token")
         localStorage.removeItem("refresh_token")
 
-        setAccessToken(null)
-        setUser(null)
+        if (isMounted) {
+          setAccessToken(null)
+          setUser(null)
+        }
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
     void initializeAuth()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const login = async (
@@ -143,7 +186,9 @@ export function AuthProvider({
     () => ({
       user,
       accessToken,
-      isAuthenticated: Boolean(accessToken && user),
+      isAuthenticated: Boolean(
+        accessToken && user,
+      ),
       isLoading,
       login,
       logout,
