@@ -41,31 +41,15 @@ class AttendanceSerializer(serializers.ModelSerializer):
         return obj.employee.user.get_full_name()
 
     def validate(self, attrs):
-        """
-        Validate attendance business rules.
-
-        Rules:
-            1. Check-out must be after check-in.
-            2. Check-in and check-out must either both be
-               provided or both be omitted.
-        """
-
-        check_in = attrs.get(
-            "check_in",
-            getattr(self.instance, "check_in", None),
-        )
-
-        check_out = attrs.get(
-            "check_out",
-            getattr(self.instance, "check_out", None),
-        )
+        check_in = attrs.get("check_in")
+        check_out = attrs.get("check_out")
 
         if check_in is None and check_out is not None:
             raise serializers.ValidationError(
                 {
                     "check_in": (
-                        "Check-in time is required when "
-                        "check-out time is provided."
+                        "Check-in time is required when check-out "
+                        "time is provided."
                     )
                 }
             )
@@ -74,8 +58,8 @@ class AttendanceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {
                     "check_out": (
-                        "Check-out time is required when "
-                        "check-in time is provided."
+                        "Check-out time is required when check-in "
+                        "time is provided."
                     )
                 }
             )
@@ -84,8 +68,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {
                     "check_out": (
-                        "Check-out time must be after "
-                        "check-in time."
+                        "Check-out time must be after check-in time."
                     )
                 }
             )
