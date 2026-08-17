@@ -1,3 +1,4 @@
+
 import apiClient from "./client"
 
 export interface Department {
@@ -13,6 +14,7 @@ export interface Designation {
   id: number
   name: string
   department: number
+  department_name?: string
   is_active: boolean
   created_at: string
   updated_at: string
@@ -45,11 +47,12 @@ export interface DesignationPayload {
 }
 
 export const getDepartments = async (): Promise<
-  DepartmentListResponse | Department[]
+  DepartmentListResponse
 > => {
-  const response = await apiClient.get<
-    DepartmentListResponse | Department[]
-  >("/departments/")
+  const response =
+    await apiClient.get<DepartmentListResponse>(
+      "/departments/",
+    )
 
   return response.data
 }
@@ -88,12 +91,12 @@ export const deleteDepartment = async (
 }
 
 export const getDesignations = async (): Promise<
-  DesignationListResponse | Designation[]
+  DesignationListResponse
 > => {
   const response =
-    await apiClient.get<
-      DesignationListResponse | Designation[]
-    >("/designations/")
+    await apiClient.get<DesignationListResponse>(
+      "/designations/",
+    )
 
   return response.data
 }
