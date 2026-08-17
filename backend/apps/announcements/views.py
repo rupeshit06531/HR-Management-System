@@ -87,12 +87,6 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         }:
             return queryset
 
-        explicit_audience_filter = (
-            self.request.query_params.get(
-                "target_audience"
-            )
-        )
-
         if user.role == User.Role.MANAGER:
             visibility_query = (
                 Q(
@@ -107,36 +101,26 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
                 )
             )
 
-            if explicit_audience_filter:
-                return queryset.filter(
-                    target_audience=explicit_audience_filter,
-                )
-
             return queryset.filter(
                 visibility_query
             )
 
         if user.role == User.Role.EMPLOYEE:
+            visibility_query = Q(
+                target_audience=Announcement.TargetAudience.ALL,
+            )
+
             try:
                 employee = user.employee_profile
             except Exception:
                 employee = None
 
-            if explicit_audience_filter:
-                return queryset.filter(
-                    target_audience=explicit_audience_filter,
-                )
-
-            visibility_query = Q(
-                target_audience=Announcement.TargetAudience.ALL,
-            )
-
-            if employee is not None:
+            if employee is not None and employee.department_id:
                 visibility_query |= Q(
                     target_audience=(
                         Announcement.TargetAudience.DEPARTMENT
                     ),
-                    department=employee.department,
+                    department_id=employee.department_id,
                 )
 
             return queryset.filter(
