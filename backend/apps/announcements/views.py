@@ -1,6 +1,8 @@
+from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
+from apps.accounts.models import User
 from apps.accounts.permissions import (
     IsAdminOrSuperAdmin,
     IsAuthenticatedUser,
@@ -11,11 +13,6 @@ from .serializers import AnnouncementSerializer
 
 
 class AnnouncementViewSet(viewsets.ModelViewSet):
-    queryset = Announcement.objects.select_related(
-        "created_by",
-        "department",
-    ).all()
-
     serializer_class = AnnouncementSerializer
 
     filter_backends = [
@@ -50,6 +47,7 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
     ordering = [
         "-publish_date",
         "-created_at",
+        "-id",
     ]
 
     def get_permissions(self):
@@ -71,3 +69,83 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
             permission()
             for permission in permission_classes
         ]
+
+    def get_queryset(self):
+        queryset = Announcement.objects.select_related(
+            "created_by",
+            "department",
+        ).all()
+
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return queryset.none()
+
+        if user.role in {
+            User.Role.SUPER_ADMIN,
+            User.Role.HR,
+        }:
+            return queryset
+
+        explicit_audience_filter = (
+            self.request.query_params.get(
+                "target_audience"
+            )
+        )
+
+        if user.role == User.Role.MANAGER:
+            visibility_query = (
+                Q(
+                    target_audience=(
+                        Announcement.TargetAudience.ALL
+                    )
+                )
+                | Q(
+                    target_audience=(
+                        Announcement.TargetAudience.MANAGERS
+                    )
+                )
+            )
+
+            if explicit_audience_filter:
+                return queryset.filter(
+                    target_audience=explicit_audience_filter,
+                )
+
+            return queryset.filter(
+                visibility_query
+            )
+
+        if user.role == User.Role.EMPLOYEE:
+            try:
+                employee = user.employee_profile
+            except Exception:
+                employee = None
+
+            if explicit_audience_filter:
+                return queryset.filter(
+                    target_audience=explicit_audience_filter,
+                )
+
+            visibility_query = Q(
+                target_audience=Announcement.TargetAudience.ALL,
+            )
+
+            if employee is not None:
+                visibility_query |= Q(
+                    target_audience=(
+                        Announcement.TargetAudience.DEPARTMENT
+                    ),
+                    department=employee.department,
+                )
+
+            return queryset.filter(
+                visibility_query
+            )
+
+        return queryset.none()
+
+    def perform_create(self, serializer):
+        serializer.save(
+            created_by=self.request.user,
+        )
