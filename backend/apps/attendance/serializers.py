@@ -41,15 +41,51 @@ class AttendanceSerializer(serializers.ModelSerializer):
         return obj.employee.user.get_full_name()
 
     def validate(self, attrs):
+        """
+        Validate attendance business rules.
 
-        check_in = attrs.get("check_in")
-        check_out = attrs.get("check_out")
+        Rules:
+            1. Check-out must be after check-in.
+            2. Check-in and check-out must either both be
+               provided or both be omitted.
+        """
+
+        check_in = attrs.get(
+            "check_in",
+            getattr(self.instance, "check_in", None),
+        )
+
+        check_out = attrs.get(
+            "check_out",
+            getattr(self.instance, "check_out", None),
+        )
+
+        if check_in is None and check_out is not None:
+            raise serializers.ValidationError(
+                {
+                    "check_in": (
+                        "Check-in time is required when "
+                        "check-out time is provided."
+                    )
+                }
+            )
+
+        if check_in is not None and check_out is None:
+            raise serializers.ValidationError(
+                {
+                    "check_out": (
+                        "Check-out time is required when "
+                        "check-in time is provided."
+                    )
+                }
+            )
 
         if check_in and check_out and check_out <= check_in:
             raise serializers.ValidationError(
                 {
                     "check_out": (
-                        "Check-out time must be after check-in time."
+                        "Check-out time must be after "
+                        "check-in time."
                     )
                 }
             )

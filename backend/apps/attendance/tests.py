@@ -465,6 +465,60 @@ class AttendanceAPITestCase(APITestCase):
             response.data,
         )
 
+    def test_check_in_requires_check_out(self):
+        self.authenticate(self.manager_user)
+
+        payload = {
+            "employee": self.employee.id,
+            "date": "2026-08-22",
+            "check_in": "09:00:00",
+            "status": "present",
+            "remarks": "Missing check-out",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "check_out",
+            response.data,
+        )
+
+    def test_check_out_requires_check_in(self):
+        self.authenticate(self.manager_user)
+
+        payload = {
+            "employee": self.employee.id,
+            "date": "2026-08-23",
+            "check_out": "17:00:00",
+            "status": "present",
+            "remarks": "Missing check-in",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "check_in",
+            response.data,
+        )
+
     def test_duplicate_employee_date_is_rejected(self):
         self.authenticate(self.manager_user)
 
