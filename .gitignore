@@ -9,6 +9,7 @@ venv/
 
 # Django
 *.sqlite3
+backend/media/
 
 # IDE
 .vscode/

@@ -8,11 +8,6 @@ from .serializers import DocumentSerializer
 
 
 class DocumentViewSet(viewsets.ModelViewSet):
-    queryset = Document.objects.select_related(
-        "employee",
-        "employee__user",
-    ).all()
-
     serializer_class = DocumentSerializer
 
     permission_classes = [
@@ -36,6 +31,8 @@ class DocumentViewSet(viewsets.ModelViewSet):
         "employee__user__username",
         "employee__user__first_name",
         "employee__user__last_name",
+        "employee__user__email",
+        "employee__department__name",
         "title",
         "description",
     ]
@@ -50,3 +47,14 @@ class DocumentViewSet(viewsets.ModelViewSet):
     ordering = [
         "-uploaded_at",
     ]
+
+    def get_queryset(self):
+        return (
+            Document.objects
+            .select_related(
+                "employee",
+                "employee__user",
+                "employee__department",
+            )
+            .all()
+        )
