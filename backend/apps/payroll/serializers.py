@@ -7,10 +7,12 @@ from .models import Payroll
 
 class PayrollSerializer(serializers.ModelSerializer):
     employee_name = serializers.SerializerMethodField()
+
     employee_id = serializers.CharField(
         source="employee.employee_id",
         read_only=True,
     )
+
     gross_salary = serializers.SerializerMethodField()
 
     class Meta:
@@ -53,9 +55,46 @@ class PayrollSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, attrs):
-        basic_salary = attrs.get("basic_salary")
-        allowances = attrs.get("allowances", 0)
-        deductions = attrs.get("deductions", 0)
+        basic_salary = attrs.get(
+            "basic_salary",
+            getattr(self.instance, "basic_salary", None),
+        )
+
+        allowances = attrs.get(
+            "allowances",
+            getattr(
+                self.instance,
+                "allowances",
+                Decimal("0"),
+            ),
+        )
+
+        deductions = attrs.get(
+            "deductions",
+            getattr(
+                self.instance,
+                "deductions",
+                Decimal("0"),
+            ),
+        )
+
+        payment_status = attrs.get(
+            "payment_status",
+            getattr(
+                self.instance,
+                "payment_status",
+                Payroll.PaymentStatus.PENDING,
+            ),
+        )
+
+        paid_at = attrs.get(
+            "paid_at",
+            getattr(
+                self.instance,
+                "paid_at",
+                None,
+            ),
+        )
 
         if basic_salary is not None and basic_salary < 0:
             raise serializers.ValidationError(
@@ -83,5 +122,27 @@ class PayrollSerializer(serializers.ModelSerializer):
                     )
                 }
             )
+
+        if payment_status == Payroll.PaymentStatus.PENDING:
+            if paid_at is not None:
+                raise serializers.ValidationError(
+                    {
+                        "paid_at": (
+                            "Paid at must be empty when "
+                            "payment status is pending."
+                        )
+                    }
+                )
+
+        elif payment_status == Payroll.PaymentStatus.PAID:
+            if paid_at is None:
+                raise serializers.ValidationError(
+                    {
+                        "paid_at": (
+                            "Paid at is required when "
+                            "payment status is paid."
+                        )
+                    }
+                )
 
         return attrs
