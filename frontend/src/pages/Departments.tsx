@@ -14,10 +14,8 @@ import {
   updateDepartment,
   updateDesignation,
   type Department,
-  type DepartmentListResponse,
   type DepartmentPayload,
   type Designation,
-  type DesignationListResponse,
   type DesignationPayload,
 } from "../api/departments"
 
@@ -93,27 +91,14 @@ function Departments() {
         getDesignations(),
       ])
 
-      if (Array.isArray(departmentResponse)) {
-        setDepartments(departmentResponse)
-      } else {
-        const paginated =
-          departmentResponse as DepartmentListResponse
+      setDepartments(
+        departmentResponse.results ?? [],
+      )
 
-        setDepartments(
-          paginated.results ?? [],
-        )
-      }
+      setDesignations(
+        designationResponse.results ?? [],
+      )
 
-      if (Array.isArray(designationResponse)) {
-        setDesignations(designationResponse)
-      } else {
-        const paginated =
-          designationResponse as DesignationListResponse
-
-        setDesignations(
-          paginated.results ?? [],
-        )
-      }
     } catch {
       setError(
         "Unable to load departments and designations.",
