@@ -130,6 +130,11 @@ class DepartmentAPITestCase(APITestCase):
             "Software Engineer",
         )
 
+        self.assertEqual(
+            results[0]["department_name"],
+            "Engineering",
+        )
+
     def test_designation_detail(self):
         response = self.client.get(
             f"/api/designations/{self.designation.id}/",
@@ -143,6 +148,11 @@ class DepartmentAPITestCase(APITestCase):
         self.assertEqual(
             response.data["department"],
             self.department.id,
+        )
+
+        self.assertEqual(
+            response.data["department_name"],
+            "Engineering",
         )
 
     def test_duplicate_department_name_is_rejected(self):
@@ -163,6 +173,81 @@ class DepartmentAPITestCase(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
+        self.assertIn(
+            "name",
+            response.data,
+        )
+
+    def test_duplicate_department_name_is_rejected_case_insensitive(self):
+        payload = {
+            "name": " engineering ",
+            "description": "Duplicate department",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            "/api/departments/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "name",
+            response.data,
+        )
+
+    def test_blank_department_name_is_rejected(self):
+        payload = {
+            "name": "   ",
+            "description": "Invalid department",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            "/api/departments/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "name",
+            response.data,
+        )
+
+    def test_department_name_is_trimmed(self):
+        payload = {
+            "name": "  Finance  ",
+            "description": "Finance department",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            "/api/departments/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            Department.objects.filter(
+                name="Finance",
+            ).exists()
+        )
+
     def test_duplicate_designation_name_is_rejected(self):
         payload = {
             "name": "Software Engineer",
@@ -179,4 +264,80 @@ class DepartmentAPITestCase(APITestCase):
         self.assertEqual(
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "name",
+            response.data,
+        )
+
+    def test_duplicate_designation_name_is_rejected_case_insensitive(self):
+        payload = {
+            "name": " software engineer ",
+            "department": self.department.id,
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            "/api/designations/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "name",
+            response.data,
+        )
+
+    def test_blank_designation_name_is_rejected(self):
+        payload = {
+            "name": "   ",
+            "department": self.department.id,
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            "/api/designations/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "name",
+            response.data,
+        )
+
+    def test_designation_name_is_trimmed(self):
+        payload = {
+            "name": "  Senior Manager  ",
+            "department": self.department.id,
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            "/api/designations/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            Designation.objects.filter(
+                name="Senior Manager",
+                department=self.department,
+            ).exists()
         )
