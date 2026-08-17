@@ -388,3 +388,97 @@ class PayrollAPITestCase(APITestCase):
             results[0]["month"],
             "2027-05-01",
         )
+
+    def test_duplicate_employee_month_is_rejected(self):
+        self.authenticate(self.super_admin)
+
+        Payroll.objects.create(
+            employee=self.employee,
+            month=date(2027, 7, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+        )
+
+        payload = {
+            "employee": self.employee.id,
+            "month": "2027-07-01",
+            "basic_salary": "55000.00",
+            "allowances": "6000.00",
+            "deductions": "2500.00",
+            "payment_status": "pending",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertTrue(
+            "employee" in response.data
+            or "month" in response.data
+            or "non_field_errors" in response.data,
+        )
+
+    def test_pending_payment_rejects_paid_at(self):
+        self.authenticate(self.super_admin)
+
+        payload = {
+            "employee": self.employee.id,
+            "month": "2027-08-01",
+            "basic_salary": "50000.00",
+            "allowances": "5000.00",
+            "deductions": "2000.00",
+            "payment_status": "pending",
+            "paid_at": "2027-08-31T10:00:00Z",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "paid_at",
+            response.data,
+        )
+
+    def test_paid_payment_requires_paid_at(self):
+        self.authenticate(self.super_admin)
+
+        payload = {
+            "employee": self.employee.id,
+            "month": "2027-09-01",
+            "basic_salary": "50000.00",
+            "allowances": "5000.00",
+            "deductions": "2000.00",
+            "payment_status": "paid",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "paid_at",
+            response.data,
+        )
