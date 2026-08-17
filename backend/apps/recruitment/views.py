@@ -52,9 +52,13 @@ class CandidateViewSet(viewsets.ModelViewSet):
     ordering = [
         "-application_date",
         "-created_at",
+        "-id",
     ]
 
     def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Candidate.objects.none()
+
         return (
             Candidate.objects
             .select_related(
