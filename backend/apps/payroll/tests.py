@@ -482,3 +482,104 @@ class PayrollAPITestCase(APITestCase):
             "paid_at",
             response.data,
         )
+
+    def test_payroll_month_must_be_first_day(self):
+        self.authenticate(self.super_admin)
+
+        payload = {
+            "employee": self.employee.id,
+            "month": "2027-10-15",
+            "basic_salary": "50000.00",
+            "allowances": "5000.00",
+            "deductions": "2000.00",
+            "payment_status": "pending",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "month",
+            response.data,
+        )
+
+    def test_payroll_update_recalculates_net_salary(self):
+        self.authenticate(self.super_admin)
+
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2027, 10, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+        )
+
+        response = self.client.patch(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+            {
+                "basic_salary": "60000.00",
+                "allowances": "10000.00",
+                "deductions": "5000.00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        payroll.refresh_from_db()
+
+        self.assertEqual(
+            payroll.net_salary,
+            Decimal("65000.00"),
+        )
+
+    def test_payroll_cannot_have_negative_net_salary(self):
+        from django.db import IntegrityError
+
+        with self.assertRaises(IntegrityError):
+            Payroll.objects.create(
+                employee=self.employee,
+                month=date(2027, 11, 1),
+                basic_salary=Decimal("1000.00"),
+                allowances=Decimal("0.00"),
+                deductions=Decimal("2000.00"),
+                net_salary=Decimal("-1000.00"),
+            )
+
+    def test_database_rejects_paid_payroll_without_paid_at(self):
+        from django.db import IntegrityError
+
+        with self.assertRaises(IntegrityError):
+            Payroll.objects.create(
+                employee=self.employee,
+                month=date(2027, 12, 1),
+                basic_salary=Decimal("50000.00"),
+                payment_status="paid",
+                paid_at=None,
+            )
+
+    def test_database_rejects_pending_payroll_with_paid_at(self):
+        from django.db import IntegrityError
+
+        with self.assertRaises(IntegrityError):
+            Payroll.objects.create(
+                employee=self.employee,
+                month=date(2028, 1, 1),
+                basic_salary=Decimal("50000.00"),
+                payment_status="pending",
+                paid_at=timezone.now(),
+            )
