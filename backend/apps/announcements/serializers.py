@@ -63,31 +63,98 @@ class AnnouncementSerializer(serializers.ModelSerializer):
 
         return True
 
+    def validate_title(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError(
+                "Announcement title cannot be empty."
+            )
+
+        if len(value) > 200:
+            raise serializers.ValidationError(
+                "Announcement title cannot exceed 200 characters."
+            )
+
+        return value
+
+    def validate_message(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError(
+                "Announcement message cannot be empty."
+            )
+
+        return value
+
+    def validate_target_audience(self, value):
+        value = value.strip().upper()
+
+        valid_audiences = {
+            choice[0]
+            for choice in Announcement.TargetAudience.choices
+        }
+
+        if value not in valid_audiences:
+            raise serializers.ValidationError(
+                "Invalid target audience."
+            )
+
+        return value
+
     def validate(self, attrs):
         target_audience = attrs.get(
-            "target_audience"
+            "target_audience",
+            getattr(
+                self.instance,
+                "target_audience",
+                Announcement.TargetAudience.ALL,
+            ),
         )
 
         department = attrs.get(
-            "department"
+            "department",
+            getattr(
+                self.instance,
+                "department",
+                None,
+            ),
         )
 
         publish_date = attrs.get(
-            "publish_date"
+            "publish_date",
+            getattr(
+                self.instance,
+                "publish_date",
+                None,
+            ),
         )
 
         expiry_date = attrs.get(
-            "expiry_date"
+            "expiry_date",
+            getattr(
+                self.instance,
+                "expiry_date",
+                None,
+            ),
         )
 
-        if (
-            target_audience == "DEPARTMENT"
-            and department is None
-        ):
+        if target_audience == Announcement.TargetAudience.DEPARTMENT:
+            if department is None:
+                raise serializers.ValidationError(
+                    {
+                        "department": (
+                            "Department is required when "
+                            "target audience is DEPARTMENT."
+                        )
+                    }
+                )
+        elif department is not None:
             raise serializers.ValidationError(
                 {
                     "department": (
-                        "Department is required when "
+                        "Department can only be specified when "
                         "target audience is DEPARTMENT."
                     )
                 }

@@ -286,6 +286,99 @@ class AnnouncementAPITestCase(APITestCase):
             response.data,
         )
 
+    def test_blank_title_is_rejected(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "title": "   ",
+            "message": "Valid announcement message.",
+            "created_by": self.hr_user.id,
+            "target_audience": "ALL",
+            "publish_date": timezone.now().isoformat(),
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "title",
+            response.data,
+        )
+
+    def test_blank_message_is_rejected(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "title": "Valid Announcement",
+            "message": "   ",
+            "created_by": self.hr_user.id,
+            "target_audience": "ALL",
+            "publish_date": timezone.now().isoformat(),
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "message",
+            response.data,
+        )
+
+    def test_title_and_message_are_trimmed(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "title": "  Trimmed Announcement  ",
+            "message": "  Trimmed announcement message.  ",
+            "created_by": self.hr_user.id,
+            "target_audience": "ALL",
+            "publish_date": timezone.now().isoformat(),
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        announcement = Announcement.objects.get(
+            pk=response.data["id"],
+        )
+
+        self.assertEqual(
+            announcement.title,
+            "Trimmed Announcement",
+        )
+
+        self.assertEqual(
+            announcement.message,
+            "Trimmed announcement message.",
+        )
+
     def test_is_published_is_true_for_active_current_announcement(self):
         self.authenticate(self.employee_user)
 
@@ -312,6 +405,63 @@ class AnnouncementAPITestCase(APITestCase):
         )
 
         self.assertTrue(
+            response.data["is_published"]
+        )
+
+    def test_future_announcement_is_not_published(self):
+        self.authenticate(self.employee_user)
+
+        announcement = Announcement.objects.create(
+            title="Future Announcement",
+            message="Future announcement.",
+            created_by=self.hr_user,
+            target_audience="ALL",
+            publish_date=timezone.now() + timedelta(hours=1),
+            is_active=True,
+        )
+
+        response = self.client.get(
+            reverse(
+                "announcement-detail",
+                kwargs={"pk": announcement.id},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertFalse(
+            response.data["is_published"]
+        )
+
+    def test_expired_announcement_is_not_published(self):
+        self.authenticate(self.employee_user)
+
+        announcement = Announcement.objects.create(
+            title="Expired Announcement",
+            message="Expired announcement.",
+            created_by=self.hr_user,
+            target_audience="ALL",
+            publish_date=timezone.now() - timedelta(days=2),
+            expiry_date=timezone.now() - timedelta(hours=1),
+            is_active=True,
+        )
+
+        response = self.client.get(
+            reverse(
+                "announcement-detail",
+                kwargs={"pk": announcement.id},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertFalse(
             response.data["is_published"]
         )
 
