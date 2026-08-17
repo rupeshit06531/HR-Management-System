@@ -740,3 +740,16 @@ class LeaveAPITestCase(APITestCase):
             results[0]["reason"],
             "Medical appointment",
         )
+
+    def test_database_rejects_invalid_leave_date_range(self):
+        from django.db import IntegrityError
+
+        with self.assertRaises(IntegrityError):
+            Leave.objects.create(
+                employee=self.employee,
+                leave_type="casual",
+                start_date=date(2026, 12, 20),
+                end_date=date(2026, 12, 15),
+                reason="Database constraint test",
+                status="pending",
+            )
