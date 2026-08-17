@@ -96,7 +96,25 @@ class EmployeeAPITestCase(APITestCase):
     def authenticate(self, user):
         self.client.force_authenticate(user=user)
 
+    def create_employee_user(
+        self,
+        username="new_employee",
+        email="new_employee@test.com",
+        first_name="New",
+        last_name="Employee",
+    ):
+        return User.objects.create_user(
+            username=username,
+            email=email,
+            password="TestPass@123",
+            first_name=first_name,
+            last_name=last_name,
+            role=User.Role.EMPLOYEE,
+        )
+
     def test_unauthenticated_access_is_denied(self):
+        self.client.force_authenticate(user=None)
+
         response = self.client.get(self.url)
 
         self.assertEqual(
@@ -122,13 +140,9 @@ class EmployeeAPITestCase(APITestCase):
     def test_hr_can_create_employee(self):
         self.authenticate(self.hr_user)
 
-        new_user = User.objects.create_user(
+        new_user = self.create_employee_user(
             username="employee_new",
             email="employee_new@test.com",
-            password="TestPass@123",
-            first_name="New",
-            last_name="Employee",
-            role=User.Role.EMPLOYEE,
         )
 
         payload = {
@@ -163,6 +177,58 @@ class EmployeeAPITestCase(APITestCase):
             ).exists()
         )
 
+    def test_created_employee_id_is_normalized(self):
+        self.authenticate(self.hr_user)
+
+        new_user = self.create_employee_user(
+            username="employee_normalized",
+            email="employee_normalized@test.com",
+        )
+
+        payload = {
+            "user": new_user.id,
+            "employee_id": "  emp-005  ",
+            "department": self.department.id,
+            "designation": self.designation.id,
+            "joining_date": "2026-05-01",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            response.data["employee_id"],
+            "EMP-005",
+        )
+
+    def test_full_name_is_returned(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(
+            reverse(
+                "employee-detail",
+                kwargs={"pk": self.employee.id},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["full_name"],
+            "Test Employee",
+        )
+
     def test_manager_can_list_only_self_and_team_members(self):
         self.authenticate(self.manager_user)
 
@@ -189,13 +255,9 @@ class EmployeeAPITestCase(APITestCase):
     def test_manager_cannot_create_employee(self):
         self.authenticate(self.manager_user)
 
-        new_user = User.objects.create_user(
+        new_user = self.create_employee_user(
             username="manager_created",
             email="manager_created@test.com",
-            password="TestPass@123",
-            first_name="Manager",
-            last_name="Created",
-            role=User.Role.EMPLOYEE,
         )
 
         payload = {
@@ -317,6 +379,33 @@ class EmployeeAPITestCase(APITestCase):
             response.data,
         )
 
+    def test_duplicate_user_employee_profile_is_rejected(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "user": self.employee_user.id,
+            "employee_id": "EMP-006",
+            "department": self.department.id,
+            "designation": self.designation.id,
+            "joining_date": "2026-06-01",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "user",
+            response.data,
+        )
+
     def test_designation_must_belong_to_department(self):
         self.authenticate(self.hr_user)
 
@@ -330,13 +419,11 @@ class EmployeeAPITestCase(APITestCase):
             department=other_department,
         )
 
-        new_user = User.objects.create_user(
+        new_user = self.create_employee_user(
             username="employee_invalid_department",
             email="employee_invalid_department@test.com",
-            password="TestPass@123",
             first_name="Invalid",
             last_name="Department",
-            role=User.Role.EMPLOYEE,
         )
 
         payload = {
@@ -373,6 +460,211 @@ class EmployeeAPITestCase(APITestCase):
             "designation": self.designation.id,
             "joining_date": "2026-01-01",
             "manager": self.employee.id,
+        }
+
+        response = self.client.put(
+            reverse(
+                "employee-detail",
+                kwargs={"pk": self.employee.id},
+            ),
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "manager",
+            response.data,
+        )
+
+    def test_inactive_manager_is_rejected(self):
+        self.authenticate(self.hr_user)
+
+        inactive_user = self.create_employee_user(
+            username="inactive_manager",
+            email="inactive_manager@test.com",
+        )
+
+        inactive_manager = Employee.objects.create(
+            user=inactive_user,
+            employee_id="EMP-INACTIVE",
+            department=self.department,
+            designation=self.manager_designation,
+            joining_date=date(2024, 1, 1),
+            employment_status=Employee.EmploymentStatus.INACTIVE,
+        )
+
+        new_user = self.create_employee_user(
+            username="employee_inactive_manager",
+            email="employee_inactive_manager@test.com",
+        )
+
+        payload = {
+            "user": new_user.id,
+            "employee_id": "EMP-007",
+            "department": self.department.id,
+            "designation": self.designation.id,
+            "joining_date": "2026-07-01",
+            "manager": inactive_manager.id,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "manager",
+            response.data,
+        )
+
+    def test_resigned_manager_is_rejected(self):
+        self.authenticate(self.hr_user)
+
+        resigned_user = self.create_employee_user(
+            username="resigned_manager",
+            email="resigned_manager@test.com",
+        )
+
+        resigned_manager = Employee.objects.create(
+            user=resigned_user,
+            employee_id="EMP-RESIGNED",
+            department=self.department,
+            designation=self.manager_designation,
+            joining_date=date(2024, 1, 1),
+            employment_status=Employee.EmploymentStatus.RESIGNED,
+        )
+
+        new_user = self.create_employee_user(
+            username="employee_resigned_manager",
+            email="employee_resigned_manager@test.com",
+        )
+
+        payload = {
+            "user": new_user.id,
+            "employee_id": "EMP-008",
+            "department": self.department.id,
+            "designation": self.designation.id,
+            "joining_date": "2026-07-01",
+            "manager": resigned_manager.id,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "manager",
+            response.data,
+        )
+
+    def test_terminated_manager_is_rejected(self):
+        self.authenticate(self.hr_user)
+
+        terminated_user = self.create_employee_user(
+            username="terminated_manager",
+            email="terminated_manager@test.com",
+        )
+
+        terminated_manager = Employee.objects.create(
+            user=terminated_user,
+            employee_id="EMP-TERMINATED",
+            department=self.department,
+            designation=self.manager_designation,
+            joining_date=date(2024, 1, 1),
+            employment_status=Employee.EmploymentStatus.TERMINATED,
+        )
+
+        new_user = self.create_employee_user(
+            username="employee_terminated_manager",
+            email="employee_terminated_manager@test.com",
+        )
+
+        payload = {
+            "user": new_user.id,
+            "employee_id": "EMP-009",
+            "department": self.department.id,
+            "designation": self.designation.id,
+            "joining_date": "2026-07-01",
+            "manager": terminated_manager.id,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "manager",
+            response.data,
+        )
+
+    def test_resigned_employee_cannot_keep_active_reporting_assignment(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "user": self.employee_user.id,
+            "employee_id": "EMP-001",
+            "department": self.department.id,
+            "designation": self.designation.id,
+            "joining_date": "2026-01-01",
+            "employment_status": "RESIGNED",
+            "manager": self.manager_employee.id,
+        }
+
+        response = self.client.put(
+            reverse(
+                "employee-detail",
+                kwargs={"pk": self.employee.id},
+            ),
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "manager",
+            response.data,
+        )
+
+    def test_terminated_employee_cannot_keep_active_reporting_assignment(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "user": self.employee_user.id,
+            "employee_id": "EMP-001",
+            "department": self.department.id,
+            "designation": self.designation.id,
+            "joining_date": "2026-01-01",
+            "employment_status": "TERMINATED",
+            "manager": self.manager_employee.id,
         }
 
         response = self.client.put(
