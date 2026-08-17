@@ -37,10 +37,15 @@ class DocumentSerializer(serializers.ModelSerializer):
                 "Document title cannot be empty."
             )
 
+        if len(value) > 200:
+            raise serializers.ValidationError(
+                "Document title cannot exceed 200 characters."
+            )
+
         return value
 
     def validate_document_type(self, value):
-        value = value.strip()
+        value = value.strip().lower()
 
         if not value:
             raise serializers.ValidationError(
@@ -59,10 +64,25 @@ class DocumentSerializer(serializers.ModelSerializer):
 
         return value
 
+    def validate_description(self, value):
+        return value.strip()
+
     def validate_file(self, value):
         if not value:
             raise serializers.ValidationError(
                 "Document file is required."
+            )
+
+        if value.size <= 0:
+            raise serializers.ValidationError(
+                "Document file cannot be empty."
+            )
+
+        max_file_size = 10 * 1024 * 1024
+
+        if value.size > max_file_size:
+            raise serializers.ValidationError(
+                "Document file cannot exceed 10 MB."
             )
 
         return value
