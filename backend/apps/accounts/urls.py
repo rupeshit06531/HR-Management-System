@@ -1,9 +1,13 @@
 from django.urls import path
+from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from rest_framework.routers import DefaultRouter
-
-from .views import LoginViewSet, LogoutViewSet, UserViewSet
+from .views import (
+    LoginViewSet,
+    LogoutViewSet,
+    MeViewSet,
+    UserViewSet,
+)
 
 
 router = DefaultRouter()
@@ -22,6 +26,10 @@ logout_view = LogoutViewSet.as_view({
     "post": "create",
 })
 
+me_view = MeViewSet.as_view({
+    "get": "list",
+})
+
 
 urlpatterns = router.urls + [
     path(
@@ -38,5 +46,10 @@ urlpatterns = router.urls + [
         "token/refresh/",
         TokenRefreshView.as_view(),
         name="token-refresh",
+    ),
+    path(
+        "me/",
+        me_view,
+        name="me",
     ),
 ]

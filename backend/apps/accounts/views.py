@@ -26,6 +26,20 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrSuperAdmin]
 
 
+class MeViewSet(viewsets.ViewSet):
+    """
+    Authenticated current-user profile API.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        return Response(
+            UserSerializer(request.user).data,
+            status=status.HTTP_200_OK,
+        )
+
+
 class LoginViewSet(viewsets.ViewSet):
     """
     Secure JWT authentication endpoint.
