@@ -1,6 +1,8 @@
 from datetime import date
 from decimal import Decimal
 
+from django.utils import timezone
+
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -299,6 +301,7 @@ class PayrollAPITestCase(APITestCase):
             month=date(2027, 3, 1),
             basic_salary=Decimal("50000.00"),
             payment_status="paid",
+            paid_at=timezone.now(),
         )
 
         response = self.client.get(
