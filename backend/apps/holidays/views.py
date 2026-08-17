@@ -1,4 +1,3 @@
-
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
@@ -12,8 +11,6 @@ from .serializers import HolidaySerializer
 
 
 class HolidayViewSet(viewsets.ModelViewSet):
-
-    queryset = Holiday.objects.all()
 
     serializer_class = HolidaySerializer
 
@@ -47,6 +44,7 @@ class HolidayViewSet(viewsets.ModelViewSet):
     ordering = [
         "date",
         "name",
+        "id",
     ]
 
     def get_permissions(self):
@@ -76,3 +74,9 @@ class HolidayViewSet(viewsets.ModelViewSet):
             permission()
             for permission in permission_classes
         ]
+
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return Holiday.objects.none()
+
+        return Holiday.objects.all()
