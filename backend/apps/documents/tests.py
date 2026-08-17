@@ -1,6 +1,4 @@
-
 from datetime import date
-from io import BytesIO
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
@@ -23,9 +21,19 @@ class DocumentAPITestCase(APITestCase):
             description="Documents test department",
         )
 
+        cls.other_department = Department.objects.create(
+            name="Documents Finance",
+            description="Documents second test department",
+        )
+
         cls.designation = Designation.objects.create(
             name="Documents Employee",
             department=cls.department,
+        )
+
+        cls.other_designation = Designation.objects.create(
+            name="Documents Finance Employee",
+            department=cls.other_department,
         )
 
         cls.super_admin = User.objects.create_user(
@@ -64,11 +72,28 @@ class DocumentAPITestCase(APITestCase):
             role=User.Role.EMPLOYEE,
         )
 
+        cls.other_employee_user = User.objects.create_user(
+            username="documents_other_employee",
+            email="documents_other_employee@test.com",
+            password="TestPass@123",
+            first_name="Other",
+            last_name="Employee",
+            role=User.Role.EMPLOYEE,
+        )
+
         cls.employee = Employee.objects.create(
             user=cls.employee_user,
             employee_id="DOC-EMP-001",
             department=cls.department,
             designation=cls.designation,
+            joining_date=date(2026, 1, 1),
+        )
+
+        cls.other_employee = Employee.objects.create(
+            user=cls.other_employee_user,
+            employee_id="DOC-EMP-002",
+            department=cls.other_department,
+            designation=cls.other_designation,
             joining_date=date(2026, 1, 1),
         )
 
@@ -89,9 +114,10 @@ class DocumentAPITestCase(APITestCase):
         self,
         title="Employment Contract",
         document_type="contract",
+        employee=None,
     ):
         return Document.objects.create(
-            employee=self.employee,
+            employee=employee or self.employee,
             title=title,
             document_type=document_type,
             file=self.create_file(),
@@ -143,10 +169,155 @@ class DocumentAPITestCase(APITestCase):
             status.HTTP_403_FORBIDDEN,
         )
 
-    def test_employee_cannot_access_documents(self):
+    def test_employee_can_list_own_documents(self):
         self.authenticate(self.employee_user)
 
+        self.create_document()
+
         response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["count"],
+            1,
+        )
+
+        self.assertEqual(
+            response.data["results"][0]["employee"],
+            self.employee.id,
+        )
+
+    def test_employee_cannot_see_other_employee_documents(self):
+        self.authenticate(self.employee_user)
+
+        self.create_document(
+            title="Own Document",
+            employee=self.employee,
+        )
+
+        self.create_document(
+            title="Other Employee Document",
+            employee=self.other_employee,
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["count"],
+            1,
+        )
+
+        self.assertEqual(
+            response.data["results"][0]["employee"],
+            self.employee.id,
+        )
+
+    def test_employee_can_retrieve_own_document(self):
+        self.authenticate(self.employee_user)
+
+        document = self.create_document()
+
+        response = self.client.get(
+            reverse(
+                "documents-detail",
+                kwargs={"pk": document.id},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["id"],
+            document.id,
+        )
+
+    def test_employee_cannot_retrieve_other_employee_document(self):
+        self.authenticate(self.employee_user)
+
+        document = self.create_document(
+            employee=self.other_employee,
+        )
+
+        response = self.client.get(
+            reverse(
+                "documents-detail",
+                kwargs={"pk": document.id},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+    def test_employee_cannot_create_document(self):
+        self.authenticate(self.employee_user)
+
+        payload = {
+            "employee": self.employee.id,
+            "title": "Employee Uploaded Document",
+            "document_type": "other",
+            "description": "Employee should not upload documents.",
+            "file": self.create_file("employee-upload.txt"),
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_employee_cannot_update_document(self):
+        self.authenticate(self.employee_user)
+
+        document = self.create_document()
+
+        payload = {
+            "title": "Updated Employee Document",
+        }
+
+        response = self.client.patch(
+            reverse(
+                "documents-detail",
+                kwargs={"pk": document.id},
+            ),
+            payload,
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_employee_cannot_delete_document(self):
+        self.authenticate(self.employee_user)
+
+        document = self.create_document()
+
+        response = self.client.delete(
+            reverse(
+                "documents-detail",
+                kwargs={"pk": document.id},
+            )
+        )
 
         self.assertEqual(
             response.status_code,

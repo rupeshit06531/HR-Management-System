@@ -1,7 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, viewsets
+from rest_framework import filters, permissions, viewsets
 
-from apps.accounts.permissions import IsAdminOrSuperAdmin
+from apps.accounts.models import User
 
 from .models import Document
 from .serializers import DocumentSerializer
@@ -9,10 +9,6 @@ from .serializers import DocumentSerializer
 
 class DocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentSerializer
-
-    permission_classes = [
-        IsAdminOrSuperAdmin,
-    ]
 
     filter_backends = [
         DjangoFilterBackend,
@@ -46,15 +42,76 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
     ordering = [
         "-uploaded_at",
+        "-id",
     ]
 
+    def get_permissions(self):
+        user = self.request.user
+
+        if self.action in {
+            "create",
+            "update",
+            "partial_update",
+            "destroy",
+        }:
+            allowed = (
+                user.is_authenticated
+                and user.role in {
+                    User.Role.HR,
+                    User.Role.SUPER_ADMIN,
+                }
+            )
+        else:
+            allowed = (
+                user.is_authenticated
+                and user.role in {
+                    User.Role.HR,
+                    User.Role.SUPER_ADMIN,
+                    User.Role.EMPLOYEE,
+                }
+            )
+
+        if not allowed:
+            return [
+                permissions.IsAdminUser(),
+            ]
+
+        return [
+            permissions.IsAuthenticated(),
+        ]
+
     def get_queryset(self):
-        return (
+        queryset = (
             Document.objects
             .select_related(
                 "employee",
                 "employee__user",
                 "employee__department",
+                "employee__designation",
+                "employee__manager",
             )
             .all()
         )
+
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return queryset.none()
+
+        if user.role in {
+            User.Role.HR,
+            User.Role.SUPER_ADMIN,
+        }:
+            return queryset
+
+        if user.role == User.Role.EMPLOYEE:
+            try:
+                employee = user.employee_profile
+            except Exception:
+                return queryset.none()
+
+            return queryset.filter(
+                employee=employee,
+            )
+
+        return queryset.none()
