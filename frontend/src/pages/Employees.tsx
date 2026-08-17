@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
   type FormEvent,
 } from "react"
@@ -13,6 +14,15 @@ import {
   type EmployeeListResponse,
   type EmployeePayload,
 } from "../api/employees"
+
+import {
+  getDepartments,
+  getDesignations,
+  type Department,
+  type DepartmentListResponse,
+  type Designation,
+  type DesignationListResponse,
+} from "../api/departments"
 
 const emptyForm: EmployeePayload = {
   user: 0,
@@ -46,6 +56,12 @@ function Employees() {
   const [employees, setEmployees] =
     useState<Employee[]>([])
 
+  const [departments, setDepartments] =
+    useState<Department[]>([])
+
+  const [designations, setDesignations] =
+    useState<Designation[]>([])
+
   const [isLoading, setIsLoading] =
     useState(true)
 
@@ -73,26 +89,66 @@ function Employees() {
     )
 
   const loadEmployees = async () => {
+    const response =
+      await getEmployees()
+
+    if (Array.isArray(response)) {
+      setEmployees(response)
+    } else {
+      const paginated =
+        response as EmployeeListResponse
+
+      setEmployees(
+        paginated.results ?? [],
+      )
+    }
+  }
+
+  const loadDepartments = async () => {
+    const response =
+      await getDepartments()
+
+    if (Array.isArray(response)) {
+      setDepartments(response)
+    } else {
+      const paginated =
+        response as DepartmentListResponse
+
+      setDepartments(
+        paginated.results ?? [],
+      )
+    }
+  }
+
+  const loadDesignations = async () => {
+    const response =
+      await getDesignations()
+
+    if (Array.isArray(response)) {
+      setDesignations(response)
+    } else {
+      const paginated =
+        response as DesignationListResponse
+
+      setDesignations(
+        paginated.results ?? [],
+      )
+    }
+  }
+
+  const loadData = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      const response =
-        await getEmployees()
-
-      if (Array.isArray(response)) {
-        setEmployees(response)
-      } else {
-        const paginated =
-          response as EmployeeListResponse
-
-        setEmployees(
-          paginated.results ?? [],
-        )
-      }
+      await Promise.all([
+        loadEmployees(),
+        loadDepartments(),
+        loadDesignations(),
+      ])
     } catch {
       setError(
-        "Unable to load employees.",
+        "Unable to load employee data.",
       )
     } finally {
       setIsLoading(false)
@@ -100,11 +156,29 @@ function Employees() {
   }
 
   useEffect(() => {
-    void loadEmployees()
+    void loadData()
   }, [])
 
+  const filteredDesignations =
+    useMemo(() => {
+      if (!form.department) {
+        return []
+      }
+
+      return designations.filter(
+        (designation) =>
+          designation.department ===
+          form.department,
+      )
+    }, [
+      designations,
+      form.department,
+    ])
+
   const resetForm = () => {
-    setForm(emptyForm)
+    setForm({
+      ...emptyForm,
+    })
     setEditingId(null)
     setShowForm(false)
   }
@@ -112,7 +186,9 @@ function Employees() {
   const handleAdd = () => {
     setError(null)
     setSuccess(null)
-    setForm(emptyForm)
+    setForm({
+      ...emptyForm,
+    })
     setEditingId(null)
     setShowForm(true)
   }
@@ -177,6 +253,32 @@ function Employees() {
     if (!form.joining_date) {
       setError(
         "Joining date is required.",
+      )
+      return
+    }
+
+    if (
+      form.designation !== null &&
+      form.department === null
+    ) {
+      setError(
+        "Please select a department before selecting a designation.",
+      )
+      return
+    }
+
+    if (
+      form.designation !== null &&
+      !designations.some(
+        (designation) =>
+          designation.id ===
+            form.designation &&
+          designation.department ===
+            form.department,
+      )
+    ) {
+      setError(
+        "Selected designation does not belong to the selected department.",
       )
       return
     }
@@ -302,6 +404,38 @@ function Employees() {
         (character) =>
           character.toUpperCase(),
       )
+
+  const getDepartmentName = (
+    departmentId: number | null,
+  ) => {
+    if (!departmentId) {
+      return "-"
+    }
+
+    return (
+      departments.find(
+        (department) =>
+          department.id ===
+          departmentId,
+      )?.name ?? String(departmentId)
+    )
+  }
+
+  const getDesignationName = (
+    designationId: number | null,
+  ) => {
+    if (!designationId) {
+      return "-"
+    }
+
+    return (
+      designations.find(
+        (designation) =>
+          designation.id ===
+          designationId,
+      )?.name ?? String(designationId)
+    )
+  }
 
   return (
     <main
@@ -572,35 +706,39 @@ function Employees() {
               </label>
 
               <label>
-                Department ID
+                Department
 
-                <input
-                  type="number"
+                <select
                   value={
                     form.department ??
                     ""
                   }
                   onChange={(
                     event,
-                  ) =>
+                  ) => {
+                    const departmentId =
+                      event
+                        .target
+                        .value
+                        ? Number(
+                            event
+                              .target
+                              .value,
+                          )
+                        : null
+
                     setForm(
                       (
                         current,
                       ) => ({
                         ...current,
                         department:
-                          event
-                            .target
-                            .value
-                            ? Number(
-                                event
-                                  .target
-                                  .value,
-                              )
-                            : null,
+                          departmentId,
+                        designation:
+                          null,
                       }),
                     )
-                  }
+                  }}
                   style={{
                     display:
                       "block",
@@ -613,14 +751,39 @@ function Employees() {
                     boxSizing:
                       "border-box",
                   }}
-                />
+                >
+                  <option value="">
+                    Select department
+                  </option>
+
+                  {departments.map(
+                    (
+                      department,
+                    ) => (
+                      <option
+                        key={
+                          department.id
+                        }
+                        value={
+                          department.id
+                        }
+                      >
+                        {
+                          department.name
+                        }
+                        {!department.is_active
+                          ? " (Inactive)"
+                          : ""}
+                      </option>
+                    ),
+                  )}
+                </select>
               </label>
 
               <label>
-                Designation ID
+                Designation
 
-                <input
-                  type="number"
+                <select
                   value={
                     form.designation ??
                     ""
@@ -646,6 +809,11 @@ function Employees() {
                       }),
                     )
                   }
+                  disabled={
+                    !form.department ||
+                    filteredDesignations.length ===
+                      0
+                  }
                   style={{
                     display:
                       "block",
@@ -658,7 +826,38 @@ function Employees() {
                     boxSizing:
                       "border-box",
                   }}
-                />
+                >
+                  <option value="">
+                    {!form.department
+                      ? "Select department first"
+                      : filteredDesignations.length ===
+                          0
+                        ? "No designations available"
+                        : "Select designation"}
+                  </option>
+
+                  {filteredDesignations.map(
+                    (
+                      designation,
+                    ) => (
+                      <option
+                        key={
+                          designation.id
+                        }
+                        value={
+                          designation.id
+                        }
+                      >
+                        {
+                          designation.name
+                        }
+                        {!designation.is_active
+                          ? " (Inactive)"
+                          : ""}
+                      </option>
+                    ),
+                  )}
+                </select>
               </label>
 
               <label>
@@ -1151,10 +1350,9 @@ function Employees() {
                               "1px solid #f3f4f6",
                           }}
                         >
-                          {
-                            employee.department ??
-                            "-"
-                          }
+                          {getDepartmentName(
+                            employee.department,
+                          )}
                         </td>
 
                         <td
@@ -1165,10 +1363,9 @@ function Employees() {
                               "1px solid #f3f4f6",
                           }}
                         >
-                          {
-                            employee.designation ??
-                            "-"
-                          }
+                          {getDesignationName(
+                            employee.designation,
+                          )}
                         </td>
 
                         <td
