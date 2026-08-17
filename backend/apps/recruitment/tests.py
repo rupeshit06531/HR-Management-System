@@ -390,3 +390,225 @@ class CandidateAPITestCase(APITestCase):
             response.data["full_name"],
             "Single",
         )
+
+    def test_negative_experience_years_is_rejected(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "first_name": "Negative",
+            "last_name": "Experience",
+            "email": "negativeexperience@test.com",
+            "phone": "9876543216",
+            "job_title": "Developer",
+            "department": self.department.id,
+            "experience_years": "-1.00",
+            "status": "APPLIED",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "experience_years",
+            response.data,
+        )
+
+    def test_negative_expected_salary_is_rejected(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "first_name": "Negative",
+            "last_name": "Salary",
+            "email": "negativesalary@test.com",
+            "phone": "9876543217",
+            "job_title": "Developer",
+            "department": self.department.id,
+            "expected_salary": "-50000.00",
+            "status": "APPLIED",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "expected_salary",
+            response.data,
+        )
+
+    def test_selected_status_requires_offer_date(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "first_name": "Selected",
+            "last_name": "Candidate",
+            "email": "selectedoffer@test.com",
+            "phone": "9876543218",
+            "job_title": "Developer",
+            "department": self.department.id,
+            "status": "SELECTED",
+            "joining_date": "2026-09-01",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "offer_date",
+            response.data,
+        )
+
+    def test_selected_status_requires_joining_date(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "first_name": "Selected",
+            "last_name": "Candidate",
+            "email": "selectedjoining@test.com",
+            "phone": "9876543219",
+            "job_title": "Developer",
+            "department": self.department.id,
+            "status": "SELECTED",
+            "offer_date": "2026-08-25",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "joining_date",
+            response.data,
+        )
+
+    def test_joining_date_cannot_be_before_offer_date(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "first_name": "Invalid",
+            "last_name": "Dates",
+            "email": "invaliddates@test.com",
+            "phone": "9876543220",
+            "job_title": "Developer",
+            "department": self.department.id,
+            "status": "SELECTED",
+            "offer_date": "2026-08-25",
+            "joining_date": "2026-08-20",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "joining_date",
+            response.data,
+        )
+
+    def test_interview_date_must_be_empty_for_non_interview_status(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "first_name": "Invalid",
+            "last_name": "Interview",
+            "email": "invalidinterview@test.com",
+            "phone": "9876543221",
+            "job_title": "Developer",
+            "department": self.department.id,
+            "status": "APPLIED",
+            "interview_date": "2026-08-25T10:00:00Z",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "interview_date",
+            response.data,
+        )
+
+    def test_selected_candidate_with_valid_dates_is_created(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "first_name": "Selected",
+            "last_name": "Valid",
+            "email": "selectedvalid@test.com",
+            "phone": "9876543222",
+            "job_title": "Senior Developer",
+            "department": self.department.id,
+            "status": "SELECTED",
+            "offer_date": "2026-08-25",
+            "joining_date": "2026-09-01",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            response.data["status"],
+            "SELECTED",
+        )
+
+        self.assertEqual(
+            response.data["offer_date"],
+            "2026-08-25",
+        )
+
+        self.assertEqual(
+            response.data["joining_date"],
+            "2026-09-01",
+        )
