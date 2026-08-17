@@ -637,3 +637,81 @@ class AttendanceAPITestCase(APITestCase):
             results[0]["date"],
             "2026-08-17",
         )
+
+    def test_manager_cannot_create_attendance_for_employee_outside_team(self):
+        self.authenticate(self.manager_user)
+
+        payload = {
+            "employee": self.second_employee.id,
+            "date": "2026-08-24",
+            "check_in": "09:00:00",
+            "check_out": "17:00:00",
+            "status": "present",
+            "remarks": "Unauthorized team attendance",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "employee",
+            response.data,
+        )
+
+        self.assertFalse(
+            Attendance.objects.filter(
+                employee=self.second_employee,
+                date=date(2026, 8, 24),
+            ).exists()
+        )
+
+    def test_manager_cannot_update_attendance_for_employee_outside_team(self):
+        attendance = self.create_attendance(
+            employee=self.second_employee,
+            attendance_date=date(2026, 8, 25),
+        )
+
+        self.authenticate(self.manager_user)
+
+        payload = {
+            "employee": self.second_employee.id,
+            "date": "2026-08-25",
+            "check_in": "10:00:00",
+            "check_out": "18:00:00",
+            "status": "late",
+            "remarks": "Unauthorized update",
+        }
+
+        response = self.client.put(
+            reverse(
+                "attendance-detail",
+                kwargs={"pk": attendance.id},
+            ),
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+        attendance.refresh_from_db()
+
+        self.assertEqual(
+            attendance.status,
+            "present",
+        )
+
+        self.assertEqual(
+            attendance.remarks,
+            "Test attendance",
+        )
