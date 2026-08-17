@@ -202,14 +202,16 @@ class Candidate(models.Model):
             models.CheckConstraint(
                 condition=(
                     models.Q(
-                        status="SELECTED",
-                        offer_date__isnull=False,
+                        joining_date__isnull=True,
                     )
-                    | ~models.Q(
-                        status="SELECTED",
+                    | models.Q(
+                        offer_date__isnull=True,
+                    )
+                    | models.Q(
+                        joining_date__gte=models.F("offer_date"),
                     )
                 ),
-                name="recruitment_selected_offer_date_consistent",
+                name="recruitment_joining_date_after_offer",
             ),
         ]
 
