@@ -1,3 +1,4 @@
+
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
@@ -12,7 +13,7 @@ from .serializers import HolidaySerializer
 
 class HolidayViewSet(viewsets.ModelViewSet):
 
-    queryset = Holiday.objects.all().order_by("date")
+    queryset = Holiday.objects.all()
 
     serializer_class = HolidaySerializer
 
@@ -35,9 +36,17 @@ class HolidayViewSet(viewsets.ModelViewSet):
 
     ordering_fields = [
         "id",
+        "name",
+        "date",
+        "holiday_type",
+        "is_active",
+        "created_at",
+        "updated_at",
+    ]
+
+    ordering = [
         "date",
         "name",
-        "created_at",
     ]
 
     def get_permissions(self):
