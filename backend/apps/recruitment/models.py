@@ -77,7 +77,63 @@ class Candidate(models.Model):
     )
 
     class Meta:
-        ordering = ["-application_date", "-created_at"]
+        ordering = [
+            "-application_date",
+            "-created_at",
+        ]
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "status",
+                    "-application_date",
+                ],
+                name="recruitment_status_date_idx",
+            ),
+            models.Index(
+                fields=[
+                    "department",
+                    "-application_date",
+                ],
+                name="recruitment_dept_date_idx",
+            ),
+            models.Index(
+                fields=[
+                    "email",
+                ],
+                name="recruitment_email_idx",
+            ),
+            models.Index(
+                fields=[
+                    "job_title",
+                    "-application_date",
+                ],
+                name="recruitment_job_date_idx",
+            ),
+        ]
+
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(first_name=""),
+                name="recruitment_first_name_not_empty",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(email=""),
+                name="recruitment_email_not_empty",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(job_title=""),
+                name="recruitment_job_title_not_empty",
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(phone=""),
+                name="recruitment_phone_not_empty",
+            ),
+        ]
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} - {self.job_title}"
+        return (
+            f"{self.first_name} "
+            f"{self.last_name} - "
+            f"{self.job_title}"
+        )

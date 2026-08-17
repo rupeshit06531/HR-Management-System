@@ -8,10 +8,6 @@ from .serializers import CandidateSerializer
 
 
 class CandidateViewSet(viewsets.ModelViewSet):
-    queryset = Candidate.objects.select_related(
-        "department",
-    ).all()
-
     serializer_class = CandidateSerializer
 
     permission_classes = [
@@ -37,16 +33,32 @@ class CandidateViewSet(viewsets.ModelViewSet):
         "email",
         "phone",
         "job_title",
+        "department__name",
     ]
 
     ordering_fields = [
         "id",
+        "first_name",
+        "last_name",
+        "email",
+        "job_title",
         "application_date",
         "interview_date",
+        "status",
         "created_at",
+        "updated_at",
     ]
 
     ordering = [
         "-application_date",
         "-created_at",
     ]
+
+    def get_queryset(self):
+        return (
+            Candidate.objects
+            .select_related(
+                "department",
+            )
+            .all()
+        )
