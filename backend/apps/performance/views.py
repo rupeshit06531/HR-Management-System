@@ -10,16 +10,7 @@ from .serializers import PerformanceReviewSerializer
 
 
 class PerformanceReviewViewSet(viewsets.ModelViewSet):
-    queryset = PerformanceReview.objects.select_related(
-        "employee",
-        "employee__user",
-    ).all()
-
     serializer_class = PerformanceReviewSerializer
-
-    permission_classes = [
-        IsManagerOrHROrSuperAdmin,
-    ]
 
     filter_backends = [
         DjangoFilterBackend,
@@ -56,3 +47,19 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
         "-review_date",
         "-created_at",
     ]
+
+    permission_classes = [
+        IsManagerOrHROrSuperAdmin,
+    ]
+
+    def get_queryset(self):
+        return (
+            PerformanceReview.objects
+            .select_related(
+                "employee",
+                "employee__user",
+                "employee__department",
+                "employee__designation",
+            )
+            .all()
+        )
