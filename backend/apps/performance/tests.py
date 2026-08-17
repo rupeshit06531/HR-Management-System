@@ -435,3 +435,37 @@ class PerformanceReviewAPITestCase(APITestCase):
             result["employee_name"],
             "Performance Employee",
         )
+
+    def test_duplicate_review_is_rejected(self):
+        self.authenticate(self.manager_user)
+
+        PerformanceReview.objects.create(
+            employee=self.employee,
+            review_period="Annual Review 2026",
+            review_date=date(2026, 8, 30),
+        )
+
+        payload = {
+            "employee": self.employee.id,
+            "review_period": "Annual Review 2026",
+            "strengths": "Updated strengths",
+            "areas_for_improvement": "Updated improvement",
+            "manager_comments": "Updated comments",
+            "review_date": "2026-08-30",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertTrue(
+            "review_period" in response.data
+            or "non_field_errors" in response.data,
+        )
