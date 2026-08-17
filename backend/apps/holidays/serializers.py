@@ -40,7 +40,7 @@ class HolidaySerializer(serializers.ModelSerializer):
         return value.strip()
 
     def validate_holiday_type(self, value):
-        value = value.strip()
+        value = value.strip().upper()
 
         valid_types = {
             choice[0]
@@ -60,21 +60,22 @@ class HolidaySerializer(serializers.ModelSerializer):
             getattr(self.instance, "name", None),
         )
 
-        date = attrs.get(
+        holiday_date = attrs.get(
             "date",
             getattr(self.instance, "date", None),
         )
 
         if name is not None:
-            attrs["name"] = name.strip()
+            name = name.strip()
+            attrs["name"] = name
 
-        if date is not None:
+        if holiday_date is not None and name:
             duplicate_queryset = Holiday.objects.filter(
                 name__iexact=name,
-                date=date,
+                date=holiday_date,
             )
 
-            if self.instance:
+            if self.instance is not None:
                 duplicate_queryset = duplicate_queryset.exclude(
                     pk=self.instance.pk,
                 )
@@ -82,12 +83,10 @@ class HolidaySerializer(serializers.ModelSerializer):
             if duplicate_queryset.exists():
                 raise serializers.ValidationError(
                     {
-                        "non_field_errors": [
-                            (
-                                "A holiday with this name "
-                                "already exists for this date."
-                            )
-                        ]
+                        "name": (
+                            "A holiday with this name "
+                            "already exists for this date."
+                        )
                     }
                 )
 
