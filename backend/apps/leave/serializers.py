@@ -1,6 +1,8 @@
 from django.db.models import Q
 from rest_framework import serializers
 
+from apps.employees.models import Employee
+
 from .models import Leave
 
 
@@ -29,19 +31,15 @@ class LeaveSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
+        request = self.context.get("request")
+
         employee = attrs.get(
             "employee",
             getattr(self.instance, "employee", None),
         )
 
-        if employee is None:
-            request = self.context.get("request")
-
-            if (
-                request
-                and request.user.is_authenticated
-                and request.user.role == "EMPLOYEE"
-            ):
+        if employee is None and request and request.user.is_authenticated:
+            if request.user.role == "EMPLOYEE":
                 try:
                     employee = request.user.employee_profile
                 except Exception:
@@ -52,6 +50,33 @@ class LeaveSerializer(serializers.ModelSerializer):
                             )
                         }
                     )
+
+            elif request.user.role in {"HR", "SUPER_ADMIN"}:
+                employee_id = request.data.get("employee")
+
+                if not employee_id:
+                    raise serializers.ValidationError(
+                        {
+                            "employee": (
+                                "Employee is required."
+                            )
+                        }
+                    )
+
+                try:
+                    employee = Employee.objects.get(
+                        pk=employee_id,
+                    )
+                except (Employee.DoesNotExist, ValueError, TypeError):
+                    raise serializers.ValidationError(
+                        {
+                            "employee": (
+                                "Invalid employee."
+                            )
+                        }
+                    )
+
+                attrs["employee"] = employee
 
         start_date = attrs.get(
             "start_date",
