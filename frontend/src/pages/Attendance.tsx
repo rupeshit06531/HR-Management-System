@@ -20,6 +20,8 @@ import {
   type Employee,
 } from "../api/employees"
 
+import { useAuth } from "../context/AuthContext"
+
 const emptyForm: AttendancePayload = {
   employee: 0,
   date: "",
@@ -31,6 +33,7 @@ const emptyForm: AttendancePayload = {
 
 function Attendance() {
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const [records, setRecords] = useState<
     AttendanceRecord[]
@@ -68,19 +71,23 @@ function Attendance() {
       emptyForm,
     )
 
+  const canManageAttendance =
+    user?.role === "SUPER_ADMIN" ||
+    user?.role === "HR" ||
+    user?.role === "MANAGER"
+
   useEffect(() => {
+    if (!user) {
+      return
+    }
+
     const loadData = async () => {
       try {
         setIsLoading(true)
         setError(null)
 
-        const [
-          attendanceResponse,
-          employeesResponse,
-        ] = await Promise.all([
-          getAttendance(),
-          getEmployees(),
-        ])
+        const attendanceResponse =
+          await getAttendance()
 
         const attendanceData =
           Array.isArray(
@@ -89,16 +96,27 @@ function Attendance() {
             ? attendanceResponse
             : attendanceResponse.results
 
-        const employeeData =
-          Array.isArray(
-            employeesResponse,
-          )
-            ? employeesResponse
-            : employeesResponse.results
-
         setRecords(attendanceData)
-        setEmployees(employeeData)
-      } catch {
+
+        if (canManageAttendance) {
+          const employeesResponse =
+            await getEmployees()
+
+          const employeeData =
+            Array.isArray(
+              employeesResponse,
+            )
+              ? employeesResponse
+              : employeesResponse.results
+
+          setEmployees(employeeData)
+        }
+      } catch (error) {
+        console.error(
+          "Attendance loading error:",
+          error,
+        )
+
         setError(
           "Unable to load attendance records.",
         )
@@ -108,7 +126,7 @@ function Attendance() {
     }
 
     void loadData()
-  }, [])
+  }, [user, canManageAttendance])
 
   const handleInputChange = (
     event: ChangeEvent<
@@ -237,7 +255,12 @@ function Attendance() {
       }
 
       resetForm()
-    } catch {
+    } catch (error) {
+      console.error(
+        "Attendance submission error:",
+        error,
+      )
+
       setError(
         editingId !== null
           ? "Unable to update attendance record."
@@ -277,7 +300,12 @@ function Attendance() {
       setSuccess(
         "Attendance record deleted successfully.",
       )
-    } catch {
+    } catch (error) {
+      console.error(
+        "Attendance delete error:",
+        error,
+      )
+
       setError(
         "Unable to delete attendance record.",
       )
@@ -341,8 +369,9 @@ function Attendance() {
               color: "#6b7280",
             }}
           >
-            Manage employee attendance
-            records
+            {canManageAttendance
+              ? "Manage employee attendance records"
+              : "View your attendance records"}
           </p>
         </div>
 
@@ -352,24 +381,26 @@ function Attendance() {
             gap: "10px",
           }}
         >
-          <button
-            type="button"
-            onClick={
-              handleAddClick
-            }
-            style={{
-              padding:
-                "10px 16px",
-              border: "none",
-              borderRadius: "6px",
-              backgroundColor:
-                "#2563eb",
-              color: "#ffffff",
-              cursor: "pointer",
-            }}
-          >
-            Add Attendance
-          </button>
+          {canManageAttendance && (
+            <button
+              type="button"
+              onClick={
+                handleAddClick
+              }
+              style={{
+                padding:
+                  "10px 16px",
+                border: "none",
+                borderRadius: "6px",
+                backgroundColor:
+                  "#2563eb",
+                color: "#ffffff",
+                cursor: "pointer",
+              }}
+            >
+              Add Attendance
+            </button>
+          )}
 
           <button
             type="button"
@@ -424,351 +455,352 @@ function Attendance() {
         </section>
       )}
 
-      {showForm && (
-        <section
-          style={{
-            backgroundColor:
-              "#ffffff",
-            borderRadius: "10px",
-            padding: "24px",
-            marginBottom: "24px",
-            boxShadow:
-              "0 1px 3px rgba(0, 0, 0, 0.08)",
-          }}
-        >
-          <div
+      {showForm &&
+        canManageAttendance && (
+          <section
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent:
-                "space-between",
-              marginBottom:
-                "20px",
+              backgroundColor:
+                "#ffffff",
+              borderRadius: "10px",
+              padding: "24px",
+              marginBottom: "24px",
+              boxShadow:
+                "0 1px 3px rgba(0, 0, 0, 0.08)",
             }}
           >
-            <h2
-              style={{
-                margin: 0,
-                color: "#111827",
-              }}
-            >
-              {editingId !== null
-                ? "Edit Attendance"
-                : "Add Attendance"}
-            </h2>
-
-            <button
-              type="button"
-              onClick={
-                resetForm
-              }
-              style={{
-                padding:
-                  "8px 14px",
-                border:
-                  "1px solid #d1d5db",
-                borderRadius:
-                  "6px",
-                backgroundColor:
-                  "#ffffff",
-                color:
-                  "#374151",
-                cursor:
-                  "pointer",
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-
-          <form
-            onSubmit={
-              handleSubmit
-            }
-          >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: "16px",
-              }}
-            >
-              <label
-                style={{
-                  display: "flex",
-                  flexDirection:
-                    "column",
-                  gap: "6px",
-                  color: "#374151",
-                  fontSize: "14px",
-                }}
-              >
-                Employee
-
-                <select
-                  name="employee"
-                  value={
-                    form.employee || ""
-                  }
-                  onChange={
-                    handleInputChange
-                  }
-                  required
-                  style={{
-                    padding:
-                      "10px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "6px",
-                  }}
-                >
-                  <option value="">
-                    Select employee
-                  </option>
-
-                  {employees.map(
-                    (employee) => (
-                      <option
-                        key={
-                          employee.id
-                        }
-                        value={
-                          employee.id
-                        }
-                      >
-                        {
-                          employee.employee_id
-                        }
-                      </option>
-                    ),
-                  )}
-                </select>
-              </label>
-
-              <label
-                style={{
-                  display: "flex",
-                  flexDirection:
-                    "column",
-                  gap: "6px",
-                  color: "#374151",
-                  fontSize: "14px",
-                }}
-              >
-                Date
-
-                <input
-                  type="date"
-                  name="date"
-                  value={
-                    form.date
-                  }
-                  onChange={
-                    handleInputChange
-                  }
-                  required
-                  style={{
-                    padding:
-                      "10px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "6px",
-                  }}
-                />
-              </label>
-
-              <label
-                style={{
-                  display: "flex",
-                  flexDirection:
-                    "column",
-                  gap: "6px",
-                  color: "#374151",
-                  fontSize: "14px",
-                }}
-              >
-                Check In
-
-                <input
-                  type="time"
-                  name="check_in"
-                  value={
-                    form.check_in ??
-                    ""
-                  }
-                  onChange={
-                    handleInputChange
-                  }
-                  style={{
-                    padding:
-                      "10px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "6px",
-                  }}
-                />
-              </label>
-
-              <label
-                style={{
-                  display: "flex",
-                  flexDirection:
-                    "column",
-                  gap: "6px",
-                  color: "#374151",
-                  fontSize: "14px",
-                }}
-              >
-                Check Out
-
-                <input
-                  type="time"
-                  name="check_out"
-                  value={
-                    form.check_out ??
-                    ""
-                  }
-                  onChange={
-                    handleInputChange
-                  }
-                  style={{
-                    padding:
-                      "10px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "6px",
-                  }}
-                />
-              </label>
-
-              <label
-                style={{
-                  display: "flex",
-                  flexDirection:
-                    "column",
-                  gap: "6px",
-                  color: "#374151",
-                  fontSize: "14px",
-                }}
-              >
-                Status
-
-                <select
-                  name="status"
-                  value={
-                    form.status
-                  }
-                  onChange={
-                    handleInputChange
-                  }
-                  required
-                  style={{
-                    padding:
-                      "10px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "6px",
-                  }}
-                >
-                  <option value="present">
-                    Present
-                  </option>
-
-                  <option value="absent">
-                    Absent
-                  </option>
-
-                  <option value="late">
-                    Late
-                  </option>
-
-                  <option value="half_day">
-                    Half Day
-                  </option>
-                </select>
-              </label>
-
-              <label
-                style={{
-                  display: "flex",
-                  flexDirection:
-                    "column",
-                  gap: "6px",
-                  color: "#374151",
-                  fontSize: "14px",
-                }}
-              >
-                Remarks
-
-                <textarea
-                  name="remarks"
-                  value={
-                    form.remarks ??
-                    ""
-                  }
-                  onChange={
-                    handleInputChange
-                  }
-                  rows={3}
-                  style={{
-                    padding:
-                      "10px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "6px",
-                    resize:
-                      "vertical",
-                  }}
-                />
-              </label>
-            </div>
-
-            <div
-              style={{
-                marginTop:
+                display: "flex",
+                alignItems: "center",
+                justifyContent:
+                  "space-between",
+                marginBottom:
                   "20px",
               }}
             >
+              <h2
+                style={{
+                  margin: 0,
+                  color: "#111827",
+                }}
+              >
+                {editingId !== null
+                  ? "Edit Attendance"
+                  : "Add Attendance"}
+              </h2>
+
               <button
-                type="submit"
-                disabled={
-                  isSubmitting
+                type="button"
+                onClick={
+                  resetForm
                 }
                 style={{
                   padding:
-                    "10px 18px",
-                  border: "none",
+                    "8px 14px",
+                  border:
+                    "1px solid #d1d5db",
                   borderRadius:
                     "6px",
                   backgroundColor:
-                    isSubmitting
-                      ? "#9ca3af"
-                      : "#16a34a",
-                  color:
                     "#ffffff",
+                  color:
+                    "#374151",
                   cursor:
-                    isSubmitting
-                      ? "not-allowed"
-                      : "pointer",
+                    "pointer",
                 }}
               >
-                {isSubmitting
-                  ? "Saving..."
-                  : editingId !== null
-                    ? "Update Attendance"
-                    : "Save Attendance"}
+                Cancel
               </button>
             </div>
-          </form>
-        </section>
-      )}
+
+            <form
+              onSubmit={
+                handleSubmit
+              }
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: "16px",
+                }}
+              >
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection:
+                      "column",
+                    gap: "6px",
+                    color: "#374151",
+                    fontSize: "14px",
+                  }}
+                >
+                  Employee
+
+                  <select
+                    name="employee"
+                    value={
+                      form.employee || ""
+                    }
+                    onChange={
+                      handleInputChange
+                    }
+                    required
+                    style={{
+                      padding:
+                        "10px",
+                      border:
+                        "1px solid #d1d5db",
+                      borderRadius:
+                        "6px",
+                    }}
+                  >
+                    <option value="">
+                      Select employee
+                    </option>
+
+                    {employees.map(
+                      (employee) => (
+                        <option
+                          key={
+                            employee.id
+                          }
+                          value={
+                            employee.id
+                          }
+                        >
+                          {
+                            employee.employee_id
+                          }
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </label>
+
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection:
+                      "column",
+                    gap: "6px",
+                    color: "#374151",
+                    fontSize: "14px",
+                  }}
+                >
+                  Date
+
+                  <input
+                    type="date"
+                    name="date"
+                    value={
+                      form.date
+                    }
+                    onChange={
+                      handleInputChange
+                    }
+                    required
+                    style={{
+                      padding:
+                        "10px",
+                      border:
+                        "1px solid #d1d5db",
+                      borderRadius:
+                        "6px",
+                    }}
+                  />
+                </label>
+
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection:
+                      "column",
+                    gap: "6px",
+                    color: "#374151",
+                    fontSize: "14px",
+                  }}
+                >
+                  Check In
+
+                  <input
+                    type="time"
+                    name="check_in"
+                    value={
+                      form.check_in ??
+                      ""
+                    }
+                    onChange={
+                      handleInputChange
+                    }
+                    style={{
+                      padding:
+                        "10px",
+                      border:
+                        "1px solid #d1d5db",
+                      borderRadius:
+                        "6px",
+                    }}
+                  />
+                </label>
+
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection:
+                      "column",
+                    gap: "6px",
+                    color: "#374151",
+                    fontSize: "14px",
+                  }}
+                >
+                  Check Out
+
+                  <input
+                    type="time"
+                    name="check_out"
+                    value={
+                      form.check_out ??
+                      ""
+                    }
+                    onChange={
+                      handleInputChange
+                    }
+                    style={{
+                      padding:
+                        "10px",
+                      border:
+                        "1px solid #d1d5db",
+                      borderRadius:
+                        "6px",
+                    }}
+                  />
+                </label>
+
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection:
+                      "column",
+                    gap: "6px",
+                    color: "#374151",
+                    fontSize: "14px",
+                  }}
+                >
+                  Status
+
+                  <select
+                    name="status"
+                    value={
+                      form.status
+                    }
+                    onChange={
+                      handleInputChange
+                    }
+                    required
+                    style={{
+                      padding:
+                        "10px",
+                      border:
+                        "1px solid #d1d5db",
+                      borderRadius:
+                        "6px",
+                    }}
+                  >
+                    <option value="present">
+                      Present
+                    </option>
+
+                    <option value="absent">
+                      Absent
+                    </option>
+
+                    <option value="late">
+                      Late
+                    </option>
+
+                    <option value="half_day">
+                      Half Day
+                    </option>
+                  </select>
+                </label>
+
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection:
+                      "column",
+                    gap: "6px",
+                    color: "#374151",
+                    fontSize: "14px",
+                  }}
+                >
+                  Remarks
+
+                  <textarea
+                    name="remarks"
+                    value={
+                      form.remarks ??
+                      ""
+                    }
+                    onChange={
+                      handleInputChange
+                    }
+                    rows={3}
+                    style={{
+                      padding:
+                        "10px",
+                      border:
+                        "1px solid #d1d5db",
+                      borderRadius:
+                        "6px",
+                      resize:
+                        "vertical",
+                    }}
+                  />
+                </label>
+              </div>
+
+              <div
+                style={{
+                  marginTop:
+                    "20px",
+                }}
+              >
+                <button
+                  type="submit"
+                  disabled={
+                    isSubmitting
+                  }
+                  style={{
+                    padding:
+                      "10px 18px",
+                    border: "none",
+                    borderRadius:
+                      "6px",
+                    backgroundColor:
+                      isSubmitting
+                        ? "#9ca3af"
+                        : "#16a34a",
+                    color:
+                      "#ffffff",
+                    cursor:
+                      isSubmitting
+                        ? "not-allowed"
+                        : "pointer",
+                  }}
+                >
+                  {isSubmitting
+                    ? "Saving..."
+                    : editingId !== null
+                      ? "Update Attendance"
+                      : "Save Attendance"}
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
 
       <section
         style={{
@@ -832,7 +864,9 @@ function Attendance() {
               borderCollapse:
                 "collapse",
               minWidth:
-                "1000px",
+                canManageAttendance
+                  ? "1000px"
+                  : "800px",
             }}
           >
             <thead>
@@ -846,7 +880,9 @@ function Attendance() {
                   "Check Out",
                   "Status",
                   "Remarks",
-                  "Actions",
+                  ...(canManageAttendance
+                    ? ["Actions"]
+                    : []),
                 ].map(
                   (heading) => (
                     <th
@@ -977,85 +1013,87 @@ function Attendance() {
                         "-"}
                     </td>
 
-                    <td
-                      style={{
-                        padding:
-                          "12px",
-                        borderBottom:
-                          "1px solid #f0f0f0",
-                      }}
-                    >
-                      <div
+                    {canManageAttendance && (
+                      <td
                         style={{
-                          display:
-                            "flex",
-                          gap: "8px",
+                          padding:
+                            "12px",
+                          borderBottom:
+                            "1px solid #f0f0f0",
                         }}
                       >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleEdit(
-                              record,
-                            )
-                          }
+                        <div
                           style={{
-                            padding:
-                              "7px 12px",
-                            border:
-                              "1px solid #2563eb",
-                            borderRadius:
-                              "6px",
-                            backgroundColor:
-                              "#ffffff",
-                            color:
-                              "#2563eb",
-                            cursor:
-                              "pointer",
+                            display:
+                              "flex",
+                            gap: "8px",
                           }}
                         >
-                          Edit
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleEdit(
+                                record,
+                              )
+                            }
+                            style={{
+                              padding:
+                                "7px 12px",
+                              border:
+                                "1px solid #2563eb",
+                              borderRadius:
+                                "6px",
+                              backgroundColor:
+                                "#ffffff",
+                              color:
+                                "#2563eb",
+                              cursor:
+                                "pointer",
+                            }}
+                          >
+                            Edit
+                          </button>
 
-                        <button
-                          type="button"
-                          disabled={
-                            isDeleting ===
+                          <button
+                            type="button"
+                            disabled={
+                              isDeleting ===
+                              record.id
+                            }
+                            onClick={() =>
+                              void handleDelete(
+                                record.id,
+                              )
+                            }
+                            style={{
+                              padding:
+                                "7px 12px",
+                              border:
+                                "none",
+                              borderRadius:
+                                "6px",
+                              backgroundColor:
+                                isDeleting ===
+                                record.id
+                                  ? "#9ca3af"
+                                  : "#dc2626",
+                              color:
+                                "#ffffff",
+                              cursor:
+                                isDeleting ===
+                                record.id
+                                  ? "not-allowed"
+                                  : "pointer",
+                            }}
+                          >
+                            {isDeleting ===
                             record.id
-                          }
-                          onClick={() =>
-                            void handleDelete(
-                              record.id,
-                            )
-                          }
-                          style={{
-                            padding:
-                              "7px 12px",
-                            border:
-                              "none",
-                            borderRadius:
-                              "6px",
-                            backgroundColor:
-                              isDeleting ===
-                              record.id
-                                ? "#9ca3af"
-                                : "#dc2626",
-                            color:
-                              "#ffffff",
-                            cursor:
-                              isDeleting ===
-                              record.id
-                                ? "not-allowed"
-                                : "pointer",
-                          }}
-                        >
-                          {isDeleting ===
-                          record.id
-                            ? "Deleting..."
-                            : "Delete"}
-                        </button>
-                      </div>
-                    </td>
+                              ? "Deleting..."
+                              : "Delete"}
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ),
               )}
