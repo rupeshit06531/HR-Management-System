@@ -371,3 +371,122 @@ class HolidayAPITestCase(APITestCase):
             results[0]["name"],
             "Earlier Holiday",
         )
+
+    def test_blank_holiday_name_is_rejected(self):
+        self.authenticate(self.super_admin)
+
+        payload = {
+            "name": "   ",
+            "date": "2028-01-01",
+            "holiday_type": "NATIONAL",
+            "description": "Invalid holiday.",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "name",
+            response.data,
+        )
+
+    def test_invalid_holiday_type_is_rejected(self):
+        self.authenticate(self.super_admin)
+
+        payload = {
+            "name": "Invalid Holiday Type",
+            "date": "2028-02-01",
+            "holiday_type": "INVALID",
+            "description": "Invalid holiday type.",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "holiday_type",
+            response.data,
+        )
+
+    def test_duplicate_holiday_name_is_case_insensitive(self):
+        self.authenticate(self.super_admin)
+
+        Holiday.objects.create(
+            name="Annual Foundation Day",
+            date=date(2028, 3, 15),
+            holiday_type="COMPANY",
+            is_active=True,
+        )
+
+        payload = {
+            "name": "annual foundation day",
+            "date": "2028-03-15",
+            "holiday_type": "COMPANY",
+            "description": "Duplicate holiday.",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertTrue(
+            "non_field_errors" in response.data
+            or "name" in response.data
+        )
+
+    def test_description_is_trimmed(self):
+        self.authenticate(self.super_admin)
+
+        payload = {
+            "name": "Trimmed Description Holiday",
+            "date": "2028-04-01",
+            "holiday_type": "COMPANY",
+            "description": "   Company holiday description   ",
+            "is_active": True,
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        holiday = Holiday.objects.get(
+            name="Trimmed Description Holiday",
+        )
+
+        self.assertEqual(
+            holiday.description,
+            "Company holiday description",
+        )
