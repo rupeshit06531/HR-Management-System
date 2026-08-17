@@ -1,6 +1,7 @@
 from django.db.models import Q
 from rest_framework import serializers
 
+from apps.accounts.models import User
 from apps.employees.models import Employee
 
 from .models import Leave
@@ -32,51 +33,70 @@ class LeaveSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         request = self.context.get("request")
+        user = (
+            request.user
+            if request and request.user.is_authenticated
+            else None
+        )
 
         employee = attrs.get(
             "employee",
             getattr(self.instance, "employee", None),
         )
 
-        if employee is None and request and request.user.is_authenticated:
-            if request.user.role == "EMPLOYEE":
-                try:
-                    employee = request.user.employee_profile
-                except Exception:
-                    raise serializers.ValidationError(
-                        {
-                            "employee": (
-                                "Employee profile does not exist."
-                            )
-                        }
-                    )
+        # Employee users can only create leave for themselves.
+        if (
+            user
+            and user.role == User.Role.EMPLOYEE
+            and self.instance is None
+        ):
+            try:
+                employee = user.employee_profile
+            except Employee.DoesNotExist:
+                raise serializers.ValidationError(
+                    {
+                        "employee": (
+                            "Employee profile does not exist."
+                        )
+                    }
+                )
 
-            elif request.user.role in {"HR", "SUPER_ADMIN"}:
-                employee_id = request.data.get("employee")
+            attrs["employee"] = employee
 
-                if not employee_id:
-                    raise serializers.ValidationError(
-                        {
-                            "employee": (
-                                "Employee is required."
-                            )
-                        }
-                    )
+        # HR / Super Admin must provide an employee when creating leave.
+        elif (
+            user
+            and user.role in {
+                User.Role.HR,
+                User.Role.SUPER_ADMIN,
+            }
+            and self.instance is None
+        ):
+            employee_id = self.initial_data.get("employee")
 
-                try:
-                    employee = Employee.objects.get(
-                        pk=employee_id,
-                    )
-                except (Employee.DoesNotExist, ValueError, TypeError):
-                    raise serializers.ValidationError(
-                        {
-                            "employee": (
-                                "Invalid employee."
-                            )
-                        }
-                    )
+            if not employee_id:
+                raise serializers.ValidationError(
+                    {
+                        "employee": "Employee is required."
+                    }
+                )
 
-                attrs["employee"] = employee
+            try:
+                employee = Employee.objects.get(
+                    pk=employee_id,
+                )
+            except (
+                Employee.DoesNotExist,
+                ValueError,
+                TypeError,
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "employee": "Invalid employee."
+                    }
+                )
+
+            attrs["employee"] = employee
 
         start_date = attrs.get(
             "start_date",
@@ -125,7 +145,7 @@ class LeaveSerializer(serializers.ModelSerializer):
             getattr(self.instance, "reason", ""),
         )
 
-        if not reason or not reason.strip():
+        if not isinstance(reason, str) or not reason.strip():
             raise serializers.ValidationError(
                 {
                     "reason": "Leave reason cannot be empty."

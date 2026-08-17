@@ -1,5 +1,6 @@
+from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, viewsets
+from rest_framework import filters, serializers, viewsets
 
 from apps.accounts.models import User
 from apps.accounts.permissions import (
@@ -46,6 +47,7 @@ class LeaveViewSet(viewsets.ModelViewSet):
 
     ordering = [
         "-applied_at",
+        "-id",
     ]
 
     def get_permissions(self):
@@ -100,11 +102,17 @@ class LeaveViewSet(viewsets.ModelViewSet):
 
         Employee:
             Can view only their own leave records.
+
+        Unauthenticated / unsupported users:
+            No records are returned.
         """
 
         queryset = Leave.objects.select_related(
             "employee",
             "employee__user",
+            "employee__department",
+            "employee__designation",
+            "employee__manager",
         ).all()
 
         user = self.request.user
@@ -125,10 +133,9 @@ class LeaveViewSet(viewsets.ModelViewSet):
                 return queryset.none()
 
             return queryset.filter(
-                employee__manager=manager_employee,
-            ) | queryset.filter(
-                employee__user=user,
-            )
+                Q(employee__manager=manager_employee)
+                | Q(employee__user=user)
+            ).distinct()
 
         if user.role == User.Role.EMPLOYEE:
             try:
@@ -157,11 +164,19 @@ class LeaveViewSet(viewsets.ModelViewSet):
             try:
                 employee = user.employee_profile
             except Exception:
-                raise ValueError(
-                    "Employee profile does not exist."
+                from rest_framework import serializers
+
+                raise serializers.ValidationError(
+                    {
+                        "employee": (
+                            "Employee profile does not exist."
+                        )
+                    }
                 )
 
-            serializer.save(employee=employee)
+            serializer.save(
+                employee=employee,
+            )
             return
 
         serializer.save()
