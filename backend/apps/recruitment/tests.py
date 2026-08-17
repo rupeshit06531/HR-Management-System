@@ -258,6 +258,8 @@ class CandidateAPITestCase(APITestCase):
             job_title="HR Executive",
             department=self.department,
             status=Candidate.ApplicationStatus.SELECTED,
+            offer_date="2026-08-25",
+            joining_date="2026-09-01",
         )
 
         response = self.client.get(

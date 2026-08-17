@@ -68,6 +68,29 @@ class Candidate(models.Model):
         blank=True,
     )
 
+    experience_years = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+    )
+
+    expected_salary = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+
+    offer_date = models.DateField(
+        null=True,
+        blank=True,
+    )
+
+    joining_date = models.DateField(
+        null=True,
+        blank=True,
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True,
     )
@@ -128,6 +151,65 @@ class Candidate(models.Model):
             models.CheckConstraint(
                 condition=~models.Q(phone=""),
                 name="recruitment_phone_not_empty",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(experience_years__gte=0),
+                name="recruitment_experience_gte_0",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(expected_salary__isnull=True)
+                    | models.Q(expected_salary__gte=0)
+                ),
+                name="recruitment_expected_salary_gte_0",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        status="INTERVIEW",
+                        interview_date__isnull=False,
+                    )
+                    | ~models.Q(
+                        status="INTERVIEW",
+                    )
+                ),
+                name="recruitment_interview_date_consistent",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        status="SELECTED",
+                        offer_date__isnull=False,
+                    )
+                    | ~models.Q(
+                        status="SELECTED",
+                    )
+                ),
+                name="recruitment_offer_date_consistent",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        status="SELECTED",
+                        joining_date__isnull=False,
+                    )
+                    | ~models.Q(
+                        status="SELECTED",
+                    )
+                ),
+                name="recruitment_joining_date_consistent",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        status="SELECTED",
+                        offer_date__isnull=False,
+                    )
+                    | ~models.Q(
+                        status="SELECTED",
+                    )
+                ),
+                name="recruitment_selected_offer_date_consistent",
             ),
         ]
 
