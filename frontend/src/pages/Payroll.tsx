@@ -9,7 +9,7 @@ import {
   createPayroll,
   deletePayroll,
   getPayroll,
-  updatePayroll,
+  patchPayroll,
   type Payroll,
   type PayrollPayload,
 } from "../api/payroll"
@@ -72,7 +72,15 @@ function PayrollPage() {
       setIsLoading(true)
       setError(null)
 
-      const response = await getPayroll()
+      const response = await getPayroll({
+        search: searchTerm.trim() || undefined,
+        payment_status:
+          statusFilter === "all"
+            ? undefined
+            : statusFilter,
+        month: monthFilter || undefined,
+        ordering: "-month,-created_at,-id",
+      })
 
       if (Array.isArray(response)) {
         setRecords(response)
@@ -89,8 +97,18 @@ function PayrollPage() {
   }
 
   useEffect(() => {
-    void loadPayroll()
-  }, [])
+    const timeoutId = window.setTimeout(() => {
+      void loadPayroll()
+    }, 300)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [
+    searchTerm,
+    statusFilter,
+    monthFilter,
+  ])
 
   const resetForm = () => {
     setForm({ ...emptyForm })
@@ -222,18 +240,17 @@ function PayrollPage() {
           form.deductions || "0",
         payment_status:
           form.payment_status,
-        ...(form.payment_status === "paid"
-          ? {
-              paid_at: new Date(
+        paid_at:
+          form.payment_status === "paid"
+            ? new Date(
                 form.paid_at,
-              ).toISOString(),
-            }
-          : {}),
+              ).toISOString()
+            : null,
       }
 
       if (editingId !== null) {
         const updated =
-          await updatePayroll(
+          await patchPayroll(
             editingId,
             payload,
           )
@@ -394,50 +411,7 @@ function PayrollPage() {
     )
   }
 
-  const filteredRecords = useMemo(() => {
-    const normalizedSearch =
-      searchTerm
-        .trim()
-        .toLowerCase()
-
-    return records.filter((record) => {
-      const employeeText = [
-        record.employee_name ?? "",
-        record.employee_id ?? "",
-        String(record.employee),
-      ]
-        .join(" ")
-        .toLowerCase()
-
-      const matchesSearch =
-        !normalizedSearch ||
-        employeeText.includes(
-          normalizedSearch,
-        )
-
-      const matchesStatus =
-        statusFilter === "all" ||
-        record.payment_status ===
-          statusFilter
-
-      const matchesMonth =
-        !monthFilter ||
-        record.month.startsWith(
-          monthFilter,
-        )
-
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesMonth
-      )
-    })
-  }, [
-    records,
-    searchTerm,
-    statusFilter,
-    monthFilter,
-  ])
+  const filteredRecords = records
 
   const statistics = useMemo(() => {
     const paidRecords =
