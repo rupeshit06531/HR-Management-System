@@ -469,3 +469,93 @@ class PerformanceReviewAPITestCase(APITestCase):
             "review_period" in response.data
             or "non_field_errors" in response.data,
         )
+
+    def test_employee_cannot_create_review(self):
+        self.authenticate(self.employee_user)
+
+        response = self.client.post(
+            self.url,
+            {
+                "employee": self.employee.id,
+                "review_period": "Employee Review 2026",
+                "strengths": "Self assessment",
+                "areas_for_improvement": "None",
+                "manager_comments": "Self submitted",
+                "review_date": "2026-09-15",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertFalse(
+            PerformanceReview.objects.filter(
+                employee=self.employee,
+                review_period="Employee Review 2026",
+                review_date=date(2026, 9, 15),
+            ).exists()
+        )
+
+    def test_employee_cannot_update_review(self):
+        review = PerformanceReview.objects.create(
+            employee=self.employee,
+            review_period="Annual Review 2026",
+            strengths="Original strengths",
+            review_date=date(2026, 8, 30),
+        )
+
+        self.authenticate(self.employee_user)
+
+        response = self.client.patch(
+            reverse(
+                "performance-detail",
+                kwargs={"pk": review.id},
+            ),
+            {
+                "strengths": "Unauthorized update",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        review.refresh_from_db()
+
+        self.assertEqual(
+            review.strengths,
+            "Original strengths",
+        )
+
+    def test_employee_cannot_delete_review(self):
+        review = PerformanceReview.objects.create(
+            employee=self.employee,
+            review_period="Annual Review 2026",
+            strengths="Original strengths",
+            review_date=date(2026, 8, 30),
+        )
+
+        self.authenticate(self.employee_user)
+
+        response = self.client.delete(
+            reverse(
+                "performance-detail",
+                kwargs={"pk": review.id},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            PerformanceReview.objects.filter(
+                pk=review.id,
+            ).exists()
+        )
