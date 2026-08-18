@@ -696,3 +696,161 @@ class PayrollAPITestCase(APITestCase):
                 pk=payroll.id,
             ).exists()
         )
+
+    def test_pending_payroll_can_be_marked_paid(self):
+        self.authenticate(self.super_admin)
+
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2028, 6, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+        )
+
+        paid_at = "2028-06-30T10:00:00Z"
+
+        response = self.client.patch(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+            {
+                "payment_status": "paid",
+                "paid_at": paid_at,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        payroll.refresh_from_db()
+
+        self.assertEqual(
+            payroll.payment_status,
+            Payroll.PaymentStatus.PAID,
+        )
+
+        self.assertIsNotNone(
+            payroll.paid_at,
+        )
+
+    def test_paid_payroll_cannot_be_changed_to_pending_with_paid_at(self):
+        self.authenticate(self.super_admin)
+
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2028, 7, 1),
+            basic_salary=Decimal("50000.00"),
+            payment_status=Payroll.PaymentStatus.PAID,
+            paid_at=timezone.now(),
+        )
+
+        response = self.client.patch(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+            {
+                "payment_status": "pending",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        payroll.refresh_from_db()
+
+        self.assertEqual(
+            payroll.payment_status,
+            Payroll.PaymentStatus.PAID,
+        )
+
+    def test_paid_payroll_cannot_clear_paid_at(self):
+        self.authenticate(self.super_admin)
+
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2028, 8, 1),
+            basic_salary=Decimal("50000.00"),
+            payment_status=Payroll.PaymentStatus.PAID,
+            paid_at=timezone.now(),
+        )
+
+        response = self.client.patch(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+            {
+                "paid_at": None,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        payroll.refresh_from_db()
+
+        self.assertIsNotNone(
+            payroll.paid_at,
+        )
+
+    def test_paid_payroll_cannot_change_paid_at(self):
+        self.authenticate(self.super_admin)
+
+        original_paid_at = timezone.now()
+
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2028, 9, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+            payment_status=Payroll.PaymentStatus.PAID,
+            paid_at=original_paid_at,
+        )
+
+        new_paid_at = timezone.now()
+
+        response = self.client.patch(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+            {
+                "paid_at": new_paid_at.isoformat(),
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "paid_at",
+            response.data,
+        )
+
+        payroll.refresh_from_db()
+
+        self.assertEqual(
+            payroll.payment_status,
+            Payroll.PaymentStatus.PAID,
+        )
+
+        self.assertEqual(
+            payroll.paid_at,
+            original_paid_at,
+        )

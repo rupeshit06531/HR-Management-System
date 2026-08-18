@@ -114,6 +114,38 @@ class PayrollSerializer(serializers.ModelSerializer):
             ),
         )
 
+        if (
+            self.instance is not None
+            and self.instance.payment_status
+            == Payroll.PaymentStatus.PAID
+            and payment_status
+            == Payroll.PaymentStatus.PENDING
+        ):
+            raise serializers.ValidationError(
+                {
+                    "payment_status": (
+                        "A paid payroll cannot be changed "
+                        "back to pending."
+                    )
+                }
+            )
+
+        if (
+            self.instance is not None
+            and self.instance.payment_status
+            == Payroll.PaymentStatus.PAID
+            and "paid_at" in attrs
+            and paid_at != self.instance.paid_at
+        ):
+            raise serializers.ValidationError(
+                {
+                    "paid_at": (
+                        "The payment date of a paid payroll "
+                        "cannot be changed."
+                    )
+                }
+            )
+
         if basic_salary is not None and basic_salary < 0:
             raise serializers.ValidationError(
                 {
