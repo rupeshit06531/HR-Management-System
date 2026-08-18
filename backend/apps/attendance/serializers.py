@@ -6,7 +6,6 @@ from .models import Attendance
 
 
 class AttendanceSerializer(serializers.ModelSerializer):
-
     employee_name = serializers.SerializerMethodField()
 
     employee_id = serializers.CharField(
@@ -100,13 +99,14 @@ class AttendanceSerializer(serializers.ModelSerializer):
                 }
             )
 
-        if check_in and check_out and check_out <= check_in:
-            raise serializers.ValidationError(
-                {
-                    "check_out": (
-                        "Check-out time must be after check-in time."
-                    )
-                }
-            )
+        if check_in is not None and check_out is not None:
+            if check_out <= check_in:
+                raise serializers.ValidationError(
+                    {
+                        "check_out": (
+                            "Check-out time must be after check-in time."
+                        )
+                    }
+                )
 
         return attrs

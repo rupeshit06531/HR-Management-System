@@ -715,3 +715,132 @@ class AttendanceAPITestCase(APITestCase):
             attendance.remarks,
             "Test attendance",
         )
+
+    def test_hr_can_access_attendance_for_all_employees(self):
+        self.authenticate(self.hr_user)
+
+        self.create_attendance(
+            employee=self.employee,
+            attendance_date=date(2026, 8, 26),
+        )
+
+        self.create_attendance(
+            employee=self.second_employee,
+            attendance_date=date(2026, 8, 27),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["count"],
+            2,
+        )
+
+        employee_ids = {
+            result["employee_id"]
+            for result in response.data["results"]
+        }
+
+        self.assertEqual(
+            employee_ids,
+            {
+                "ATT-EMP-001",
+                "ATT-EMP-002",
+            },
+        )
+
+    def test_manager_cannot_view_attendance_for_employee_outside_team(self):
+        self.create_attendance(
+            employee=self.employee,
+            attendance_date=date(2026, 8, 28),
+        )
+
+        self.create_attendance(
+            employee=self.second_employee,
+            attendance_date=date(2026, 8, 29),
+        )
+
+        self.authenticate(self.manager_user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["count"],
+            1,
+        )
+
+        self.assertEqual(
+            response.data["results"][0]["employee_id"],
+            "ATT-EMP-001",
+        )
+
+    def test_manager_cannot_delete_attendance_for_employee_outside_team(self):
+        attendance = self.create_attendance(
+            employee=self.second_employee,
+            attendance_date=date(2026, 8, 30),
+        )
+
+        self.authenticate(self.manager_user)
+
+        response = self.client.delete(
+            reverse(
+                "attendance-detail",
+                kwargs={"pk": attendance.id},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+
+        self.assertTrue(
+            Attendance.objects.filter(
+                id=attendance.id,
+            ).exists()
+        )
+
+    def test_ordering_by_date_is_deterministic(self):
+        first = self.create_attendance(
+            attendance_date=date(2026, 8, 31),
+        )
+
+        second = self.create_attendance(
+            employee=self.employee,
+            attendance_date=date(2026, 9, 1),
+            status_value="late",
+        )
+
+        self.authenticate(self.manager_user)
+
+        response = self.client.get(
+            self.url,
+            {"ordering": "date"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            results[0]["id"],
+            first.id,
+        )
+
+        self.assertEqual(
+            results[1]["id"],
+            second.id,
+        )

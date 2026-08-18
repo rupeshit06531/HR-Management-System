@@ -43,6 +43,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     ordering = [
         "-date",
         "-check_in",
+        "-id",
     ]
 
     def get_permissions(self):
@@ -121,7 +122,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             User.Role.SUPER_ADMIN,
             User.Role.HR,
         }:
-            return queryset
+            return queryset.distinct()
 
         if user.role == User.Role.MANAGER:
             try:
@@ -131,7 +132,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
             return queryset.filter(
                 employee__manager=manager_employee,
-            )
+            ).distinct()
 
         if user.role == User.Role.EMPLOYEE:
             try:
@@ -141,6 +142,6 @@ class AttendanceViewSet(viewsets.ModelViewSet):
 
             return queryset.filter(
                 employee=employee,
-            )
+            ).distinct()
 
         return queryset.none()
