@@ -32,6 +32,7 @@ class LeaveSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         request = self.context.get("request")
+
         user = (
             request.user
             if request and request.user.is_authenticated
@@ -62,7 +63,8 @@ class LeaveSerializer(serializers.ModelSerializer):
 
             attrs["employee"] = employee
 
-        # HR / Super Admin must provide an employee when creating leave.
+        # HR / Super Admin must provide a valid employee
+        # when creating a leave record.
         elif (
             user
             and user.role in {
@@ -107,6 +109,7 @@ class LeaveSerializer(serializers.ModelSerializer):
             getattr(self.instance, "end_date", None),
         )
 
+        # Leave dates must always form a valid date range.
         if start_date and end_date and end_date < start_date:
             raise serializers.ValidationError(
                 {
@@ -116,10 +119,8 @@ class LeaveSerializer(serializers.ModelSerializer):
                 }
             )
 
-        # Only active leave requests should block a new request.
-        #
-        # Rejected requests must not prevent the employee
-        # from applying for the same dates again.
+        # Only pending and approved leave requests block
+        # another overlapping leave request.
         if employee and start_date and end_date:
             queryset = Leave.objects.filter(
                 employee=employee,
@@ -129,6 +130,8 @@ class LeaveSerializer(serializers.ModelSerializer):
                 status="rejected",
             )
 
+            # When updating an existing leave, exclude itself
+            # from the overlap check.
             if self.instance is not None:
                 queryset = queryset.exclude(
                     pk=self.instance.pk,
@@ -158,6 +161,8 @@ class LeaveSerializer(serializers.ModelSerializer):
                 }
             )
 
+        # Store a normalized reason without leading/trailing
+        # whitespace.
         attrs["reason"] = reason.strip()
 
         return attrs
