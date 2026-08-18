@@ -8,6 +8,7 @@ from apps.accounts.permissions import (
     IsLeaveCreator,
     IsLeaveViewer,
 )
+from apps.employees.models import Employee
 
 from .models import Leave
 from .serializers import LeaveSerializer
@@ -124,7 +125,7 @@ class LeaveViewSet(viewsets.ModelViewSet):
             User.Role.SUPER_ADMIN,
             User.Role.HR,
         }:
-            return queryset
+            return queryset.distinct()
 
         if user.role == User.Role.MANAGER:
             try:
@@ -145,7 +146,7 @@ class LeaveViewSet(viewsets.ModelViewSet):
 
             return queryset.filter(
                 employee=employee,
-            )
+            ).distinct()
 
         return queryset.none()
 
@@ -164,8 +165,6 @@ class LeaveViewSet(viewsets.ModelViewSet):
             try:
                 employee = user.employee_profile
             except Employee.DoesNotExist:
-                from rest_framework import serializers
-
                 raise serializers.ValidationError(
                     {
                         "employee": (
