@@ -1,10 +1,10 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, viewsets
+from rest_framework import filters, status, viewsets
+from rest_framework.response import Response
 
 from apps.accounts.permissions import (
-    IsAuthenticatedUser,
-    IsSuperAdmin,
     IsHROrSuperAdmin,
+    IsSuperAdmin,
 )
 
 from .models import Payroll
@@ -83,3 +83,26 @@ class PayrollViewSet(viewsets.ModelViewSet):
             permission()
             for permission in permission_classes
         ]
+
+    def destroy(self, request, *args, **kwargs):
+        payroll = self.get_object()
+
+        if (
+            payroll.payment_status
+            == Payroll.PaymentStatus.PAID
+        ):
+            return Response(
+                {
+                    "detail": (
+                        "Paid payroll records cannot be "
+                        "deleted."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return super().destroy(
+            request,
+            *args,
+            **kwargs,
+        )

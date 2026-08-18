@@ -949,3 +949,100 @@ class PayrollAPITestCase(APITestCase):
             payroll.month,
             date(2028, 11, 1),
         )
+
+    def test_paid_payroll_cannot_be_deleted(self):
+        self.authenticate(self.super_admin)
+
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2028, 12, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+            payment_status=Payroll.PaymentStatus.PAID,
+            paid_at=timezone.now(),
+        )
+
+        response = self.client.delete(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "detail",
+            response.data,
+        )
+
+        self.assertTrue(
+            Payroll.objects.filter(
+                pk=payroll.id,
+            ).exists()
+        )
+
+    def test_pending_payroll_can_be_deleted(self):
+        self.authenticate(self.super_admin)
+
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2029, 1, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+            payment_status=Payroll.PaymentStatus.PENDING,
+        )
+
+        response = self.client.delete(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Payroll.objects.filter(
+                pk=payroll.id,
+            ).exists()
+        )
+
+    def test_hr_cannot_delete_paid_payroll(self):
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2029, 2, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+            payment_status=Payroll.PaymentStatus.PAID,
+            paid_at=timezone.now(),
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.delete(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Payroll.objects.filter(
+                pk=payroll.id,
+            ).exists()
+        )
