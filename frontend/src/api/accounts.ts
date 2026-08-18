@@ -14,6 +14,13 @@ export interface AuthUser {
   date_joined: string
 }
 
+export interface UserListResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: AuthUser[]
+}
+
 export interface LoginRequest {
   username: string
   password: string
@@ -39,10 +46,11 @@ export interface CurrentUserResponse extends AuthUser {}
 export const login = async (
   credentials: LoginRequest,
 ): Promise<LoginResponse> => {
-  const response = await apiClient.post<LoginResponse>(
-    "/login/",
-    credentials,
-  )
+  const response =
+    await apiClient.post<LoginResponse>(
+      "/login/",
+      credentials,
+    )
 
   return response.data
 }
@@ -50,12 +58,13 @@ export const login = async (
 export const refreshAccessToken = async (
   refreshToken: string,
 ): Promise<RefreshResponse> => {
-  const response = await apiClient.post<RefreshResponse>(
-    "/token/refresh/",
-    {
-      refresh: refreshToken,
-    },
-  )
+  const response =
+    await apiClient.post<RefreshResponse>(
+      "/token/refresh/",
+      {
+        refresh: refreshToken,
+      },
+    )
 
   return response.data
 }
@@ -71,10 +80,23 @@ export const logout = async (
   )
 }
 
-export const getCurrentUser = async (): Promise<CurrentUserResponse> => {
-  const response = await apiClient.get<CurrentUserResponse>(
-    "/me/",
-  )
+export const getCurrentUser =
+  async (): Promise<CurrentUserResponse> => {
+    const response =
+      await apiClient.get<CurrentUserResponse>(
+        "/me/",
+      )
+
+    return response.data
+  }
+
+export const getUsers = async (): Promise<
+  UserListResponse | AuthUser[]
+> => {
+  const response =
+    await apiClient.get<
+      UserListResponse | AuthUser[]
+    >("/users/")
 
   return response.data
 }
