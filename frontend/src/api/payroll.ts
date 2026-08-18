@@ -34,12 +34,35 @@ export interface PayrollPayload {
   paid_at?: string | null
 }
 
-export const getPayroll = async (): Promise<
-  PayrollListResponse
-> => {
+export interface PayrollUpdatePayload {
+  employee?: number
+  month?: string
+  basic_salary?: string
+  allowances?: string
+  deductions?: string
+  payment_status?: "pending" | "paid"
+  paid_at?: string | null
+}
+
+export interface PayrollQueryParams {
+  page?: number
+  employee?: number
+  payment_status?: "pending" | "paid"
+  month?: string
+  paid_at?: string
+  search?: string
+  ordering?: string
+}
+
+export const getPayroll = async (
+  params?: PayrollQueryParams,
+): Promise<PayrollListResponse> => {
   const response =
     await apiClient.get<PayrollListResponse>(
       "/payroll/",
+      {
+        params,
+      },
     )
 
   return response.data
@@ -63,6 +86,19 @@ export const updatePayroll = async (
 ): Promise<Payroll> => {
   const response =
     await apiClient.put<Payroll>(
+      `/payroll/${id}/`,
+      data,
+    )
+
+  return response.data
+}
+
+export const patchPayroll = async (
+  id: number,
+  data: PayrollUpdatePayload,
+): Promise<Payroll> => {
+  const response =
+    await apiClient.patch<Payroll>(
       `/payroll/${id}/`,
       data,
     )
