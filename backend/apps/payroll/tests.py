@@ -1046,3 +1046,299 @@ class PayrollAPITestCase(APITestCase):
                 pk=payroll.id,
             ).exists()
         )
+
+    def test_filter_by_employee(self):
+        self.authenticate(self.super_admin)
+
+        second_employee_user = User.objects.create_user(
+            username="payroll_employee_filter",
+            email="payroll_employee_filter@test.com",
+            password="TestPass@123",
+            first_name="Filter",
+            last_name="Employee",
+            role=User.Role.EMPLOYEE,
+        )
+
+        second_employee = Employee.objects.create(
+            user=second_employee_user,
+            employee_id="PAY-EMP-FILTER",
+            department=self.department,
+            designation=self.designation,
+            joining_date=date(2026, 1, 1),
+        )
+
+        Payroll.objects.create(
+            employee=self.employee,
+            month=date(2029, 3, 1),
+            basic_salary=Decimal("50000.00"),
+        )
+
+        Payroll.objects.create(
+            employee=second_employee,
+            month=date(2029, 3, 1),
+            basic_salary=Decimal("60000.00"),
+        )
+
+        response = self.client.get(
+            self.url,
+            {"employee": self.employee.id},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["employee"],
+            self.employee.id,
+        )
+
+    def test_filter_by_month(self):
+        self.authenticate(self.super_admin)
+
+        Payroll.objects.create(
+            employee=self.employee,
+            month=date(2029, 4, 1),
+            basic_salary=Decimal("50000.00"),
+        )
+
+        Payroll.objects.create(
+            employee=self.employee,
+            month=date(2029, 5, 1),
+            basic_salary=Decimal("55000.00"),
+        )
+
+        response = self.client.get(
+            self.url,
+            {"month": "2029-04-01"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["month"],
+            "2029-04-01",
+        )
+
+    def test_filter_by_paid_at(self):
+        self.authenticate(self.super_admin)
+
+        paid_at = timezone.now()
+
+        Payroll.objects.create(
+            employee=self.employee,
+            month=date(2029, 6, 1),
+            basic_salary=Decimal("50000.00"),
+            payment_status=Payroll.PaymentStatus.PAID,
+            paid_at=paid_at,
+        )
+
+        Payroll.objects.create(
+            employee=self.employee,
+            month=date(2029, 7, 1),
+            basic_salary=Decimal("50000.00"),
+            payment_status=Payroll.PaymentStatus.PAID,
+            paid_at=timezone.now(),
+        )
+
+        response = self.client.get(
+            self.url,
+            {
+                "paid_at": paid_at.isoformat(),
+            },
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["month"],
+            "2029-06-01",
+        )
+
+    def test_search_by_employee_name(self):
+        self.authenticate(self.super_admin)
+
+        Payroll.objects.create(
+            employee=self.employee,
+            month=date(2029, 8, 1),
+            basic_salary=Decimal("50000.00"),
+        )
+
+        response = self.client.get(
+            self.url,
+            {"search": self.employee.user.first_name},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["employee"],
+            self.employee.id,
+        )
+
+    def test_search_by_employee_id(self):
+        self.authenticate(self.super_admin)
+
+        Payroll.objects.create(
+            employee=self.employee,
+            month=date(2029, 9, 1),
+            basic_salary=Decimal("50000.00"),
+        )
+
+        response = self.client.get(
+            self.url,
+            {"search": self.employee.employee_id},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["employee"],
+            self.employee.id,
+        )
+
+    def test_ordering_by_month(self):
+        self.authenticate(self.super_admin)
+
+        Payroll.objects.create(
+            employee=self.employee,
+            month=date(2029, 10, 1),
+            basic_salary=Decimal("50000.00"),
+        )
+
+        Payroll.objects.create(
+            employee=self.employee,
+            month=date(2029, 11, 1),
+            basic_salary=Decimal("55000.00"),
+        )
+
+        response = self.client.get(
+            self.url,
+            {"ordering": "month"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            2,
+        )
+
+        self.assertEqual(
+            results[0]["month"],
+            "2029-10-01",
+        )
+
+        self.assertEqual(
+            results[1]["month"],
+            "2029-11-01",
+        )
+
+    def test_default_ordering_is_deterministic_for_same_month(self):
+        self.authenticate(self.super_admin)
+
+        second_employee_user = User.objects.create_user(
+            username="payroll_employee_ordering",
+            email="payroll_employee_ordering@test.com",
+            password="TestPass@123",
+            first_name="Ordering",
+            last_name="Employee",
+            role=User.Role.EMPLOYEE,
+        )
+
+        second_employee = Employee.objects.create(
+            user=second_employee_user,
+            employee_id="PAY-EMP-ORDER",
+            department=self.department,
+            designation=self.designation,
+            joining_date=date(2026, 1, 1),
+        )
+
+        first_payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2030, 1, 1),
+            basic_salary=Decimal("50000.00"),
+        )
+
+        second_payroll = Payroll.objects.create(
+            employee=second_employee,
+            month=date(2030, 1, 1),
+            basic_salary=Decimal("55000.00"),
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            2,
+        )
+
+        self.assertEqual(
+            results[0]["id"],
+            second_payroll.id,
+        )
+
+        self.assertEqual(
+            results[1]["id"],
+            first_payroll.id,
+        )
