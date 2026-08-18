@@ -1,4 +1,3 @@
-
 import {
   useEffect,
   useState,
@@ -75,11 +74,51 @@ function Login() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "Arial, sans-serif",
-          background: "#f5f7fb",
+          background:
+            "linear-gradient(135deg, #f8fafc 0%, #eef4ff 100%)",
+          color: "#475569",
+          fontFamily:
+            'Inter, "Segoe UI", Roboto, Arial, sans-serif',
         }}
       >
-        <p>Loading...</p>
+        <div
+          style={{
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              width: "38px",
+              height: "38px",
+              margin: "0 auto 14px",
+              border: "3px solid #dbeafe",
+              borderTopColor: "#2563eb",
+              borderRadius: "50%",
+              animation:
+                "hrms-login-spin 0.8s linear infinite",
+            }}
+          />
+
+          <p
+            style={{
+              margin: 0,
+              fontSize: "14px",
+              fontWeight: 600,
+            }}
+          >
+            Loading HRMS...
+          </p>
+
+          <style>
+            {`
+              @keyframes hrms-login-spin {
+                to {
+                  transform: rotate(360deg);
+                }
+              }
+            `}
+          </style>
+        </div>
       </main>
     )
   }
@@ -93,146 +132,469 @@ function Login() {
       style={{
         minHeight: "100vh",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-        boxSizing: "border-box",
-        fontFamily: "Arial, sans-serif",
-        background: "#f5f7fb",
+        alignItems: "stretch",
+        background: "#f8fafc",
+        fontFamily:
+          'Inter, "Segoe UI", Roboto, Arial, sans-serif',
       }}
     >
       <section
         style={{
-          width: "100%",
-          maxWidth: "420px",
-          background: "#ffffff",
-          padding: "32px",
-          borderRadius: "12px",
-          boxShadow:
-            "0 4px 16px rgba(0, 0, 0, 0.08)",
+          width: "46%",
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "48px",
           boxSizing: "border-box",
+          background:
+            "linear-gradient(145deg, #0f172a 0%, #172554 55%, #1d4ed8 100%)",
+          color: "#ffffff",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <h1
+        <div
           style={{
-            marginTop: 0,
-            marginBottom: "8px",
-            color: "#111827",
+            position: "absolute",
+            width: "360px",
+            height: "360px",
+            right: "-150px",
+            top: "-120px",
+            borderRadius: "50%",
+            background:
+              "rgba(96, 165, 250, 0.12)",
+          }}
+        />
+
+        <div
+          style={{
+            position: "absolute",
+            width: "280px",
+            height: "280px",
+            left: "-140px",
+            bottom: "-100px",
+            borderRadius: "50%",
+            background:
+              "rgba(59, 130, 246, 0.12)",
+          }}
+        />
+
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "470px",
+            position: "relative",
+            zIndex: 1,
           }}
         >
-          HR Management System
-        </h1>
-
-        <p
-          style={{
-            marginBottom: "28px",
-            color: "#6b7280",
-          }}
-        >
-          Sign in to continue
-        </p>
-
-        {error && (
           <div
             style={{
-              marginBottom: "20px",
-              padding: "12px",
-              borderRadius: "6px",
-              background: "#fee2e2",
-              color: "#991b1b",
-              fontSize: "14px",
+              width: "52px",
+              height: "52px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: "24px",
+              borderRadius: "14px",
+              background: "#2563eb",
+              boxShadow:
+                "0 12px 28px rgba(37, 99, 235, 0.35)",
+              fontSize: "20px",
+              fontWeight: 800,
+              letterSpacing: "-0.04em",
             }}
           >
-            {error}
+            HR
           </div>
-        )}
 
-        <form
-          onSubmit={handleSubmit}
+          <p
+            style={{
+              margin: "0 0 10px",
+              color: "#93c5fd",
+              fontSize: "12px",
+              fontWeight: 800,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+            }}
+          >
+            Enterprise HR Platform
+          </p>
+
+          <h1
+            style={{
+              margin: "0 0 18px",
+              color: "#ffffff",
+              fontSize: "42px",
+              lineHeight: 1.1,
+              fontWeight: 800,
+              letterSpacing: "-0.035em",
+            }}
+          >
+            Human Resources
+            <br />
+            Management System
+          </h1>
+
+          <p
+            style={{
+              maxWidth: "410px",
+              margin: 0,
+              color: "#cbd5e1",
+              fontSize: "15px",
+              lineHeight: 1.75,
+            }}
+          >
+            A centralized platform for managing
+            employees, attendance, leave, payroll,
+            performance and recruitment.
+          </p>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(2, minmax(0, 1fr))",
+              gap: "12px",
+              marginTop: "34px",
+            }}
+          >
+            {[
+              "Employee Management",
+              "Attendance & Leave",
+              "Payroll Management",
+              "Performance & Recruitment",
+            ].map((item) => (
+              <div
+                key={item}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "9px",
+                  padding: "11px 12px",
+                  border:
+                    "1px solid rgba(255,255,255,0.09)",
+                  borderRadius: "9px",
+                  background:
+                    "rgba(255,255,255,0.05)",
+                  color: "#dbeafe",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                }}
+              >
+                <span
+                  style={{
+                    width: "7px",
+                    height: "7px",
+                    flexShrink: 0,
+                    borderRadius: "50%",
+                    background: "#60a5fa",
+                  }}
+                />
+
+                {item}
+              </div>
+            ))}
+          </div>
+
+          <p
+            style={{
+              margin: "34px 0 0",
+              color: "#94a3b8",
+              fontSize: "11px",
+            }}
+          >
+            Secure • Centralized • Role-based
+          </p>
+        </div>
+      </section>
+
+      <section
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "40px 28px",
+          boxSizing: "border-box",
+          background: "#f8fafc",
+        }}
+      >
+        <div
           style={{
-            display: "grid",
-            gap: "18px",
+            width: "100%",
+            maxWidth: "430px",
           }}
         >
-          <label
+          <div
             style={{
-              display: "grid",
-              gap: "6px",
+              marginBottom: "28px",
             }}
           >
-            <span>Username</span>
+            <p
+              style={{
+                margin: "0 0 8px",
+                color: "#2563eb",
+                fontSize: "11px",
+                fontWeight: 800,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+              }}
+            >
+              Welcome back
+            </p>
 
-            <input
-              type="text"
-              value={username}
-              onChange={(event) =>
-                setUsername(event.target.value)
-              }
-              autoComplete="username"
-              placeholder="Enter username"
+            <h2
+              style={{
+                margin: 0,
+                color: "#0f172a",
+                fontSize: "30px",
+                lineHeight: 1.2,
+                fontWeight: 800,
+                letterSpacing: "-0.025em",
+              }}
+            >
+              Sign in to HRMS
+            </h2>
+
+            <p
+              style={{
+                margin: "9px 0 0",
+                color: "#64748b",
+                fontSize: "14px",
+                lineHeight: 1.6,
+              }}
+            >
+              Use your organization credentials
+              to access the HR management portal.
+            </p>
+          </div>
+
+          {error && (
+            <div
+              role="alert"
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "10px",
+                marginBottom: "20px",
+                padding: "12px 14px",
+                border:
+                  "1px solid #fecaca",
+                borderRadius: "9px",
+                background: "#fef2f2",
+                color: "#991b1b",
+                fontSize: "13px",
+                lineHeight: 1.5,
+              }}
+            >
+              <span
+                style={{
+                  fontWeight: 800,
+                }}
+              >
+                !
+              </span>
+
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form
+            onSubmit={handleSubmit}
+            style={{
+              padding: "26px",
+              border:
+                "1px solid #e2e8f0",
+              borderRadius: "14px",
+              background: "#ffffff",
+              boxShadow:
+                "0 10px 30px rgba(15, 23, 42, 0.07)",
+            }}
+          >
+            <label
+              style={{
+                display: "grid",
+                gap: "8px",
+                marginBottom: "18px",
+              }}
+            >
+              <span
+                style={{
+                  color: "#334155",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                }}
+              >
+                Username
+              </span>
+
+              <input
+                type="text"
+                value={username}
+                onChange={(event) =>
+                  setUsername(event.target.value)
+                }
+                autoComplete="username"
+                placeholder="Enter your username"
+                disabled={isSubmitting}
+                style={{
+                  width: "100%",
+                  minHeight: "44px",
+                  padding: "10px 12px",
+                  border:
+                    "1px solid #cbd5e1",
+                  borderRadius: "9px",
+                  boxSizing: "border-box",
+                  background:
+                    isSubmitting
+                      ? "#f8fafc"
+                      : "#ffffff",
+                  color: "#0f172a",
+                  fontSize: "14px",
+                  outline: "none",
+                }}
+              />
+            </label>
+
+            <label
+              style={{
+                display: "grid",
+                gap: "8px",
+                marginBottom: "22px",
+              }}
+            >
+              <span
+                style={{
+                  color: "#334155",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                }}
+              >
+                Password
+              </span>
+
+              <input
+                type="password"
+                value={password}
+                onChange={(event) =>
+                  setPassword(event.target.value)
+                }
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                disabled={isSubmitting}
+                style={{
+                  width: "100%",
+                  minHeight: "44px",
+                  padding: "10px 12px",
+                  border:
+                    "1px solid #cbd5e1",
+                  borderRadius: "9px",
+                  boxSizing: "border-box",
+                  background:
+                    isSubmitting
+                      ? "#f8fafc"
+                      : "#ffffff",
+                  color: "#0f172a",
+                  fontSize: "14px",
+                  outline: "none",
+                }}
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
               style={{
                 width: "100%",
-                padding: "11px",
-                border: "1px solid #d1d5db",
-                borderRadius: "6px",
-                boxSizing: "border-box",
+                minHeight: "45px",
+                border: "none",
+                borderRadius: "9px",
+                background:
+                  isSubmitting
+                    ? "#93c5fd"
+                    : "#2563eb",
+                color: "#ffffff",
+                cursor:
+                  isSubmitting
+                    ? "not-allowed"
+                    : "pointer",
                 fontSize: "14px",
+                fontWeight: 800,
+                boxShadow:
+                  isSubmitting
+                    ? "none"
+                    : "0 6px 16px rgba(37, 99, 235, 0.2)",
               }}
-            />
-          </label>
+            >
+              {isSubmitting
+                ? "Signing in..."
+                : "Sign in to HRMS"}
+            </button>
+          </form>
 
-          <label
+          <div
             style={{
-              display: "grid",
-              gap: "6px",
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "16px",
+              marginTop: "18px",
+              color: "#94a3b8",
+              fontSize: "11px",
             }}
           >
-            <span>Password</span>
-
-            <input
-              type="password"
-              value={password}
-              onChange={(event) =>
-                setPassword(event.target.value)
-              }
-              autoComplete="current-password"
-              placeholder="Enter password"
-              style={{
-                width: "100%",
-                padding: "11px",
-                border: "1px solid #d1d5db",
-                borderRadius: "6px",
-                boxSizing: "border-box",
-                fontSize: "14px",
-              }}
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            style={{
-              marginTop: "6px",
-              padding: "12px",
-              border: "none",
-              borderRadius: "6px",
-              background: isSubmitting
-                ? "#9ca3af"
-                : "#2563eb",
-              color: "#ffffff",
-              cursor: isSubmitting
-                ? "not-allowed"
-                : "pointer",
-              fontSize: "15px",
-              fontWeight: 600,
-            }}
-          >
-            {isSubmitting
-              ? "Signing in..."
-              : "Login"}
-          </button>
-        </form>
+            <span>HR Management System</span>
+            <span>Authorized access only</span>
+          </div>
+        </div>
       </section>
+
+      <style>
+        {`
+          @media (max-width: 900px) {
+            main {
+              flex-direction: column;
+            }
+
+            main > section:first-child {
+              width: 100%;
+              min-height: auto;
+              padding: 38px 28px;
+            }
+
+            main > section:first-child h1 {
+              font-size: 34px;
+            }
+
+            main > section:last-child {
+              padding: 38px 20px;
+            }
+          }
+
+          @media (max-width: 560px) {
+            main > section:first-child {
+              padding: 30px 20px;
+            }
+
+            main > section:first-child h1 {
+              font-size: 29px;
+            }
+
+            main > section:first-child > div > div:nth-of-type(2) {
+              grid-template-columns: 1fr;
+            }
+
+            main > section:last-child {
+              padding: 28px 14px;
+            }
+
+            form {
+              padding: 20px !important;
+            }
+          }
+        `}
+      </style>
     </main>
   )
 }
