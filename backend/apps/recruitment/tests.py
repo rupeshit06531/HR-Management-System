@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -37,6 +39,15 @@ class CandidateAPITestCase(APITestCase):
             first_name="Recruitment",
             last_name="Manager",
             role=User.Role.MANAGER,
+        )
+
+        cls.employee_user = User.objects.create_user(
+            username="recruitment_employee",
+            email="recruitment_employee@test.com",
+            password="TestPass@123",
+            first_name="Recruitment",
+            last_name="Employee",
+            role=User.Role.EMPLOYEE,
         )
 
         cls.department = Department.objects.create(
@@ -112,6 +123,69 @@ class CandidateAPITestCase(APITestCase):
             status.HTTP_200_OK,
         )
 
+    def test_super_admin_can_create_update_and_delete_candidate(self):
+        self.authenticate(self.super_admin_user)
+
+        create_response = self.client.post(
+            self.url,
+            {
+                "first_name": "Super",
+                "last_name": "Admin",
+                "email": "superadmin_candidate@test.com",
+                "phone": "9876543255",
+                "job_title": "Engineering Manager",
+                "department": self.department.id,
+                "status": "APPLIED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            create_response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        candidate_id = create_response.data["id"]
+
+        update_response = self.client.patch(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": candidate_id},
+            ),
+            {
+                "status": "SHORTLISTED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            update_response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            update_response.data["status"],
+            "SHORTLISTED",
+        )
+
+        delete_response = self.client.delete(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": candidate_id},
+            )
+        )
+
+        self.assertEqual(
+            delete_response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Candidate.objects.filter(
+                pk=candidate_id,
+            ).exists()
+        )
+
     def test_manager_cannot_access_recruitment(self):
         self.authenticate(self.manager_user)
 
@@ -122,12 +196,166 @@ class CandidateAPITestCase(APITestCase):
             status.HTTP_403_FORBIDDEN,
         )
 
+    def test_employee_cannot_access_recruitment(self):
+        self.authenticate(self.employee_user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_manager_cannot_create_candidate(self):
+        self.authenticate(self.manager_user)
+
+        response = self.client.post(
+            self.url,
+            {
+                "first_name": "Manager",
+                "last_name": "Candidate",
+                "email": "manager_candidate@test.com",
+                "phone": "9876543233",
+                "job_title": "Software Engineer",
+                "department": self.department.id,
+                "status": "APPLIED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertFalse(
+            Candidate.objects.filter(
+                email="manager_candidate@test.com",
+            ).exists()
+        )
+
+    def test_manager_cannot_update_candidate(self):
+        self.authenticate(self.manager_user)
+
+        response = self.client.patch(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": self.candidate.pk},
+            ),
+            {
+                "status": "SHORTLISTED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.candidate.refresh_from_db()
+
+        self.assertEqual(
+            self.candidate.status,
+            Candidate.ApplicationStatus.APPLIED,
+        )
+
+    def test_manager_cannot_delete_candidate(self):
+        self.authenticate(self.manager_user)
+
+        response = self.client.delete(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": self.candidate.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Candidate.objects.filter(
+                pk=self.candidate.pk,
+            ).exists()
+        )
+
     def test_unauthenticated_access_is_denied(self):
         response = self.client.get(self.url)
 
         self.assertEqual(
             response.status_code,
             status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_unauthenticated_user_cannot_create_candidate(self):
+        response = self.client.post(
+            self.url,
+            {
+                "first_name": "Unauthenticated",
+                "last_name": "Candidate",
+                "email": "unauthenticated@test.com",
+                "phone": "9876543244",
+                "job_title": "Software Engineer",
+                "department": self.department.id,
+                "status": "APPLIED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+        self.assertFalse(
+            Candidate.objects.filter(
+                email="unauthenticated@test.com",
+            ).exists()
+        )
+
+    def test_unauthenticated_user_cannot_update_candidate(self):
+        response = self.client.patch(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": self.candidate.pk},
+            ),
+            {
+                "status": "SHORTLISTED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+        self.candidate.refresh_from_db()
+
+        self.assertEqual(
+            self.candidate.status,
+            Candidate.ApplicationStatus.APPLIED,
+        )
+
+    def test_unauthenticated_user_cannot_delete_candidate(self):
+        response = self.client.delete(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": self.candidate.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+        self.assertTrue(
+            Candidate.objects.filter(
+                pk=self.candidate.pk,
+            ).exists()
         )
 
     def test_candidate_detail(self):
@@ -170,6 +398,38 @@ class CandidateAPITestCase(APITestCase):
         )
 
         self.candidate.refresh_from_db()
+
+        self.assertEqual(
+            self.candidate.status,
+            Candidate.ApplicationStatus.SHORTLISTED,
+        )
+
+    def test_hr_can_update_candidate_details(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.patch(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": self.candidate.pk},
+            ),
+            {
+                "job_title": "Senior Software Engineer",
+                "status": "SHORTLISTED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.candidate.refresh_from_db()
+
+        self.assertEqual(
+            self.candidate.job_title,
+            "Senior Software Engineer",
+        )
 
         self.assertEqual(
             self.candidate.status,
@@ -570,6 +830,236 @@ class CandidateAPITestCase(APITestCase):
         self.assertIn(
             "interview_date",
             response.data,
+        )
+
+    def test_interview_candidate_with_valid_date_is_created(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "first_name": "Interview",
+            "last_name": "Candidate",
+            "email": "interview_candidate@test.com",
+            "phone": "9876543266",
+            "job_title": "Backend Developer",
+            "department": self.department.id,
+            "status": "INTERVIEW",
+            "interview_date": "2026-08-28T10:30:00Z",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            response.data["status"],
+            "INTERVIEW",
+        )
+
+        self.assertIsNotNone(
+            response.data["interview_date"],
+        )
+
+    def test_candidate_can_be_updated_to_interview_with_date(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.patch(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": self.candidate.pk},
+            ),
+            {
+                "status": "INTERVIEW",
+                "interview_date": "2026-08-29T11:00:00Z",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.candidate.refresh_from_db()
+
+        self.assertEqual(
+            self.candidate.status,
+            Candidate.ApplicationStatus.INTERVIEW,
+        )
+
+        self.assertIsNotNone(
+            self.candidate.interview_date,
+        )
+
+    def test_candidate_update_to_selected_requires_offer_date(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.patch(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": self.candidate.pk},
+            ),
+            {
+                "status": "SELECTED",
+                "joining_date": "2026-09-01",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "offer_date",
+            response.data,
+        )
+
+        self.candidate.refresh_from_db()
+
+        self.assertEqual(
+            self.candidate.status,
+            Candidate.ApplicationStatus.APPLIED,
+        )
+
+    def test_candidate_update_to_selected_requires_joining_date(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.patch(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": self.candidate.pk},
+            ),
+            {
+                "status": "SELECTED",
+                "offer_date": "2026-08-25",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "joining_date",
+            response.data,
+        )
+
+        self.candidate.refresh_from_db()
+
+        self.assertEqual(
+            self.candidate.status,
+            Candidate.ApplicationStatus.APPLIED,
+        )
+
+    def test_selected_candidate_cannot_change_to_applied_with_dates(self):
+        selected_candidate = Candidate.objects.create(
+            first_name="Selected",
+            last_name="Existing",
+            email="selected_existing@test.com",
+            phone="9876543277",
+            job_title="Senior Developer",
+            department=self.department,
+            status=Candidate.ApplicationStatus.SELECTED,
+            offer_date=date(2026, 8, 25),
+            joining_date=date(2026, 9, 1),
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.patch(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": selected_candidate.pk},
+            ),
+            {
+                "status": "APPLIED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "offer_date",
+            response.data,
+        )
+
+        selected_candidate.refresh_from_db()
+
+        self.assertEqual(
+            selected_candidate.status,
+            Candidate.ApplicationStatus.SELECTED,
+        )
+
+        self.assertEqual(
+            selected_candidate.offer_date,
+            date(2026, 8, 25),
+        )
+
+        self.assertEqual(
+            selected_candidate.joining_date,
+            date(2026, 9, 1),
+        )
+
+    def test_selected_candidate_can_change_to_applied_after_clearing_dates(self):
+        selected_candidate = Candidate.objects.create(
+            first_name="Selected",
+            last_name="ClearDates",
+            email="selected_clear_dates@test.com",
+            phone="9876543288",
+            job_title="Senior Developer",
+            department=self.department,
+            status=Candidate.ApplicationStatus.SELECTED,
+            offer_date=date(2026, 8, 25),
+            joining_date=date(2026, 9, 1),
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.patch(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": selected_candidate.pk},
+            ),
+            {
+                "status": "APPLIED",
+                "offer_date": None,
+                "joining_date": None,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        selected_candidate.refresh_from_db()
+
+        self.assertEqual(
+            selected_candidate.status,
+            Candidate.ApplicationStatus.APPLIED,
+        )
+
+        self.assertIsNone(
+            selected_candidate.offer_date,
+        )
+
+        self.assertIsNone(
+            selected_candidate.joining_date,
         )
 
     def test_selected_candidate_with_valid_dates_is_created(self):
