@@ -1,8 +1,6 @@
 import {
   useEffect,
-  useMemo,
   useState,
-  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -16,105 +14,14 @@ import {
   type PerformanceReview,
 } from "../api/performance"
 
-const emptyForm: CreatePerformanceRequest = {
+const createEmptyForm = (): CreatePerformanceRequest => ({
   employee: 0,
   review_period: "Annual Review",
   strengths: "",
   areas_for_improvement: "",
   manager_comments: "",
   review_date: "",
-}
-
-const pageStyle: CSSProperties = {
-  minHeight: "100vh",
-  padding: "32px",
-  background:
-    "linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)",
-  fontFamily:
-    "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  boxSizing: "border-box",
-}
-
-const cardStyle: CSSProperties = {
-  backgroundColor: "#ffffff",
-  border: "1px solid #e5e7eb",
-  borderRadius: "16px",
-  boxShadow:
-    "0 8px 24px rgba(15, 23, 42, 0.06)",
-}
-
-const inputStyle: CSSProperties = {
-  width: "100%",
-  padding: "11px 13px",
-  border: "1px solid #d1d5db",
-  borderRadius: "9px",
-  backgroundColor: "#ffffff",
-  color: "#111827",
-  fontSize: "14px",
-  outline: "none",
-  boxSizing: "border-box",
-}
-
-const labelStyle: CSSProperties = {
-  display: "grid",
-  gap: "7px",
-  color: "#374151",
-  fontSize: "13px",
-  fontWeight: 600,
-}
-
-const primaryButtonStyle: CSSProperties = {
-  padding: "10px 16px",
-  border: "none",
-  borderRadius: "9px",
-  backgroundColor: "#2563eb",
-  color: "#ffffff",
-  fontSize: "14px",
-  fontWeight: 600,
-  cursor: "pointer",
-}
-
-const secondaryButtonStyle: CSSProperties = {
-  padding: "10px 16px",
-  border: "1px solid #d1d5db",
-  borderRadius: "9px",
-  backgroundColor: "#ffffff",
-  color: "#374151",
-  fontSize: "14px",
-  fontWeight: 600,
-  cursor: "pointer",
-}
-
-function formatDate(value: string) {
-  if (!value) {
-    return "-"
-  }
-
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  })
-}
-
-function truncateText(
-  value: string,
-  maxLength = 90,
-) {
-  const text = value?.trim() || "-"
-
-  if (text.length <= maxLength) {
-    return text
-  }
-
-  return `${text.slice(0, maxLength)}...`
-}
+})
 
 function Performance() {
   const [reviews, setReviews] = useState<
@@ -143,9 +50,9 @@ function Performance() {
     useState<number | null>(null)
 
   const [form, setForm] =
-    useState<CreatePerformanceRequest>({
-      ...emptyForm,
-    })
+    useState<CreatePerformanceRequest>(
+      createEmptyForm(),
+    )
 
   const loadReviews = async () => {
     try {
@@ -179,17 +86,13 @@ function Performance() {
   }, [])
 
   const resetForm = () => {
-    setForm({
-      ...emptyForm,
-    })
+    setForm(createEmptyForm())
     setEditingId(null)
     setShowForm(false)
   }
 
   const openCreateForm = () => {
-    setForm({
-      ...emptyForm,
-    })
+    setForm(createEmptyForm())
     setEditingId(null)
     setShowForm(true)
     setError(null)
@@ -343,6 +246,10 @@ function Performance() {
           ),
       )
 
+      if (editingId === id) {
+        resetForm()
+      }
+
       setSuccess(
         "Performance review deleted successfully.",
       )
@@ -355,108 +262,95 @@ function Performance() {
     }
   }
 
-  const reviewStats = useMemo(() => {
-    const total = reviews.length
-
-    const currentYear =
-      new Date().getFullYear()
-
-    const thisYear = reviews.filter(
-      (review) => {
-        const date = new Date(
-          review.review_date,
-        )
-
-        return (
-          !Number.isNaN(date.getTime()) &&
-          date.getFullYear() === currentYear
-        )
-      },
-    ).length
-
-    const withFeedback = reviews.filter(
-      (review) =>
-        Boolean(
-          review.strengths?.trim() ||
-            review.manager_comments?.trim(),
-        ),
-    ).length
-
-    return {
-      total,
-      thisYear,
-      withFeedback,
+  const formatDate = (
+    value: string,
+  ) => {
+    if (!value) {
+      return "-"
     }
-  }, [reviews])
+
+    const date = new Date(
+      `${value}T00:00:00`,
+    )
+
+    if (Number.isNaN(date.getTime())) {
+      return value
+    }
+
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      },
+    )
+  }
 
   return (
-    <main style={pageStyle}>
+    <main
+      style={{
+        minHeight: "100vh",
+        padding: "32px",
+        backgroundColor: "#f5f7fa",
+        fontFamily:
+          "Arial, sans-serif",
+        boxSizing: "border-box",
+      }}
+    >
       <section
         style={{
-          maxWidth: "1450px",
+          maxWidth: "1300px",
           margin: "0 auto",
         }}
       >
         <header
           style={{
             display: "flex",
-            alignItems: "flex-start",
+            alignItems: "center",
             justifyContent:
               "space-between",
-            gap: "20px",
+            gap: "16px",
             marginBottom: "24px",
             flexWrap: "wrap",
           }}
         >
           <div>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "5px 10px",
-                marginBottom: "10px",
-                borderRadius: "999px",
-                backgroundColor: "#dbeafe",
-                color: "#1d4ed8",
-                fontSize: "12px",
-                fontWeight: 700,
-              }}
-            >
-              PEOPLE & PERFORMANCE
-            </div>
-
             <h1
               style={{
                 margin: 0,
                 color: "#111827",
-                fontSize: "30px",
-                lineHeight: 1.2,
-                letterSpacing: "-0.5px",
               }}
             >
-              Performance Management
+              Performance
             </h1>
 
             <p
               style={{
-                margin:
-                  "8px 0 0",
                 color: "#6b7280",
-                fontSize: "14px",
+                marginBottom: 0,
               }}
             >
-              Manage employee reviews,
-              feedback, strengths and
-              development opportunities.
+              Manage employee performance
+              reviews
             </p>
           </div>
 
           <button
             type="button"
             onClick={openCreateForm}
-            style={primaryButtonStyle}
+            style={{
+              padding: "10px 16px",
+              border: "none",
+              borderRadius: "6px",
+              backgroundColor:
+                "#2563eb",
+              color: "#ffffff",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
           >
-            + Add Review
+            Add Review
           </button>
         </header>
 
@@ -464,30 +358,17 @@ function Performance() {
           <section
             role="alert"
             style={{
-              ...cardStyle,
-              padding: "14px 16px",
+              padding: "16px",
               marginBottom: "20px",
-              backgroundColor: "#fef2f2",
-              borderColor: "#fecaca",
+              backgroundColor:
+                "#fee2e2",
+              borderRadius: "8px",
               color: "#991b1b",
+              border:
+                "1px solid #fecaca",
             }}
           >
-            <strong
-              style={{
-                display: "block",
-                marginBottom: "3px",
-              }}
-            >
-              Action failed
-            </strong>
-
-            <span
-              style={{
-                fontSize: "14px",
-              }}
-            >
-              {error}
-            </span>
+            {error}
           </section>
         )}
 
@@ -495,434 +376,305 @@ function Performance() {
           <section
             role="status"
             style={{
-              ...cardStyle,
-              padding: "14px 16px",
+              padding: "16px",
               marginBottom: "20px",
-              backgroundColor: "#f0fdf4",
-              borderColor: "#bbf7d0",
+              backgroundColor:
+                "#dcfce7",
+              borderRadius: "8px",
               color: "#166534",
+              border:
+                "1px solid #bbf7d0",
             }}
           >
-            <strong
-              style={{
-                display: "block",
-                marginBottom: "3px",
-              }}
-            >
-              Success
-            </strong>
-
-            <span
-              style={{
-                fontSize: "14px",
-              }}
-            >
-              {success}
-            </span>
+            {success}
           </section>
         )}
-
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "16px",
-            marginBottom: "24px",
-          }}
-        >
-          <div
-            style={{
-              ...cardStyle,
-              padding: "20px",
-            }}
-          >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                fontWeight: 600,
-              }}
-            >
-              Total Reviews
-            </div>
-
-            <div
-              style={{
-                marginTop: "8px",
-                color: "#111827",
-                fontSize: "28px",
-                fontWeight: 700,
-              }}
-            >
-              {reviewStats.total}
-            </div>
-
-            <div
-              style={{
-                marginTop: "4px",
-                color: "#9ca3af",
-                fontSize: "12px",
-              }}
-            >
-              All performance records
-            </div>
-          </div>
-
-          <div
-            style={{
-              ...cardStyle,
-              padding: "20px",
-            }}
-          >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                fontWeight: 600,
-              }}
-            >
-              Reviews This Year
-            </div>
-
-            <div
-              style={{
-                marginTop: "8px",
-                color: "#111827",
-                fontSize: "28px",
-                fontWeight: 700,
-              }}
-            >
-              {reviewStats.thisYear}
-            </div>
-
-            <div
-              style={{
-                marginTop: "4px",
-                color: "#9ca3af",
-                fontSize: "12px",
-              }}
-            >
-              Current calendar year
-            </div>
-          </div>
-
-          <div
-            style={{
-              ...cardStyle,
-              padding: "20px",
-            }}
-          >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                fontWeight: 600,
-              }}
-            >
-              Feedback Available
-            </div>
-
-            <div
-              style={{
-                marginTop: "8px",
-                color: "#111827",
-                fontSize: "28px",
-                fontWeight: 700,
-              }}
-            >
-              {reviewStats.withFeedback}
-            </div>
-
-            <div
-              style={{
-                marginTop: "4px",
-                color: "#9ca3af",
-                fontSize: "12px",
-              }}
-            >
-              Reviews with written feedback
-            </div>
-          </div>
-        </section>
 
         {showForm && (
           <section
             style={{
-              ...cardStyle,
+              backgroundColor:
+                "#ffffff",
               padding: "24px",
+              borderRadius: "10px",
               marginBottom: "24px",
+              boxShadow:
+                "0 1px 3px rgba(0, 0, 0, 0.08)",
             }}
           >
             <div
               style={{
                 display: "flex",
-                alignItems: "flex-start",
+                alignItems: "center",
                 justifyContent:
                   "space-between",
                 gap: "16px",
-                marginBottom: "22px",
+                marginBottom: "20px",
               }}
             >
-              <div>
-                <h2
-                  style={{
-                    margin: 0,
-                    color: "#111827",
-                    fontSize: "20px",
-                  }}
-                >
-                  {editingId !== null
-                    ? "Edit Performance Review"
-                    : "Create Performance Review"}
-                </h2>
-
-                <p
-                  style={{
-                    margin:
-                      "6px 0 0",
-                    color: "#6b7280",
-                    fontSize: "13px",
-                  }}
-                >
-                  Enter review details and
-                  employee feedback.
-                </p>
-              </div>
+              <h2
+                style={{
+                  margin: 0,
+                }}
+              >
+                {editingId !== null
+                  ? "Edit Performance Review"
+                  : "Add Performance Review"}
+              </h2>
 
               <button
                 type="button"
                 onClick={resetForm}
                 disabled={isSubmitting}
                 style={{
-                  border: "none",
-                  background: "transparent",
-                  color: "#6b7280",
-                  cursor: isSubmitting
-                    ? "not-allowed"
-                    : "pointer",
-                  fontSize: "20px",
-                  lineHeight: 1,
+                  padding: "7px 12px",
+                  border:
+                    "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  backgroundColor:
+                    "#ffffff",
+                  cursor:
+                    isSubmitting
+                      ? "not-allowed"
+                      : "pointer",
                 }}
-                aria-label="Close form"
               >
-                ×
+                Close
               </button>
             </div>
 
             <form
               onSubmit={handleSubmit}
+              style={{
+                display: "grid",
+                gap: "16px",
+                maxWidth: "700px",
+              }}
             >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(260px, 1fr))",
-                  gap: "18px",
-                }}
-              >
-                <label style={labelStyle}>
-                  Employee ID
-                  <input
-                    type="number"
-                    min="1"
-                    value={
-                      form.employee || ""
-                    }
-                    onChange={(event) =>
-                      setForm(
-                        (current) => ({
-                          ...current,
-                          employee:
-                            Number(
-                              event.target
-                                .value,
-                            ),
-                        }),
-                      )
-                    }
-                    required
-                    placeholder="Enter employee ID"
-                    style={inputStyle}
-                  />
-                </label>
+              <label>
+                Employee ID
 
-                <label style={labelStyle}>
-                  Review Period
-                  <input
-                    type="text"
-                    value={
-                      form.review_period
-                    }
-                    onChange={(event) =>
-                      setForm(
-                        (current) => ({
-                          ...current,
-                          review_period:
+                <input
+                  type="number"
+                  min="1"
+                  value={
+                    form.employee || ""
+                  }
+                  onChange={(event) =>
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        employee:
+                          Number(
                             event.target
                               .value,
-                        }),
-                      )
-                    }
-                    required
-                    placeholder="e.g. Annual Review"
-                    style={inputStyle}
-                  />
-                </label>
-
-                <label style={labelStyle}>
-                  Review Date
-                  <input
-                    type="date"
-                    value={
-                      form.review_date
-                    }
-                    onChange={(event) =>
-                      setForm(
-                        (current) => ({
-                          ...current,
-                          review_date:
-                            event.target
-                              .value,
-                        }),
-                      )
-                    }
-                    required
-                    style={inputStyle}
-                  />
-                </label>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(300px, 1fr))",
-                  gap: "18px",
-                  marginTop: "18px",
-                }}
-              >
-                <label style={labelStyle}>
-                  Strengths
-                  <textarea
-                    value={form.strengths}
-                    onChange={(event) =>
-                      setForm(
-                        (current) => ({
-                          ...current,
-                          strengths:
-                            event.target
-                              .value,
-                        }),
-                      )
-                    }
-                    rows={5}
-                    placeholder="Describe key strengths and achievements..."
-                    style={{
-                      ...inputStyle,
-                      resize: "vertical",
-                      lineHeight: 1.5,
-                    }}
-                  />
-                </label>
-
-                <label style={labelStyle}>
-                  Areas for Improvement
-                  <textarea
-                    value={
-                      form.areas_for_improvement
-                    }
-                    onChange={(event) =>
-                      setForm(
-                        (current) => ({
-                          ...current,
-                          areas_for_improvement:
-                            event.target
-                              .value,
-                        }),
-                      )
-                    }
-                    rows={5}
-                    placeholder="Describe development areas..."
-                    style={{
-                      ...inputStyle,
-                      resize: "vertical",
-                      lineHeight: 1.5,
-                    }}
-                  />
-                </label>
-
-                <label
+                          ),
+                      }),
+                    )
+                  }
+                  required
+                  disabled={isSubmitting}
                   style={{
-                    ...labelStyle,
-                    gridColumn:
-                      "1 / -1",
+                    display:
+                      "block",
+                    width: "100%",
+                    marginTop: "6px",
+                    padding: "10px",
+                    boxSizing:
+                      "border-box",
                   }}
-                >
-                  Manager Comments
-                  <textarea
-                    value={
-                      form.manager_comments
-                    }
-                    onChange={(event) =>
-                      setForm(
-                        (current) => ({
-                          ...current,
-                          manager_comments:
-                            event.target
-                              .value,
-                        }),
-                      )
-                    }
-                    rows={5}
-                    placeholder="Add manager feedback, goals or follow-up notes..."
-                    style={{
-                      ...inputStyle,
-                      resize: "vertical",
-                      lineHeight: 1.5,
-                    }}
-                  />
-                </label>
-              </div>
+                />
+              </label>
+
+              <label>
+                Review Period
+
+                <input
+                  type="text"
+                  value={
+                    form.review_period
+                  }
+                  onChange={(event) =>
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        review_period:
+                          event.target
+                            .value,
+                      }),
+                    )
+                  }
+                  required
+                  disabled={isSubmitting}
+                  placeholder="e.g. Annual Review"
+                  style={{
+                    display:
+                      "block",
+                    width: "100%",
+                    marginTop: "6px",
+                    padding: "10px",
+                    boxSizing:
+                      "border-box",
+                  }}
+                />
+              </label>
+
+              <label>
+                Review Date
+
+                <input
+                  type="date"
+                  value={
+                    form.review_date
+                  }
+                  onChange={(event) =>
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        review_date:
+                          event.target
+                            .value,
+                      }),
+                    )
+                  }
+                  required
+                  disabled={isSubmitting}
+                  style={{
+                    display:
+                      "block",
+                    width: "100%",
+                    marginTop: "6px",
+                    padding: "10px",
+                    boxSizing:
+                      "border-box",
+                  }}
+                />
+              </label>
+
+              <label>
+                Strengths
+
+                <textarea
+                  value={form.strengths}
+                  onChange={(event) =>
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        strengths:
+                          event.target
+                            .value,
+                      }),
+                    )
+                  }
+                  rows={4}
+                  disabled={isSubmitting}
+                  placeholder="Employee strengths and achievements"
+                  style={{
+                    display:
+                      "block",
+                    width: "100%",
+                    marginTop: "6px",
+                    padding: "10px",
+                    boxSizing:
+                      "border-box",
+                    resize: "vertical",
+                  }}
+                />
+              </label>
+
+              <label>
+                Areas for Improvement
+
+                <textarea
+                  value={
+                    form.areas_for_improvement
+                  }
+                  onChange={(event) =>
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        areas_for_improvement:
+                          event.target
+                            .value,
+                      }),
+                    )
+                  }
+                  rows={4}
+                  disabled={isSubmitting}
+                  placeholder="Skills or areas requiring improvement"
+                  style={{
+                    display:
+                      "block",
+                    width: "100%",
+                    marginTop: "6px",
+                    padding: "10px",
+                    boxSizing:
+                      "border-box",
+                    resize: "vertical",
+                  }}
+                />
+              </label>
+
+              <label>
+                Manager Comments
+
+                <textarea
+                  value={
+                    form.manager_comments
+                  }
+                  onChange={(event) =>
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        manager_comments:
+                          event.target
+                            .value,
+                      }),
+                    )
+                  }
+                  rows={4}
+                  disabled={isSubmitting}
+                  placeholder="Manager's overall comments"
+                  style={{
+                    display:
+                      "block",
+                    width: "100%",
+                    marginTop: "6px",
+                    padding: "10px",
+                    boxSizing:
+                      "border-box",
+                    resize: "vertical",
+                  }}
+                />
+              </label>
 
               <div
                 style={{
                   display: "flex",
                   gap: "10px",
-                  justifyContent:
-                    "flex-end",
-                  marginTop: "22px",
                   flexWrap: "wrap",
                 }}
               >
                 <button
-                  type="button"
-                  onClick={resetForm}
-                  disabled={isSubmitting}
-                  style={{
-                    ...secondaryButtonStyle,
-                    opacity:
-                      isSubmitting
-                        ? 0.6
-                        : 1,
-                  }}
-                >
-                  Cancel
-                </button>
-
-                <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting
+                  }
                   style={{
-                    ...primaryButtonStyle,
-                    opacity:
-                      isSubmitting
-                        ? 0.7
-                        : 1,
+                    padding:
+                      "10px 18px",
+                    border: "none",
+                    borderRadius:
+                      "6px",
+                    backgroundColor:
+                      "#2563eb",
+                    color:
+                      "#ffffff",
                     cursor:
                       isSubmitting
                         ? "not-allowed"
                         : "pointer",
+                    fontWeight: 600,
                   }}
                 >
                   {isSubmitting
@@ -931,6 +683,30 @@ function Performance() {
                       ? "Update Review"
                       : "Save Review"}
                 </button>
+
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  disabled={
+                    isSubmitting
+                  }
+                  style={{
+                    padding:
+                      "10px 18px",
+                    border:
+                      "1px solid #d1d5db",
+                    borderRadius:
+                      "6px",
+                    backgroundColor:
+                      "#ffffff",
+                    cursor:
+                      isSubmitting
+                        ? "not-allowed"
+                        : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </section>
@@ -938,490 +714,381 @@ function Performance() {
 
         <section
           style={{
-            ...cardStyle,
-            overflow: "hidden",
+            backgroundColor:
+              "#ffffff",
+            borderRadius: "10px",
+            overflow: "auto",
+            boxShadow:
+              "0 1px 3px rgba(0, 0, 0, 0.05)",
           }}
         >
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent:
-                "space-between",
-              gap: "16px",
-              padding: "20px 24px",
+              padding:
+                "20px 24px",
               borderBottom:
                 "1px solid #e5e7eb",
-              flexWrap: "wrap",
             }}
           >
-            <div>
-              <h2
-                style={{
-                  margin: 0,
-                  color: "#111827",
-                  fontSize: "18px",
-                }}
-              >
-                Performance Reviews
-              </h2>
-
-              <p
-                style={{
-                  margin:
-                    "5px 0 0",
-                  color: "#6b7280",
-                  fontSize: "13px",
-                }}
-              >
-                Employee evaluation history
-              </p>
-            </div>
-
-            <span
+            <h2
               style={{
-                padding: "6px 10px",
-                borderRadius: "999px",
-                backgroundColor: "#f3f4f6",
-                color: "#4b5563",
-                fontSize: "12px",
-                fontWeight: 600,
+                margin: 0,
+              }}
+            >
+              Performance Reviews
+            </h2>
+
+            <p
+              style={{
+                margin:
+                  "6px 0 0",
+                color:
+                  "#6b7280",
+                fontSize:
+                  "14px",
               }}
             >
               {reviews.length}{" "}
               {reviews.length === 1
-                ? "Review"
-                : "Reviews"}
-            </span>
+                ? "review"
+                : "reviews"}
+            </p>
           </div>
 
           {isLoading ? (
-            <div
+            <p
               style={{
-                padding: "48px 24px",
-                textAlign: "center",
+                padding: "24px",
               }}
             >
-              <div
-                style={{
-                  color: "#2563eb",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                }}
-              >
-                Loading performance reviews...
-              </div>
-
-              <div
-                style={{
-                  marginTop: "6px",
-                  color: "#9ca3af",
-                  fontSize: "13px",
-                }}
-              >
-                Please wait while records are
-                loaded.
-              </div>
-            </div>
-          ) : reviews.length === 0 ? (
+              Loading performance
+              reviews...
+            </p>
+          ) : reviews.length ===
+            0 ? (
             <div
               style={{
-                padding: "60px 24px",
-                textAlign: "center",
+                padding: "40px 24px",
+                textAlign:
+                  "center",
               }}
             >
-              <div
-                style={{
-                  width: "52px",
-                  height: "52px",
-                  margin: "0 auto 14px",
-                  display: "grid",
-                  placeItems: "center",
-                  borderRadius: "50%",
-                  backgroundColor: "#eff6ff",
-                  color: "#2563eb",
-                  fontSize: "24px",
-                  fontWeight: 700,
-                }}
-              >
-                ✓
-              </div>
-
-              <h3
+              <p
                 style={{
                   margin: 0,
-                  color: "#111827",
-                  fontSize: "16px",
+                  color:
+                    "#6b7280",
                 }}
               >
                 No performance reviews
-              </h3>
-
-              <p
-                style={{
-                  margin:
-                    "7px 0 18px",
-                  color: "#6b7280",
-                  fontSize: "13px",
-                }}
-              >
-                Start by creating the first
-                employee performance review.
+                found.
               </p>
 
               <button
                 type="button"
-                onClick={openCreateForm}
-                style={primaryButtonStyle}
+                onClick={
+                  openCreateForm
+                }
+                style={{
+                  marginTop:
+                    "14px",
+                  padding:
+                    "9px 14px",
+                  border: "none",
+                  borderRadius:
+                    "6px",
+                  backgroundColor:
+                    "#2563eb",
+                  color:
+                    "#ffffff",
+                  cursor:
+                    "pointer",
+                }}
               >
-                + Add First Review
+                Add First Review
               </button>
             </div>
           ) : (
-            <div
+            <table
               style={{
-                overflowX: "auto",
+                width: "100%",
+                borderCollapse:
+                  "collapse",
+                minWidth:
+                  "1150px",
               }}
             >
-              <table
-                style={{
-                  width: "100%",
-                  minWidth: "1250px",
-                  borderCollapse:
-                    "collapse",
-                }}
-              >
-                <thead>
-                  <tr
-                    style={{
-                      backgroundColor:
-                        "#f8fafc",
-                    }}
-                  >
-                    {[
-                      "Employee",
-                      "Review Period",
-                      "Review Date",
-                      "Strengths",
-                      "Areas for Improvement",
-                      "Manager Comments",
-                      "Actions",
-                    ].map(
-                      (heading) => (
-                        <th
-                          key={heading}
-                          style={{
-                            padding:
-                              "13px 16px",
-                            textAlign:
-                              "left",
-                            color:
-                              "#4b5563",
-                            fontSize:
-                              "12px",
-                            fontWeight:
-                              700,
-                            textTransform:
-                              "uppercase",
-                            letterSpacing:
-                              "0.3px",
-                            borderBottom:
-                              "1px solid #e5e7eb",
-                            whiteSpace:
-                              "nowrap",
-                          }}
-                        >
-                          {heading}
-                        </th>
-                      ),
-                    )}
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {reviews.map(
-                    (review) => (
-                      <tr
+              <thead>
+                <tr>
+                  {[
+                    "Employee",
+                    "Review Period",
+                    "Review Date",
+                    "Strengths",
+                    "Areas for Improvement",
+                    "Manager Comments",
+                    "Actions",
+                  ].map(
+                    (heading) => (
+                      <th
                         key={
-                          review.id
+                          heading
                         }
                         style={{
+                          padding:
+                            "14px",
+                          textAlign:
+                            "left",
+                          borderBottom:
+                            "1px solid #e5e7eb",
                           backgroundColor:
-                            "#ffffff",
+                            "#f9fafb",
+                          whiteSpace:
+                            "nowrap",
+                          fontSize:
+                            "13px",
+                          color:
+                            "#374151",
                         }}
                       >
-                        <td
-                          style={{
-                            padding:
-                              "16px",
-                            verticalAlign:
-                              "top",
-                            borderBottom:
-                              "1px solid #f1f5f9",
-                          }}
-                        >
-                          <div
-                            style={{
-                              color:
-                                "#111827",
-                              fontWeight:
-                                700,
-                              fontSize:
-                                "14px",
-                            }}
-                          >
-                            {review.employee_name ||
-                              "-"}
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop:
-                                "4px",
-                              color:
-                                "#6b7280",
-                              fontSize:
-                                "12px",
-                            }}
-                          >
-                            {review.employee_id ||
-                              `Employee #${review.employee}`}
-                          </div>
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "16px",
-                            verticalAlign:
-                              "top",
-                            borderBottom:
-                              "1px solid #f1f5f9",
-                          }}
-                        >
-                          <span
-                            style={{
-                              display:
-                                "inline-flex",
-                              padding:
-                                "5px 9px",
-                              borderRadius:
-                                "7px",
-                              backgroundColor:
-                                "#eff6ff",
-                              color:
-                                "#1d4ed8",
-                              fontSize:
-                                "12px",
-                              fontWeight:
-                                600,
-                              whiteSpace:
-                                "nowrap",
-                            }}
-                          >
-                            {
-                              review.review_period
-                            }
-                          </span>
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "16px",
-                            verticalAlign:
-                              "top",
-                            borderBottom:
-                              "1px solid #f1f5f9",
-                            whiteSpace:
-                              "nowrap",
-                            color:
-                              "#374151",
-                            fontSize:
-                              "13px",
-                          }}
-                        >
-                          {formatDate(
-                            review.review_date,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "16px",
-                            verticalAlign:
-                              "top",
-                            borderBottom:
-                              "1px solid #f1f5f9",
-                            maxWidth:
-                              "230px",
-                            color:
-                              "#4b5563",
-                            fontSize:
-                              "13px",
-                            lineHeight:
-                              1.5,
-                          }}
-                          title={
-                            review.strengths ||
-                            "-"
-                          }
-                        >
-                          {truncateText(
-                            review.strengths,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "16px",
-                            verticalAlign:
-                              "top",
-                            borderBottom:
-                              "1px solid #f1f5f9",
-                            maxWidth:
-                              "230px",
-                            color:
-                              "#4b5563",
-                            fontSize:
-                              "13px",
-                            lineHeight:
-                              1.5,
-                          }}
-                          title={
-                            review.areas_for_improvement ||
-                            "-"
-                          }
-                        >
-                          {truncateText(
-                            review.areas_for_improvement,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "16px",
-                            verticalAlign:
-                              "top",
-                            borderBottom:
-                              "1px solid #f1f5f9",
-                            maxWidth:
-                              "230px",
-                            color:
-                              "#4b5563",
-                            fontSize:
-                              "13px",
-                            lineHeight:
-                              1.5,
-                          }}
-                          title={
-                            review.manager_comments ||
-                            "-"
-                          }
-                        >
-                          {truncateText(
-                            review.manager_comments,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "16px",
-                            verticalAlign:
-                              "top",
-                            borderBottom:
-                              "1px solid #f1f5f9",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display:
-                                "flex",
-                              gap: "8px",
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openEditForm(
-                                  review,
-                                )
-                              }
-                              style={{
-                                padding:
-                                  "7px 11px",
-                                border:
-                                  "1px solid #2563eb",
-                                borderRadius:
-                                  "7px",
-                                backgroundColor:
-                                  "#ffffff",
-                                color:
-                                  "#2563eb",
-                                fontSize:
-                                  "12px",
-                                fontWeight:
-                                  600,
-                                cursor:
-                                  "pointer",
-                              }}
-                            >
-                              Edit
-                            </button>
-
-                            <button
-                              type="button"
-                              disabled={
-                                deletingId ===
-                                review.id
-                              }
-                              onClick={() =>
-                                void handleDelete(
-                                  review.id,
-                                )
-                              }
-                              style={{
-                                padding:
-                                  "7px 11px",
-                                border:
-                                  "1px solid #dc2626",
-                                borderRadius:
-                                  "7px",
-                                backgroundColor:
-                                  deletingId ===
-                                  review.id
-                                    ? "#fca5a5"
-                                    : "#dc2626",
-                                color:
-                                  "#ffffff",
-                                fontSize:
-                                  "12px",
-                                fontWeight:
-                                  600,
-                                cursor:
-                                  deletingId ===
-                                  review.id
-                                    ? "not-allowed"
-                                    : "pointer",
-                              }}
-                            >
-                              {deletingId ===
-                              review.id
-                                ? "Deleting..."
-                                : "Delete"}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                        {heading}
+                      </th>
                     ),
                   )}
-                </tbody>
-              </table>
-            </div>
+                </tr>
+              </thead>
+
+              <tbody>
+                {reviews.map(
+                  (review) => (
+                    <tr
+                      key={
+                        review.id
+                      }
+                    >
+                      <td
+                        style={{
+                          padding:
+                            "14px",
+                          borderBottom:
+                            "1px solid #f3f4f6",
+                          verticalAlign:
+                            "top",
+                        }}
+                      >
+                        <strong>
+                          {review.employee_name ||
+                            "-"}
+                        </strong>
+
+                        <div
+                          style={{
+                            fontSize:
+                              "12px",
+                            color:
+                              "#6b7280",
+                            marginTop:
+                              "4px",
+                          }}
+                        >
+                          {review.employee_id ||
+                            `Employee #${review.employee}`}
+                        </div>
+                      </td>
+
+                      <td
+                        style={{
+                          padding:
+                            "14px",
+                          borderBottom:
+                            "1px solid #f3f4f6",
+                          verticalAlign:
+                            "top",
+                          whiteSpace:
+                            "nowrap",
+                        }}
+                      >
+                        {
+                          review.review_period
+                        }
+                      </td>
+
+                      <td
+                        style={{
+                          padding:
+                            "14px",
+                          borderBottom:
+                            "1px solid #f3f4f6",
+                          verticalAlign:
+                            "top",
+                          whiteSpace:
+                            "nowrap",
+                        }}
+                      >
+                        {formatDate(
+                          review.review_date,
+                        )}
+                      </td>
+
+                      <td
+                        style={{
+                          padding:
+                            "14px",
+                          borderBottom:
+                            "1px solid #f3f4f6",
+                          verticalAlign:
+                            "top",
+                          maxWidth:
+                            "220px",
+                          whiteSpace:
+                            "pre-wrap",
+                          overflowWrap:
+                            "anywhere",
+                        }}
+                      >
+                        {review.strengths ||
+                          "-"}
+                      </td>
+
+                      <td
+                        style={{
+                          padding:
+                            "14px",
+                          borderBottom:
+                            "1px solid #f3f4f6",
+                          verticalAlign:
+                            "top",
+                          maxWidth:
+                            "220px",
+                          whiteSpace:
+                            "pre-wrap",
+                          overflowWrap:
+                            "anywhere",
+                        }}
+                      >
+                        {
+                          review.areas_for_improvement ||
+                          "-"
+                        }
+                      </td>
+
+                      <td
+                        style={{
+                          padding:
+                            "14px",
+                          borderBottom:
+                            "1px solid #f3f4f6",
+                          verticalAlign:
+                            "top",
+                          maxWidth:
+                            "220px",
+                          whiteSpace:
+                            "pre-wrap",
+                          overflowWrap:
+                            "anywhere",
+                        }}
+                      >
+                        {
+                          review.manager_comments ||
+                          "-"
+                        }
+                      </td>
+
+                      <td
+                        style={{
+                          padding:
+                            "14px",
+                          borderBottom:
+                            "1px solid #f3f4f6",
+                          verticalAlign:
+                            "top",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display:
+                              "flex",
+                            gap:
+                              "8px",
+                            flexWrap:
+                              "wrap",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            disabled={
+                              isSubmitting ||
+                              deletingId !==
+                                null
+                            }
+                            onClick={() =>
+                              openEditForm(
+                                review,
+                              )
+                            }
+                            style={{
+                              padding:
+                                "7px 12px",
+                              border:
+                                "1px solid #2563eb",
+                              borderRadius:
+                                "6px",
+                              backgroundColor:
+                                "#ffffff",
+                              color:
+                                "#2563eb",
+                              cursor:
+                                isSubmitting ||
+                                deletingId !==
+                                  null
+                                  ? "not-allowed"
+                                  : "pointer",
+                            }}
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={
+                              deletingId ===
+                              review.id
+                            }
+                            onClick={() =>
+                              void handleDelete(
+                                review.id,
+                              )
+                            }
+                            style={{
+                              padding:
+                                "7px 12px",
+                              border:
+                                "none",
+                              borderRadius:
+                                "6px",
+                              backgroundColor:
+                                "#dc2626",
+                              color:
+                                "#ffffff",
+                              cursor:
+                                deletingId ===
+                                review.id
+                                  ? "not-allowed"
+                                  : "pointer",
+                            }}
+                          >
+                            {deletingId ===
+                            review.id
+                              ? "Deleting..."
+                              : "Delete"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ),
+                )}
+              </tbody>
+            </table>
           )}
         </section>
       </section>
