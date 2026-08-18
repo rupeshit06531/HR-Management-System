@@ -141,6 +141,25 @@ class PayrollSerializer(serializers.ModelSerializer):
                 }
             )
 
+        if basic_salary is not None:
+            gross_salary = (
+                basic_salary + allowances
+            )
+
+            net_salary = (
+                gross_salary - deductions
+            )
+
+            if net_salary < 0:
+                raise serializers.ValidationError(
+                    {
+                        "deductions": (
+                            "Deductions cannot exceed "
+                            "gross salary."
+                        )
+                    }
+                )
+
         if payment_status == Payroll.PaymentStatus.PENDING:
             if paid_at is not None:
                 raise serializers.ValidationError(

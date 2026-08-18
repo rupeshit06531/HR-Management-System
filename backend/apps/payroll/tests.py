@@ -256,6 +256,35 @@ class PayrollAPITestCase(APITestCase):
             response.data,
         )
 
+
+    def test_deductions_cannot_exceed_gross_salary(self):
+        self.authenticate(self.super_admin)
+
+        payload = {
+            "employee": self.employee.id,
+            "month": "2028-02-01",
+            "basic_salary": "50000.00",
+            "allowances": "5000.00",
+            "deductions": "60000.00",
+            "payment_status": "pending",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "deductions",
+            response.data,
+        )
+
     def test_gross_salary_is_returned(self):
         self.authenticate(self.super_admin)
 
