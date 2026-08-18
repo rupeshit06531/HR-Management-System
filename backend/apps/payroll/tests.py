@@ -854,3 +854,98 @@ class PayrollAPITestCase(APITestCase):
             payroll.paid_at,
             original_paid_at,
         )
+
+    def test_payroll_employee_cannot_be_changed(self):
+        self.authenticate(self.super_admin)
+
+        second_employee_user = User.objects.create_user(
+            username="payroll_employee_two",
+            email="payroll_employee_two@test.com",
+            password="TestPass@123",
+            first_name="Second",
+            last_name="Employee",
+            role=User.Role.EMPLOYEE,
+        )
+
+        second_employee = Employee.objects.create(
+            user=second_employee_user,
+            employee_id="PAY-EMP-002",
+            department=self.department,
+            designation=self.designation,
+            joining_date=date(2026, 1, 1),
+        )
+
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2028, 10, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+        )
+
+        response = self.client.patch(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+            {
+                "employee": second_employee.id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "employee",
+            response.data,
+        )
+
+        payroll.refresh_from_db()
+
+        self.assertEqual(
+            payroll.employee_id,
+            self.employee.id,
+        )
+
+    def test_payroll_month_cannot_be_changed(self):
+        self.authenticate(self.super_admin)
+
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2028, 11, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+        )
+
+        response = self.client.patch(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+            {
+                "month": "2028-12-01",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "month",
+            response.data,
+        )
+
+        payroll.refresh_from_db()
+
+        self.assertEqual(
+            payroll.month,
+            date(2028, 11, 1),
+        )

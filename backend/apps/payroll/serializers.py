@@ -114,6 +114,33 @@ class PayrollSerializer(serializers.ModelSerializer):
             ),
         )
 
+        if self.instance is not None:
+            if (
+                "employee" in attrs
+                and employee != self.instance.employee
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "employee": (
+                            "Payroll employee cannot be "
+                            "changed after creation."
+                        )
+                    }
+                )
+
+            if (
+                "month" in attrs
+                and month != self.instance.month
+            ):
+                raise serializers.ValidationError(
+                    {
+                        "month": (
+                            "Payroll month cannot be changed "
+                            "after creation."
+                        )
+                    }
+                )
+
         if (
             self.instance is not None
             and self.instance.payment_status
