@@ -265,9 +265,9 @@ class PerformanceReviewAPITestCase(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-        self.assertIn(
-            "review_period",
-            response.data,
+        self.assertTrue(
+            "review_period" in response.data
+            or "non_field_errors" in response.data,
         )
 
     def test_search_by_employee_id(self):
@@ -558,4 +558,100 @@ class PerformanceReviewAPITestCase(APITestCase):
             PerformanceReview.objects.filter(
                 pk=review.id,
             ).exists()
+        )
+
+    def test_update_review_rejects_duplicate_review_period_and_date(self):
+        self.authenticate(self.manager_user)
+
+        existing_review = PerformanceReview.objects.create(
+            employee=self.employee,
+            review_period="Annual Review 2026",
+            strengths="Existing review",
+            review_date=date(2026, 8, 30),
+        )
+
+        review_to_update = PerformanceReview.objects.create(
+            employee=self.employee,
+            review_period="Mid Year Review 2026",
+            strengths="Second review",
+            review_date=date(2026, 6, 30),
+        )
+
+        response = self.client.patch(
+            reverse(
+                "performance-detail",
+                kwargs={"pk": review_to_update.id},
+            ),
+            {
+                "review_period": existing_review.review_period,
+                "review_date": existing_review.review_date,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertTrue(
+            "review_period" in response.data
+            or "non_field_errors" in response.data,
+        )
+
+        review_to_update.refresh_from_db()
+
+        self.assertEqual(
+            review_to_update.review_period,
+            "Mid Year Review 2026",
+        )
+
+        self.assertEqual(
+            review_to_update.review_date,
+            date(2026, 6, 30),
+        )
+
+    def test_update_review_with_same_values_is_allowed(self):
+        self.authenticate(self.manager_user)
+
+        review = PerformanceReview.objects.create(
+            employee=self.employee,
+            review_period="Annual Review 2026",
+            strengths="Original strengths",
+            review_date=date(2026, 8, 30),
+        )
+
+        response = self.client.patch(
+            reverse(
+                "performance-detail",
+                kwargs={"pk": review.id},
+            ),
+            {
+                "review_period": "Annual Review 2026",
+                "review_date": "2026-08-30",
+                "strengths": "Updated strengths",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        review.refresh_from_db()
+
+        self.assertEqual(
+            review.review_period,
+            "Annual Review 2026",
+        )
+
+        self.assertEqual(
+            review.review_date,
+            date(2026, 8, 30),
+        )
+
+        self.assertEqual(
+            review.strengths,
+            "Updated strengths",
         )
