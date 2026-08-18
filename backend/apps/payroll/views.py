@@ -53,6 +53,7 @@ class PayrollViewSet(viewsets.ModelViewSet):
     ordering = [
         "-month",
         "-created_at",
+        "-id",
     ]
 
     def get_permissions(self):
