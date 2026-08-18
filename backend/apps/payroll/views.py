@@ -48,6 +48,7 @@ class PayrollViewSet(viewsets.ModelViewSet):
         "deductions",
         "net_salary",
         "paid_at",
+        "created_at",
     ]
 
     ordering = [
