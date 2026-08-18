@@ -36,6 +36,9 @@ const emptyForm: PayrollForm = {
 
 function PayrollPage() {
   const [records, setRecords] = useState<Payroll[]>([])
+  const [totalRecords, setTotalRecords] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [deletingId, setDeletingId] =
@@ -67,26 +70,39 @@ function PayrollPage() {
   const [monthFilter, setMonthFilter] =
     useState("")
 
-  const loadPayroll = async () => {
+  const pageSize = 10
+
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        totalRecords / pageSize,
+      ),
+    )
+
+  const loadPayroll = async (
+    page = currentPage,
+  ) => {
     try {
       setIsLoading(true)
       setError(null)
 
       const response = await getPayroll({
-        search: searchTerm.trim() || undefined,
+        page,
+        search:
+          searchTerm.trim() || undefined,
         payment_status:
           statusFilter === "all"
             ? undefined
             : statusFilter,
-        month: monthFilter || undefined,
-        ordering: "-month,-created_at,-id",
+        month:
+          monthFilter || undefined,
+        ordering:
+          "-month,-created_at,-id",
       })
 
-      if (Array.isArray(response)) {
-        setRecords(response)
-      } else {
-        setRecords(response.results ?? [])
-      }
+      setRecords(response.results ?? [])
+      setTotalRecords(response.count ?? 0)
     } catch {
       setError(
         "Unable to load payroll records.",
@@ -97,17 +113,31 @@ function PayrollPage() {
   }
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      void loadPayroll()
-    }, 300)
+    const timeoutId =
+      window.setTimeout(() => {
+        void loadPayroll(currentPage)
+      }, 300)
 
     return () => {
       window.clearTimeout(timeoutId)
     }
   }, [
+    currentPage,
     searchTerm,
     statusFilter,
     monthFilter,
+  ])
+
+  useEffect(() => {
+    if (
+      currentPage > totalPages &&
+      totalPages > 0
+    ) {
+      setCurrentPage(totalPages)
+    }
+  }, [
+    currentPage,
+    totalPages,
   ])
 
   const resetForm = () => {
@@ -124,17 +154,26 @@ function PayrollPage() {
     setSuccess(null)
   }
 
-  const openEditForm = (record: Payroll) => {
+  const openEditForm = (
+    record: Payroll,
+  ) => {
     setForm({
       employee: record.employee,
-      month: record.month.slice(0, 7),
-      basic_salary: record.basic_salary,
-      allowances: record.allowances,
-      deductions: record.deductions,
+      month:
+        record.month.slice(0, 7),
+      basic_salary:
+        record.basic_salary,
+      allowances:
+        record.allowances,
+      deductions:
+        record.deductions,
       payment_status:
         record.payment_status,
       paid_at: record.paid_at
-        ? record.paid_at.slice(0, 16)
+        ? record.paid_at.slice(
+            0,
+            16,
+          )
         : "",
     })
 
@@ -152,18 +191,27 @@ function PayrollPage() {
     setError(null)
     setSuccess(null)
 
-    if (!form.employee || form.employee <= 0) {
-      setError("Employee ID is required.")
+    if (
+      !form.employee ||
+      form.employee <= 0
+    ) {
+      setError(
+        "Employee ID is required.",
+      )
       return
     }
 
     if (!form.month) {
-      setError("Payroll month is required.")
+      setError(
+        "Payroll month is required.",
+      )
       return
     }
 
     if (!form.basic_salary) {
-      setError("Basic salary is required.")
+      setError(
+        "Basic salary is required.",
+      )
       return
     }
 
@@ -171,13 +219,19 @@ function PayrollPage() {
       Number(form.basic_salary)
 
     const allowances =
-      Number(form.allowances || "0")
+      Number(
+        form.allowances || "0",
+      )
 
     const deductions =
-      Number(form.deductions || "0")
+      Number(
+        form.deductions || "0",
+      )
 
     if (
-      !Number.isFinite(basicSalary) ||
+      !Number.isFinite(
+        basicSalary,
+      ) ||
       basicSalary < 0
     ) {
       setError(
@@ -187,7 +241,9 @@ function PayrollPage() {
     }
 
     if (
-      !Number.isFinite(allowances) ||
+      !Number.isFinite(
+        allowances,
+      ) ||
       allowances < 0
     ) {
       setError(
@@ -197,7 +253,9 @@ function PayrollPage() {
     }
 
     if (
-      !Number.isFinite(deductions) ||
+      !Number.isFinite(
+        deductions,
+      ) ||
       deductions < 0
     ) {
       setError(
@@ -207,7 +265,8 @@ function PayrollPage() {
     }
 
     if (
-      form.payment_status === "paid" &&
+      form.payment_status ===
+        "paid" &&
       !form.paid_at
     ) {
       setError(
@@ -217,7 +276,8 @@ function PayrollPage() {
     }
 
     if (
-      form.payment_status === "pending" &&
+      form.payment_status ===
+        "pending" &&
       form.paid_at
     ) {
       setError(
@@ -229,55 +289,56 @@ function PayrollPage() {
     try {
       setIsSubmitting(true)
 
-      const payload: PayrollPayload = {
-        employee: form.employee,
-        month: `${form.month}-01`,
-        basic_salary:
-          form.basic_salary,
-        allowances:
-          form.allowances || "0",
-        deductions:
-          form.deductions || "0",
-        payment_status:
-          form.payment_status,
-        paid_at:
-          form.payment_status === "paid"
-            ? new Date(
-                form.paid_at,
-              ).toISOString()
-            : null,
-      }
+      const payload: PayrollPayload =
+        {
+          employee:
+            form.employee,
+          month: `${form.month}-01`,
+          basic_salary:
+            form.basic_salary,
+          allowances:
+            form.allowances || "0",
+          deductions:
+            form.deductions || "0",
+          payment_status:
+            form.payment_status,
+          paid_at:
+            form.payment_status ===
+            "paid"
+              ? new Date(
+                  form.paid_at,
+                ).toISOString()
+              : null,
+        }
 
       if (editingId !== null) {
-        const updated =
-          await patchPayroll(
-            editingId,
-            payload,
-          )
+        await patchPayroll(
+          editingId,
+          payload,
+        )
 
-        setRecords(
-          (current) =>
-            current.map(
-              (record) =>
-                record.id === editingId
-                  ? updated
-                  : record,
-            ),
+        await loadPayroll(
+          currentPage,
         )
 
         setSuccess(
           "Payroll record updated successfully.",
         )
       } else {
-        const created =
-          await createPayroll(payload)
-
-        setRecords(
-          (current) => [
-            created,
-            ...current,
-          ],
+        await createPayroll(
+          payload,
         )
+
+        setTotalRecords(
+          (current) =>
+            current + 1,
+        )
+
+        if (currentPage !== 1) {
+          setCurrentPage(1)
+        } else {
+          await loadPayroll(1)
+        }
 
         setSuccess(
           "Payroll record created successfully.",
@@ -315,13 +376,35 @@ function PayrollPage() {
 
       await deletePayroll(id)
 
-      setRecords(
-        (current) =>
-          current.filter(
-            (record) =>
-              record.id !== id,
+      const nextTotalRecords =
+        Math.max(0, totalRecords - 1)
+
+      const nextTotalPages =
+        Math.max(
+          1,
+          Math.ceil(
+            nextTotalRecords / pageSize,
           ),
+        )
+
+      const nextPage =
+        currentPage > nextTotalPages
+          ? nextTotalPages
+          : currentPage
+
+      setTotalRecords(
+        nextTotalRecords,
       )
+
+      if (
+        nextPage !== currentPage
+      ) {
+        setCurrentPage(nextPage)
+      } else {
+        await loadPayroll(
+          nextPage,
+        )
+      }
 
       setSuccess(
         "Payroll record deleted successfully.",
@@ -338,9 +421,12 @@ function PayrollPage() {
   const formatCurrency = (
     value: string,
   ) => {
-    const amount = Number(value)
+    const amount =
+      Number(value)
 
-    if (!Number.isFinite(amount)) {
+    if (
+      !Number.isFinite(amount)
+    ) {
       return value
     }
 
@@ -372,9 +458,14 @@ function PayrollPage() {
       return "-"
     }
 
-    const date = new Date(value)
+    const date =
+      new Date(value)
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+      Number.isNaN(
+        date.getTime(),
+      )
+    ) {
       return value
     }
 
@@ -394,11 +485,19 @@ function PayrollPage() {
       return "-"
     }
 
-    const date = new Date(
-      `${value.slice(0, 7)}-01T00:00:00`,
-    )
+    const date =
+      new Date(
+        `${value.slice(
+          0,
+          7,
+        )}-01T00:00:00`,
+      )
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+      Number.isNaN(
+        date.getTime(),
+      )
+    ) {
       return value
     }
 
@@ -411,54 +510,58 @@ function PayrollPage() {
     )
   }
 
-  const filteredRecords = records
+  const statistics =
+    useMemo(() => {
+      const paidRecords =
+        records.filter(
+          (record) =>
+            record.payment_status ===
+            "paid",
+        )
 
-  const statistics = useMemo(() => {
-    const paidRecords =
-      records.filter(
-        (record) =>
-          record.payment_status ===
-          "paid",
-      )
+      const pendingRecords =
+        records.filter(
+          (record) =>
+            record.payment_status ===
+            "pending",
+        )
 
-    const pendingRecords =
-      records.filter(
-        (record) =>
-          record.payment_status ===
-          "pending",
-      )
+      const totalNetSalary =
+        records.reduce(
+          (total, record) =>
+            total +
+            Number(
+              record.net_salary || 0,
+            ),
+          0,
+        )
 
-    const totalNetSalary =
-      records.reduce(
-        (total, record) =>
-          total +
-          Number(record.net_salary || 0),
-        0,
-      )
+      const paidNetSalary =
+        paidRecords.reduce(
+          (total, record) =>
+            total +
+            Number(
+              record.net_salary || 0,
+            ),
+          0,
+        )
 
-    const paidNetSalary =
-      paidRecords.reduce(
-        (total, record) =>
-          total +
-          Number(record.net_salary || 0),
-        0,
-      )
-
-    return {
-      total: records.length,
-      paid: paidRecords.length,
-      pending: pendingRecords.length,
-      totalNetSalary,
-      paidNetSalary,
-    }
-  }, [records])
+      return {
+        paid: paidRecords.length,
+        pending:
+          pendingRecords.length,
+        totalNetSalary,
+        paidNetSalary,
+      }
+    }, [records])
 
   return (
     <main
       style={{
         minHeight: "100vh",
         padding: "32px",
-        backgroundColor: "#f5f7fa",
+        backgroundColor:
+          "#f5f7fa",
         fontFamily:
           "Inter, Arial, sans-serif",
         boxSizing: "border-box",
@@ -508,7 +611,9 @@ function PayrollPage() {
 
           <button
             type="button"
-            onClick={openCreateForm}
+            onClick={
+              openCreateForm
+            }
             style={{
               padding:
                 "11px 18px",
@@ -600,7 +705,7 @@ function PayrollPage() {
                 color: "#111827",
               }}
             >
-              {statistics.total}
+              {totalRecords}
             </strong>
           </div>
 
@@ -681,7 +786,7 @@ function PayrollPage() {
                 marginBottom: "7px",
               }}
             >
-              Total Net Salary
+              Current Page Net Salary
             </div>
 
             <strong
@@ -1324,11 +1429,20 @@ function PayrollPage() {
                   }}
                 >
                   Showing{" "}
-                  {
-                    filteredRecords.length
-                  }{" "}
+                  {totalRecords === 0
+                    ? 0
+                    : (currentPage -
+                        1) *
+                        pageSize +
+                      1}{" "}
+                  -{" "}
+                  {Math.min(
+                    currentPage *
+                      pageSize,
+                    totalRecords,
+                  )}{" "}
                   of{" "}
-                  {records.length}{" "}
+                  {totalRecords}{" "}
                   records
                 </p>
               </div>
@@ -1454,7 +1568,7 @@ function PayrollPage() {
             >
               Loading payroll...
             </div>
-          ) : filteredRecords.length ===
+          ) : records.length ===
             0 ? (
             <div
               style={{
@@ -1500,371 +1614,506 @@ function PayrollPage() {
               </p>
             </div>
           ) : (
-            <div
-              style={{
-                overflowX:
-                  "auto",
-              }}
-            >
-              <table
+            <>
+              <div
                 style={{
-                  width:
-                    "100%",
-                  borderCollapse:
-                    "collapse",
-                  minWidth:
-                    "1350px",
+                  overflowX:
+                    "auto",
                 }}
               >
-                <thead>
-                  <tr
-                    style={{
-                      backgroundColor:
-                        "#f9fafb",
-                    }}
-                  >
-                    {[
-                      "Employee",
-                      "Month",
-                      "Basic",
-                      "Allowances",
-                      "Deductions",
-                      "Gross",
-                      "Net Salary",
-                      "Status",
-                      "Paid At",
-                      "Actions",
-                    ].map(
-                      (heading) => (
-                        <th
-                          key={
-                            heading
-                          }
-                          style={{
-                            padding:
-                              "13px 16px",
-                            textAlign:
-                              [
-                                "Basic",
-                                "Allowances",
-                                "Deductions",
-                                "Gross",
-                                "Net Salary",
-                              ].includes(
-                                heading,
-                              )
-                                ? "right"
-                                : "left",
-                            color:
-                              "#4b5563",
-                            fontSize:
-                              "12px",
-                            fontWeight:
-                              700,
-                            textTransform:
-                              "uppercase",
-                            borderBottom:
-                              "1px solid #e5e7eb",
-                            whiteSpace:
-                              "nowrap",
-                          }}
-                        >
-                          {heading}
-                        </th>
-                      ),
-                    )}
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredRecords.map(
-                    (record) => (
-                      <tr
-                        key={
-                          record.id
-                        }
-                      >
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            color:
-                              "#111827",
-                          }}
-                        >
-                          <strong>
-                            {record.employee_name ||
-                              "-"}
-                          </strong>
-
-                          <div
+                <table
+                  style={{
+                    width:
+                      "100%",
+                    borderCollapse:
+                      "collapse",
+                    minWidth:
+                      "1350px",
+                  }}
+                >
+                  <thead>
+                    <tr
+                      style={{
+                        backgroundColor:
+                          "#f9fafb",
+                      }}
+                    >
+                      {[
+                        "Employee",
+                        "Month",
+                        "Basic",
+                        "Allowances",
+                        "Deductions",
+                        "Gross",
+                        "Net Salary",
+                        "Status",
+                        "Paid At",
+                        "Actions",
+                      ].map(
+                        (heading) => (
+                          <th
+                            key={
+                              heading
+                            }
                             style={{
-                              fontSize:
-                                "12px",
-                              color:
-                                "#6b7280",
-                              marginTop:
-                                "4px",
-                            }}
-                          >
-                            {record.employee_id ||
-                              `Employee #${record.employee}`}
-                          </div>
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            whiteSpace:
-                              "nowrap",
-                            color:
-                              "#374151",
-                          }}
-                        >
-                          {formatMonth(
-                            record.month,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            textAlign:
-                              "right",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            whiteSpace:
-                              "nowrap",
-                          }}
-                        >
-                          {formatCurrency(
-                            record.basic_salary,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            textAlign:
-                              "right",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            whiteSpace:
-                              "nowrap",
-                          }}
-                        >
-                          {formatCurrency(
-                            record.allowances,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            textAlign:
-                              "right",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            whiteSpace:
-                              "nowrap",
-                          }}
-                        >
-                          {formatCurrency(
-                            record.deductions,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            textAlign:
-                              "right",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            whiteSpace:
-                              "nowrap",
-                          }}
-                        >
-                          {formatCurrency(
-                            record.gross_salary,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            textAlign:
-                              "right",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            fontWeight:
-                              700,
-                            color:
-                              "#111827",
-                            whiteSpace:
-                              "nowrap",
-                          }}
-                        >
-                          {formatCurrency(
-                            record.net_salary,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                          }}
-                        >
-                          <span
-                            style={{
-                              display:
-                                "inline-block",
                               padding:
-                                "5px 9px",
-                              borderRadius:
-                                "999px",
-                              backgroundColor:
-                                record.payment_status ===
-                                "paid"
-                                  ? "#dcfce7"
-                                  : "#fef3c7",
+                                "13px 16px",
+                              textAlign:
+                                [
+                                  "Basic",
+                                  "Allowances",
+                                  "Deductions",
+                                  "Gross",
+                                  "Net Salary",
+                                ].includes(
+                                  heading,
+                                )
+                                  ? "right"
+                                  : "left",
                               color:
-                                record.payment_status ===
-                                "paid"
-                                  ? "#166534"
-                                  : "#92400e",
+                                "#4b5563",
                               fontSize:
                                 "12px",
                               fontWeight:
                                 700,
+                              textTransform:
+                                "uppercase",
+                              borderBottom:
+                                "1px solid #e5e7eb",
+                              whiteSpace:
+                                "nowrap",
                             }}
                           >
-                            {formatStatus(
-                              record.payment_status,
-                            )}
-                          </span>
-                        </td>
+                            {heading}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
 
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            whiteSpace:
-                              "nowrap",
-                            color:
-                              "#4b5563",
-                          }}
+                  <tbody>
+                    {records.map(
+                      (record) => (
+                        <tr
+                          key={
+                            record.id
+                          }
                         >
-                          {formatPaidAt(
-                            record.paid_at,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                          }}
-                        >
-                          <div
+                          <td
                             style={{
-                              display:
-                                "flex",
-                              gap:
-                                "8px",
+                              padding:
+                                "15px 16px",
+                              borderBottom:
+                                "1px solid #f3f4f6",
+                              color:
+                                "#111827",
                             }}
                           >
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openEditForm(
-                                  record,
-                                )
-                              }
-                              style={{
-                                padding:
-                                  "7px 12px",
-                                border:
-                                  "1px solid #2563eb",
-                                borderRadius:
-                                  "6px",
-                                backgroundColor:
-                                  "#ffffff",
-                                color:
-                                  "#2563eb",
-                                cursor:
-                                  "pointer",
-                                fontWeight:
-                                  600,
-                              }}
-                            >
-                              Edit
-                            </button>
+                            <strong>
+                              {record.employee_name ||
+                                "-"}
+                            </strong>
 
-                            <button
-                              type="button"
-                              disabled={
-                                deletingId ===
-                                record.id
-                              }
-                              onClick={() =>
-                                void handleDelete(
-                                  record.id,
-                                )
-                              }
+                            <div
                               style={{
-                                padding:
-                                  "7px 12px",
-                                border:
-                                  "none",
-                                borderRadius:
-                                  "6px",
-                                backgroundColor:
-                                  deletingId ===
-                                  record.id
-                                    ? "#fca5a5"
-                                    : "#dc2626",
+                                fontSize:
+                                  "12px",
                                 color:
-                                  "#ffffff",
-                                cursor:
-                                  deletingId ===
-                                  record.id
-                                    ? "not-allowed"
-                                    : "pointer",
-                                fontWeight:
-                                  600,
+                                  "#6b7280",
+                                marginTop:
+                                  "4px",
                               }}
                             >
-                              {deletingId ===
-                              record.id
-                                ? "Deleting..."
-                                : "Delete"}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ),
-                  )}
-                </tbody>
-              </table>
-            </div>
+                              {record.employee_id ||
+                                `Employee #${record.employee}`}
+                            </div>
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "15px 16px",
+                              borderBottom:
+                                "1px solid #f3f4f6",
+                              whiteSpace:
+                                "nowrap",
+                              color:
+                                "#374151",
+                            }}
+                          >
+                            {formatMonth(
+                              record.month,
+                            )}
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "15px 16px",
+                              textAlign:
+                                "right",
+                              borderBottom:
+                                "1px solid #f3f4f6",
+                              whiteSpace:
+                                "nowrap",
+                            }}
+                          >
+                            {formatCurrency(
+                              record.basic_salary,
+                            )}
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "15px 16px",
+                              textAlign:
+                                "right",
+                              borderBottom:
+                                "1px solid #f3f4f6",
+                              whiteSpace:
+                                "nowrap",
+                            }}
+                          >
+                            {formatCurrency(
+                              record.allowances,
+                            )}
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "15px 16px",
+                              textAlign:
+                                "right",
+                              borderBottom:
+                                "1px solid #f3f4f6",
+                              whiteSpace:
+                                "nowrap",
+                            }}
+                          >
+                            {formatCurrency(
+                              record.deductions,
+                            )}
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "15px 16px",
+                              textAlign:
+                                "right",
+                              borderBottom:
+                                "1px solid #f3f4f6",
+                              whiteSpace:
+                                "nowrap",
+                            }}
+                          >
+                            {formatCurrency(
+                              record.gross_salary,
+                            )}
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "15px 16px",
+                              textAlign:
+                                "right",
+                              borderBottom:
+                                "1px solid #f3f4f6",
+                              borderBottomColor:
+                                "#f3f4f6",
+                              fontWeight:
+                                700,
+                              color:
+                                "#111827",
+                              whiteSpace:
+                                "nowrap",
+                            }}
+                          >
+                            {formatCurrency(
+                              record.net_salary,
+                            )}
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "15px 16px",
+                              borderBottom:
+                                "1px solid #f3f4f6",
+                            }}
+                          >
+                            <span
+                              style={{
+                                display:
+                                  "inline-block",
+                                padding:
+                                  "5px 9px",
+                                borderRadius:
+                                  "999px",
+                                backgroundColor:
+                                  record.payment_status ===
+                                  "paid"
+                                    ? "#dcfce7"
+                                    : "#fef3c7",
+                                color:
+                                  record.payment_status ===
+                                  "paid"
+                                    ? "#166534"
+                                    : "#92400e",
+                                fontSize:
+                                  "12px",
+                                fontWeight:
+                                  700,
+                              }}
+                            >
+                              {formatStatus(
+                                record.payment_status,
+                              )}
+                            </span>
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "15px 16px",
+                              borderBottom:
+                                "1px solid #f3f4f6",
+                              whiteSpace:
+                                "nowrap",
+                              color:
+                                "#4b5563",
+                            }}
+                          >
+                            {formatPaidAt(
+                              record.paid_at,
+                            )}
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "15px 16px",
+                              borderBottom:
+                                "1px solid #f3f4f6",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display:
+                                  "flex",
+                                gap:
+                                  "8px",
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openEditForm(
+                                    record,
+                                  )
+                                }
+                                style={{
+                                  padding:
+                                    "7px 12px",
+                                  border:
+                                    "1px solid #2563eb",
+                                  borderRadius:
+                                    "6px",
+                                  backgroundColor:
+                                    "#ffffff",
+                                  color:
+                                    "#2563eb",
+                                  cursor:
+                                    "pointer",
+                                  fontWeight:
+                                    600,
+                                }}
+                              >
+                                Edit
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={
+                                  deletingId ===
+                                  record.id
+                                }
+                                onClick={() =>
+                                  void handleDelete(
+                                    record.id,
+                                  )
+                                }
+                                style={{
+                                  padding:
+                                    "7px 12px",
+                                  border:
+                                    "none",
+                                  borderRadius:
+                                    "6px",
+                                  backgroundColor:
+                                    deletingId ===
+                                    record.id
+                                      ? "#fca5a5"
+                                      : "#dc2626",
+                                  color:
+                                    "#ffffff",
+                                  cursor:
+                                    deletingId ===
+                                    record.id
+                                      ? "not-allowed"
+                                      : "pointer",
+                                  fontWeight:
+                                    600,
+                                }}
+                              >
+                                {deletingId ===
+                                record.id
+                                  ? "Deleting..."
+                                  : "Delete"}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ),
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div
+                style={{
+                  display:
+                    "flex",
+                  alignItems:
+                    "center",
+                  justifyContent:
+                    "space-between",
+                  gap: "16px",
+                  padding:
+                    "16px 24px",
+                  borderTop:
+                    "1px solid #e5e7eb",
+                  flexWrap:
+                    "wrap",
+                }}
+              >
+                <span
+                  style={{
+                    color:
+                      "#6b7280",
+                    fontSize:
+                      "14px",
+                  }}
+                >
+                  Page{" "}
+                  {currentPage}{" "}
+                  of{" "}
+                  {totalPages}
+                </span>
+
+                <div
+                  style={{
+                    display:
+                      "flex",
+                    gap: "8px",
+                  }}
+                >
+                  <button
+                    type="button"
+                    disabled={
+                      isLoading ||
+                      currentPage <= 1
+                    }
+                    onClick={() =>
+                      setCurrentPage(
+                        (current) =>
+                          Math.max(
+                            1,
+                            current -
+                              1,
+                          ),
+                      )
+                    }
+                    style={{
+                      padding:
+                        "8px 14px",
+                      border:
+                        "1px solid #d1d5db",
+                      borderRadius:
+                        "7px",
+                      backgroundColor:
+                        currentPage <=
+                        1
+                          ? "#f3f4f6"
+                          : "#ffffff",
+                      color:
+                        currentPage <=
+                        1
+                          ? "#9ca3af"
+                          : "#374151",
+                      cursor:
+                        currentPage <=
+                        1
+                          ? "not-allowed"
+                          : "pointer",
+                      fontWeight:
+                        600,
+                    }}
+                  >
+                    Previous
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={
+                      isLoading ||
+                      currentPage >=
+                        totalPages
+                    }
+                    onClick={() =>
+                      setCurrentPage(
+                        (current) =>
+                          Math.min(
+                            totalPages,
+                            current +
+                              1,
+                          ),
+                      )
+                    }
+                    style={{
+                      padding:
+                        "8px 14px",
+                      border:
+                        "1px solid #d1d5db",
+                      borderRadius:
+                        "7px",
+                      backgroundColor:
+                        currentPage >=
+                        totalPages
+                          ? "#f3f4f6"
+                          : "#ffffff",
+                      color:
+                        currentPage >=
+                        totalPages
+                          ? "#9ca3af"
+                          : "#374151",
+                      cursor:
+                        currentPage >=
+                        totalPages
+                          ? "not-allowed"
+                          : "pointer",
+                      fontWeight:
+                        600,
+                    }}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </section>
       </section>
