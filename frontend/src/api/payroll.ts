@@ -31,15 +31,16 @@ export interface PayrollPayload {
   allowances: string
   deductions: string
   payment_status: "pending" | "paid"
+  paid_at?: string | null
 }
 
 export const getPayroll = async (): Promise<
-  PayrollListResponse | Payroll[]
+  PayrollListResponse
 > => {
   const response =
-    await apiClient.get<
-      PayrollListResponse | Payroll[]
-    >("/payroll/")
+    await apiClient.get<PayrollListResponse>(
+      "/payroll/",
+    )
 
   return response.data
 }
