@@ -1,3 +1,4 @@
+
 import {
   useEffect,
   useState,
@@ -13,26 +14,37 @@ import {
   type PayrollPayload,
 } from "../api/payroll"
 
-const emptyForm: PayrollPayload = {
+interface PayrollForm {
+  employee: number
+  month: string
+  basic_salary: string
+  allowances: string
+  deductions: string
+  payment_status: "pending" | "paid"
+  paid_at: string
+}
+
+const emptyForm: PayrollForm = {
   employee: 0,
   month: "",
   basic_salary: "",
   allowances: "0",
   deductions: "0",
   payment_status: "pending",
-  paid_at: null,
+  paid_at: "",
 }
 
 function PayrollPage() {
-  const [records, setRecords] = useState<Payroll[]>(
-    [],
-  )
+  const [records, setRecords] = useState<Payroll[]>([])
 
   const [isLoading, setIsLoading] =
     useState(true)
 
   const [isSubmitting, setIsSubmitting] =
     useState(false)
+
+  const [deletingId, setDeletingId] =
+    useState<number | null>(null)
 
   const [error, setError] =
     useState<string | null>(null)
@@ -47,10 +59,7 @@ function PayrollPage() {
     useState<number | null>(null)
 
   const [form, setForm] =
-    useState<PayrollPayload>(emptyForm)
-
-  const [deletingId, setDeletingId] =
-    useState<number | null>(null)
+    useState<PayrollForm>(emptyForm)
 
   const loadPayroll = async () => {
     try {
@@ -59,9 +68,11 @@ function PayrollPage() {
 
       const response = await getPayroll()
 
-      setRecords(
-        response.results ?? [],
-      )
+      if (Array.isArray(response)) {
+        setRecords(response)
+      } else {
+        setRecords(response.results ?? [])
+      }
     } catch {
       setError(
         "Unable to load payroll records.",
@@ -76,12 +87,36 @@ function PayrollPage() {
   }, [])
 
   const resetForm = () => {
-    setForm({
-      ...emptyForm,
-    })
-
+    setForm({ ...emptyForm })
     setEditingId(null)
     setShowForm(false)
+  }
+
+  const openCreateForm = () => {
+    setForm({ ...emptyForm })
+    setEditingId(null)
+    setShowForm(true)
+    setError(null)
+    setSuccess(null)
+  }
+
+  const openEditForm = (record: Payroll) => {
+    setForm({
+      employee: record.employee,
+      month: record.month.slice(0, 7),
+      basic_salary: record.basic_salary,
+      allowances: record.allowances,
+      deductions: record.deductions,
+      payment_status: record.payment_status,
+      paid_at: record.paid_at
+        ? record.paid_at.slice(0, 16)
+        : "",
+    })
+
+    setEditingId(record.id)
+    setShowForm(true)
+    setError(null)
+    setSuccess(null)
   }
 
   const handleSubmit = async (
@@ -93,23 +128,17 @@ function PayrollPage() {
     setSuccess(null)
 
     if (!form.employee || form.employee <= 0) {
-      setError(
-        "Employee ID is required.",
-      )
+      setError("Employee ID is required.")
       return
     }
 
     if (!form.month) {
-      setError(
-        "Payroll month is required.",
-      )
+      setError("Payroll month is required.")
       return
     }
 
     if (!form.basic_salary) {
-      setError(
-        "Basic salary is required.",
-      )
+      setError("Basic salary is required.")
       return
     }
 
@@ -162,27 +191,43 @@ function PayrollPage() {
       return
     }
 
+    if (
+      form.payment_status === "pending" &&
+      form.paid_at
+    ) {
+      setError(
+        "Paid date and time must be empty for pending payroll.",
+      )
+      return
+    }
+
     try {
       setIsSubmitting(true)
 
-      const apiMonth =
-        `${form.month}-01`
-
       const payload: PayrollPayload = {
         employee: form.employee,
-        month: apiMonth,
+
+        month: `${form.month}-01`,
+
         basic_salary:
           form.basic_salary,
+
         allowances:
           form.allowances || "0",
+
         deductions:
           form.deductions || "0",
+
         payment_status:
           form.payment_status,
-        paid_at:
-          form.payment_status === "paid"
-            ? form.paid_at
-            : null,
+
+        ...(form.payment_status === "paid"
+          ? {
+              paid_at: new Date(
+                form.paid_at,
+              ).toISOString(),
+            }
+          : {}),
       }
 
       if (editingId !== null) {
@@ -207,14 +252,12 @@ function PayrollPage() {
         )
       } else {
         const created =
-          await createPayroll(
-            payload,
-          )
+          await createPayroll(payload)
 
         setRecords(
           (current) => [
-            ...current,
             created,
+            ...current,
           ],
         )
 
@@ -332,8 +375,7 @@ function PayrollPage() {
         minHeight: "100vh",
         padding: "32px",
         backgroundColor: "#f5f7fa",
-        fontFamily:
-          "Arial, sans-serif",
+        fontFamily: "Arial, sans-serif",
         boxSizing: "border-box",
       }}
     >
@@ -347,8 +389,7 @@ function PayrollPage() {
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent:
-              "space-between",
+            justifyContent: "space-between",
             gap: "16px",
             marginBottom: "24px",
           }}
@@ -369,29 +410,18 @@ function PayrollPage() {
                 marginBottom: 0,
               }}
             >
-              Manage employee payroll
-              records
+              Manage employee payroll records
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() => {
-              setForm({
-                ...emptyForm,
-              })
-
-              setEditingId(null)
-              setShowForm(true)
-              setError(null)
-              setSuccess(null)
-            }}
+            onClick={openCreateForm}
             style={{
               padding: "10px 16px",
               border: "none",
               borderRadius: "6px",
-              backgroundColor:
-                "#2563eb",
+              backgroundColor: "#2563eb",
               color: "#ffffff",
               cursor: "pointer",
             }}
@@ -405,8 +435,7 @@ function PayrollPage() {
             style={{
               padding: "16px",
               marginBottom: "20px",
-              backgroundColor:
-                "#fee2e2",
+              backgroundColor: "#fee2e2",
               borderRadius: "8px",
               color: "#991b1b",
             }}
@@ -420,8 +449,7 @@ function PayrollPage() {
             style={{
               padding: "16px",
               marginBottom: "20px",
-              backgroundColor:
-                "#dcfce7",
+              backgroundColor: "#dcfce7",
               borderRadius: "8px",
               color: "#166534",
             }}
@@ -433,8 +461,7 @@ function PayrollPage() {
         {showForm && (
           <section
             style={{
-              backgroundColor:
-                "#ffffff",
+              backgroundColor: "#ffffff",
               padding: "24px",
               borderRadius: "10px",
               marginBottom: "24px",
@@ -471,21 +498,18 @@ function PayrollPage() {
                         ...current,
                         employee:
                           Number(
-                            event.target
-                              .value,
+                            event.target.value,
                           ),
                       }),
                     )
                   }
                   required
                   style={{
-                    display:
-                      "block",
+                    display: "block",
                     width: "100%",
                     marginTop: "6px",
                     padding: "10px",
-                    boxSizing:
-                      "border-box",
+                    boxSizing: "border-box",
                   }}
                 />
               </label>
@@ -501,20 +525,17 @@ function PayrollPage() {
                       (current) => ({
                         ...current,
                         month:
-                          event.target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
                   required
                   style={{
-                    display:
-                      "block",
+                    display: "block",
                     width: "100%",
                     marginTop: "6px",
                     padding: "10px",
-                    boxSizing:
-                      "border-box",
+                    boxSizing: "border-box",
                   }}
                 />
               </label>
@@ -534,20 +555,17 @@ function PayrollPage() {
                       (current) => ({
                         ...current,
                         basic_salary:
-                          event.target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
                   required
                   style={{
-                    display:
-                      "block",
+                    display: "block",
                     width: "100%",
                     marginTop: "6px",
                     padding: "10px",
-                    boxSizing:
-                      "border-box",
+                    boxSizing: "border-box",
                   }}
                 />
               </label>
@@ -567,19 +585,16 @@ function PayrollPage() {
                       (current) => ({
                         ...current,
                         allowances:
-                          event.target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
                   style={{
-                    display:
-                      "block",
+                    display: "block",
                     width: "100%",
                     marginTop: "6px",
                     padding: "10px",
-                    boxSizing:
-                      "border-box",
+                    boxSizing: "border-box",
                   }}
                 />
               </label>
@@ -599,19 +614,16 @@ function PayrollPage() {
                       (current) => ({
                         ...current,
                         deductions:
-                          event.target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
                   style={{
-                    display:
-                      "block",
+                    display: "block",
                     width: "100%",
                     marginTop: "6px",
                     padding: "10px",
-                    boxSizing:
-                      "border-box",
+                    boxSizing: "border-box",
                   }}
                 />
               </label>
@@ -623,34 +635,28 @@ function PayrollPage() {
                   value={
                     form.payment_status
                   }
-                  onChange={(event) => {
-                    const status =
-                      event.target
-                        .value as
-                        | "pending"
-                        | "paid"
-
+                  onChange={(event) =>
                     setForm(
                       (current) => ({
                         ...current,
                         payment_status:
-                          status,
+                          event.target
+                            .value as
+                            | "pending"
+                            | "paid",
                         paid_at:
-                          status ===
-                          "pending"
-                            ? null
+                          event.target
+                            .value === "pending"
+                            ? ""
                             : current.paid_at,
                       }),
                     )
-                  }}
+                  }
                   style={{
-                    display:
-                      "block",
+                    display: "block",
                     width: "100%",
                     marginTop: "6px",
                     padding: "10px",
-                    boxSizing:
-                      "border-box",
                   }}
                 >
                   <option value="pending">
@@ -672,37 +678,23 @@ function PayrollPage() {
                     type="datetime-local"
                     value={
                       form.paid_at
-                        ? form.paid_at.slice(
-                            0,
-                            16,
-                          )
-                        : ""
                     }
-                    onChange={(
-                      event,
-                    ) =>
+                    onChange={(event) =>
                       setForm(
                         (current) => ({
                           ...current,
                           paid_at:
                             event.target
-                              .value
-                              ? new Date(
-                                  event.target.value,
-                                ).toISOString()
-                              : null,
+                              .value,
                         }),
                       )
                     }
                     required
                     style={{
-                      display:
-                        "block",
+                      display: "block",
                       width: "100%",
-                      marginTop:
-                        "6px",
-                      padding:
-                        "10px",
+                      marginTop: "6px",
+                      padding: "10px",
                       boxSizing:
                         "border-box",
                     }}
@@ -718,27 +710,18 @@ function PayrollPage() {
               >
                 <button
                   type="submit"
-                  disabled={
-                    isSubmitting
-                  }
+                  disabled={isSubmitting}
                   style={{
-                    padding:
-                      "10px 18px",
+                    padding: "10px 18px",
                     border: "none",
-                    borderRadius:
-                      "6px",
+                    borderRadius: "6px",
                     backgroundColor:
                       "#2563eb",
-                    color:
-                      "#ffffff",
+                    color: "#ffffff",
                     cursor:
                       isSubmitting
                         ? "not-allowed"
                         : "pointer",
-                    opacity:
-                      isSubmitting
-                        ? 0.7
-                        : 1,
                   }}
                 >
                   {isSubmitting
@@ -751,20 +734,15 @@ function PayrollPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  disabled={
-                    isSubmitting
-                  }
+                  disabled={isSubmitting}
                   style={{
-                    padding:
-                      "10px 18px",
+                    padding: "10px 18px",
                     border:
                       "1px solid #d1d5db",
-                    borderRadius:
-                      "6px",
+                    borderRadius: "6px",
                     backgroundColor:
                       "#ffffff",
-                    cursor:
-                      "pointer",
+                    cursor: "pointer",
                   }}
                 >
                   Cancel
@@ -776,16 +754,14 @@ function PayrollPage() {
 
         <section
           style={{
-            backgroundColor:
-              "#ffffff",
+            backgroundColor: "#ffffff",
             borderRadius: "10px",
             overflow: "auto",
           }}
         >
           <div
             style={{
-              padding:
-                "20px 24px",
+              padding: "20px 24px",
               borderBottom:
                 "1px solid #e5e7eb",
             }}
@@ -807,147 +783,62 @@ function PayrollPage() {
             >
               Loading payroll...
             </p>
-          ) : records.length ===
-            0 ? (
+          ) : records.length === 0 ? (
             <p
               style={{
                 padding: "24px",
                 color: "#6b7280",
               }}
             >
-              No payroll records
-              found.
+              No payroll records found.
             </p>
           ) : (
             <table
               style={{
                 width: "100%",
-                borderCollapse:
-                  "collapse",
-                minWidth: "1350px",
+                borderCollapse: "collapse",
+                minWidth: "1300px",
               }}
             >
               <thead>
                 <tr>
-                  <th
-                    style={{
-                      padding: "14px",
-                      textAlign:
-                        "left",
-                      borderBottom:
-                        "1px solid #e5e7eb",
-                    }}
-                  >
-                    Employee
-                  </th>
-
-                  <th
-                    style={{
-                      padding: "14px",
-                      textAlign:
-                        "left",
-                      borderBottom:
-                        "1px solid #e5e7eb",
-                    }}
-                  >
-                    Month
-                  </th>
-
-                  <th
-                    style={{
-                      padding: "14px",
-                      textAlign:
-                        "right",
-                      borderBottom:
-                        "1px solid #e5e7eb",
-                    }}
-                  >
-                    Basic
-                  </th>
-
-                  <th
-                    style={{
-                      padding: "14px",
-                      textAlign:
-                        "right",
-                      borderBottom:
-                        "1px solid #e5e7eb",
-                    }}
-                  >
-                    Allowances
-                  </th>
-
-                  <th
-                    style={{
-                      padding: "14px",
-                      textAlign:
-                        "right",
-                      borderBottom:
-                        "1px solid #e5e7eb",
-                    }}
-                  >
-                    Deductions
-                  </th>
-
-                  <th
-                    style={{
-                      padding: "14px",
-                      textAlign:
-                        "right",
-                      borderBottom:
-                        "1px solid #e5e7eb",
-                    }}
-                  >
-                    Gross
-                  </th>
-
-                  <th
-                    style={{
-                      padding: "14px",
-                      textAlign:
-                        "right",
-                      borderBottom:
-                        "1px solid #e5e7eb",
-                    }}
-                  >
-                    Net Salary
-                  </th>
-
-                  <th
-                    style={{
-                      padding: "14px",
-                      textAlign:
-                        "left",
-                      borderBottom:
-                        "1px solid #e5e7eb",
-                    }}
-                  >
-                    Status
-                  </th>
-
-                  <th
-                    style={{
-                      padding: "14px",
-                      textAlign:
-                        "left",
-                      borderBottom:
-                        "1px solid #e5e7eb",
-                    }}
-                  >
-                    Paid At
-                  </th>
-
-                  <th
-                    style={{
-                      padding: "14px",
-                      textAlign:
-                        "left",
-                      borderBottom:
-                        "1px solid #e5e7eb",
-                    }}
-                  >
-                    Actions
-                  </th>
+                  {[
+                    "Employee",
+                    "Month",
+                    "Basic",
+                    "Allowances",
+                    "Deductions",
+                    "Gross",
+                    "Net Salary",
+                    "Status",
+                    "Paid At",
+                    "Actions",
+                  ].map((heading) => (
+                    <th
+                      key={heading}
+                      style={{
+                        padding: "14px",
+                        textAlign:
+                          [
+                            "Basic",
+                            "Allowances",
+                            "Deductions",
+                            "Gross",
+                            "Net Salary",
+                          ].includes(
+                            heading,
+                          )
+                            ? "right"
+                            : "left",
+                        borderBottom:
+                          "1px solid #e5e7eb",
+                        whiteSpace:
+                          "nowrap",
+                      }}
+                    >
+                      {heading}
+                    </th>
+                  ))}
                 </tr>
               </thead>
 
@@ -955,14 +846,11 @@ function PayrollPage() {
                 {records.map(
                   (record) => (
                     <tr
-                      key={
-                        record.id
-                      }
+                      key={record.id}
                     >
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "14px",
                           borderBottom:
                             "1px solid #f3f4f6",
                         }}
@@ -974,12 +862,9 @@ function PayrollPage() {
 
                         <div
                           style={{
-                            fontSize:
-                              "12px",
-                            color:
-                              "#6b7280",
-                            marginTop:
-                              "4px",
+                            fontSize: "12px",
+                            color: "#6b7280",
+                            marginTop: "4px",
                           }}
                         >
                           {record.employee_id ||
@@ -989,10 +874,11 @@ function PayrollPage() {
 
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "14px",
                           borderBottom:
                             "1px solid #f3f4f6",
+                          whiteSpace:
+                            "nowrap",
                         }}
                       >
                         {record.month}
@@ -1000,10 +886,8 @@ function PayrollPage() {
 
                       <td
                         style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "right",
+                          padding: "14px",
+                          textAlign: "right",
                           borderBottom:
                             "1px solid #f3f4f6",
                         }}
@@ -1015,10 +899,8 @@ function PayrollPage() {
 
                       <td
                         style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "right",
+                          padding: "14px",
+                          textAlign: "right",
                           borderBottom:
                             "1px solid #f3f4f6",
                         }}
@@ -1030,10 +912,8 @@ function PayrollPage() {
 
                       <td
                         style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "right",
+                          padding: "14px",
+                          textAlign: "right",
                           borderBottom:
                             "1px solid #f3f4f6",
                         }}
@@ -1045,10 +925,8 @@ function PayrollPage() {
 
                       <td
                         style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "right",
+                          padding: "14px",
+                          textAlign: "right",
                           borderBottom:
                             "1px solid #f3f4f6",
                         }}
@@ -1060,14 +938,11 @@ function PayrollPage() {
 
                       <td
                         style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "right",
+                          padding: "14px",
+                          textAlign: "right",
                           borderBottom:
                             "1px solid #f3f4f6",
-                          fontWeight:
-                            "bold",
+                          fontWeight: "bold",
                         }}
                       >
                         {formatCurrency(
@@ -1077,8 +952,7 @@ function PayrollPage() {
 
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "14px",
                           borderBottom:
                             "1px solid #f3f4f6",
                         }}
@@ -1090,8 +964,7 @@ function PayrollPage() {
 
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "14px",
                           borderBottom:
                             "1px solid #f3f4f6",
                           whiteSpace:
@@ -1105,58 +978,24 @@ function PayrollPage() {
 
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "14px",
                           borderBottom:
                             "1px solid #f3f4f6",
                         }}
                       >
                         <div
                           style={{
-                            display:
-                              "flex",
+                            display: "flex",
                             gap: "8px",
                           }}
                         >
                           <button
                             type="button"
-                            onClick={() => {
-                              setForm({
-                                employee:
-                                  record.employee,
-                                month:
-                                  record.month.slice(
-                                    0,
-                                    7,
-                                  ),
-                                basic_salary:
-                                  record.basic_salary,
-                                allowances:
-                                  record.allowances,
-                                deductions:
-                                  record.deductions,
-                                payment_status:
-                                  record.payment_status,
-                                paid_at:
-                                  record.paid_at,
-                              })
-
-                              setEditingId(
-                                record.id,
+                            onClick={() =>
+                              openEditForm(
+                                record,
                               )
-
-                              setShowForm(
-                                true,
-                              )
-
-                              setError(
-                                null,
-                              )
-
-                              setSuccess(
-                                null,
-                              )
-                            }}
+                            }
                             style={{
                               padding:
                                 "7px 12px",
@@ -1189,8 +1028,7 @@ function PayrollPage() {
                             style={{
                               padding:
                                 "7px 12px",
-                              border:
-                                "none",
+                              border: "none",
                               borderRadius:
                                 "6px",
                               backgroundColor:
@@ -1202,11 +1040,6 @@ function PayrollPage() {
                                 record.id
                                   ? "not-allowed"
                                   : "pointer",
-                              opacity:
-                                deletingId ===
-                                record.id
-                                  ? 0.7
-                                  : 1,
                             }}
                           >
                             {deletingId ===
