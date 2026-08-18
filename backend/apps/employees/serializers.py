@@ -6,6 +6,18 @@ from .models import Employee
 class EmployeeSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
 
+    user_name = serializers.SerializerMethodField()
+    user_username = serializers.SerializerMethodField()
+    user_email = serializers.SerializerMethodField()
+
+    department_name = serializers.SerializerMethodField()
+    designation_name = serializers.SerializerMethodField()
+    manager_name = serializers.SerializerMethodField()
+    manager_employee_id = serializers.SerializerMethodField()
+
+    employment_type_label = serializers.SerializerMethodField()
+    employment_status_label = serializers.SerializerMethodField()
+
     class Meta:
         model = Employee
 
@@ -13,13 +25,22 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "full_name",
+            "user_name",
+            "user_username",
+            "user_email",
             "employee_id",
             "department",
+            "department_name",
             "designation",
+            "designation_name",
             "joining_date",
             "employment_type",
+            "employment_type_label",
             "employment_status",
+            "employment_status_label",
             "manager",
+            "manager_name",
+            "manager_employee_id",
             "date_of_birth",
             "address",
             "emergency_contact",
@@ -30,12 +51,54 @@ class EmployeeSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "full_name",
+            "user_name",
+            "user_username",
+            "user_email",
+            "department_name",
+            "designation_name",
+            "manager_name",
+            "manager_employee_id",
+            "employment_type_label",
+            "employment_status_label",
             "created_at",
             "updated_at",
         ]
 
     def get_full_name(self, obj):
         return obj.user.get_full_name()
+
+    def get_user_name(self, obj):
+        return obj.user.get_full_name()
+
+    def get_user_username(self, obj):
+        return obj.user.username
+
+    def get_user_email(self, obj):
+        return obj.user.email
+
+    def get_department_name(self, obj):
+        return obj.department.name if obj.department else None
+
+    def get_designation_name(self, obj):
+        return obj.designation.name if obj.designation else None
+
+    def get_manager_name(self, obj):
+        if not obj.manager:
+            return None
+
+        return obj.manager.user.get_full_name()
+
+    def get_manager_employee_id(self, obj):
+        if not obj.manager:
+            return None
+
+        return obj.manager.employee_id
+
+    def get_employment_type_label(self, obj):
+        return obj.get_employment_type_display()
+
+    def get_employment_status_label(self, obj):
+        return obj.get_employment_status_display()
 
     def validate_employee_id(self, value):
         """
@@ -84,17 +147,29 @@ class EmployeeSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         department = attrs.get(
             "department",
-            getattr(self.instance, "department", None),
+            getattr(
+                self.instance,
+                "department",
+                None,
+            ),
         )
 
         designation = attrs.get(
             "designation",
-            getattr(self.instance, "designation", None),
+            getattr(
+                self.instance,
+                "designation",
+                None,
+            ),
         )
 
         manager = attrs.get(
             "manager",
-            getattr(self.instance, "manager", None),
+            getattr(
+                self.instance,
+                "manager",
+                None,
+            ),
         )
 
         employment_status = attrs.get(
@@ -154,7 +229,12 @@ class EmployeeSerializer(serializers.ModelSerializer):
                 Employee.EmploymentStatus.TERMINATED,
             }
             and manager is not None
-            and manager.pk == getattr(self.instance, "manager_id", None)
+            and manager.pk
+            == getattr(
+                self.instance,
+                "manager_id",
+                None,
+            )
         ):
             raise serializers.ValidationError(
                 {

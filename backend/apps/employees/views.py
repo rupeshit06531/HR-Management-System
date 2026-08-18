@@ -39,6 +39,8 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         "id",
         "employee_id",
         "joining_date",
+        "created_at",
+        "updated_at",
     ]
 
     ordering = [
@@ -80,14 +82,22 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         """
         Scope employee visibility according to the
         authenticated user's HRMS role.
+
+        select_related() keeps employee list/detail
+        responses efficient when serializer accesses
+        user, department, designation and manager data.
         """
 
-        queryset = Employee.objects.select_related(
-            "user",
-            "department",
-            "designation",
-            "manager",
-        ).all()
+        queryset = (
+            Employee.objects.select_related(
+                "user",
+                "department",
+                "designation",
+                "manager",
+                "manager__user",
+            )
+            .all()
+        )
 
         user = self.request.user
 

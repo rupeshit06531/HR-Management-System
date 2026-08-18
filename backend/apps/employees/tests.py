@@ -685,3 +685,91 @@ class EmployeeAPITestCase(APITestCase):
             "manager",
             response.data,
         )
+
+    def test_employee_response_contains_enterprise_profile_fields(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(
+            reverse(
+                "employee-detail",
+                kwargs={"pk": self.employee.id},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["full_name"],
+            "Test Employee",
+        )
+
+        self.assertEqual(
+            response.data["user_name"],
+            "Test Employee",
+        )
+
+        self.assertEqual(
+            response.data["user_username"],
+            "employee_worker",
+        )
+
+        self.assertEqual(
+            response.data["user_email"],
+            "employee_worker@test.com",
+        )
+
+        self.assertEqual(
+            response.data["department_name"],
+            "Engineering",
+        )
+
+        self.assertEqual(
+            response.data["designation_name"],
+            "Software Engineer",
+        )
+
+        self.assertEqual(
+            response.data["employment_type_label"],
+            "Full Time",
+        )
+
+        self.assertEqual(
+            response.data["employment_status_label"],
+            "Active",
+        )
+
+        self.assertEqual(
+            response.data["manager_name"],
+            "Employee Manager",
+        )
+
+        self.assertEqual(
+            response.data["manager_employee_id"],
+            "EMP-MGR-001",
+        )
+
+    def test_employee_without_manager_returns_null_manager_fields(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(
+            reverse(
+                "employee-detail",
+                kwargs={"pk": self.other_employee.id},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertIsNone(
+            response.data["manager_name"],
+        )
+
+        self.assertIsNone(
+            response.data["manager_employee_id"],
+        )
