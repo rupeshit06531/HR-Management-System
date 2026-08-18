@@ -545,3 +545,186 @@ class DepartmentAPITestCase(APITestCase):
             response.status_code,
             status.HTTP_401_UNAUTHORIZED,
         )
+
+    def test_department_filter_by_active_status(self):
+        Department.objects.create(
+            name="Inactive Department",
+            description="Inactive department",
+            is_active=False,
+        )
+
+        response = self.client.get(
+            "/api/departments/",
+            {"is_active": "false"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["name"],
+            "Inactive Department",
+        )
+
+    def test_department_search_by_name(self):
+        Department.objects.create(
+            name="Human Resources",
+            description="HR department",
+        )
+
+        response = self.client.get(
+            "/api/departments/",
+            {"search": "Human"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["name"],
+            "Human Resources",
+        )
+
+    def test_department_search_by_description(self):
+        Department.objects.create(
+            name="Finance",
+            description="Corporate finance department",
+        )
+
+        response = self.client.get(
+            "/api/departments/",
+            {"search": "Corporate"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["name"],
+            "Finance",
+        )
+
+    def test_department_ordering_by_name(self):
+        Department.objects.create(
+            name="Accounting",
+            description="Accounting department",
+        )
+
+        Department.objects.create(
+            name="Zoology",
+            description="Zoology department",
+        )
+
+        response = self.client.get(
+            "/api/departments/",
+            {"ordering": "name"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        names = [
+            item["name"]
+            for item in results
+        ]
+
+        self.assertEqual(
+            names,
+            [
+                "Accounting",
+                "Engineering",
+                "Zoology",
+            ],
+        )
+
+    def test_designation_filter_by_department(self):
+        other_department = Department.objects.create(
+            name="Finance",
+            description="Finance department",
+        )
+
+        Designation.objects.create(
+            name="Finance Manager",
+            department=other_department,
+        )
+
+        response = self.client.get(
+            "/api/designations/",
+            {"department": other_department.id},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["name"],
+            "Finance Manager",
+        )
+
+    def test_designation_search_by_name(self):
+        Designation.objects.create(
+            name="Senior Engineer",
+            department=self.department,
+        )
+
+        response = self.client.get(
+            "/api/designations/",
+            {"search": "Senior"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["name"],
+            "Senior Engineer",
+        )

@@ -1,4 +1,5 @@
-from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, viewsets
 
 from apps.accounts.permissions import (
     IsAdminOrSuperAdmin,
@@ -10,8 +11,36 @@ from .serializers import DepartmentSerializer, DesignationSerializer
 
 
 class DepartmentViewSet(viewsets.ModelViewSet):
-    queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
+
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+
+    filterset_fields = [
+        "is_active",
+    ]
+
+    search_fields = [
+        "name",
+        "description",
+    ]
+
+    ordering_fields = [
+        "id",
+        "name",
+        "created_at",
+        "updated_at",
+    ]
+
+    ordering = [
+        "name",
+    ]
+
+    def get_queryset(self):
+        return Department.objects.all()
 
     def get_permissions(self):
         """
@@ -46,11 +75,40 @@ class DepartmentViewSet(viewsets.ModelViewSet):
 
 
 class DesignationViewSet(viewsets.ModelViewSet):
-    queryset = Designation.objects.select_related(
-        "department",
-    ).all()
-
     serializer_class = DesignationSerializer
+
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+
+    filterset_fields = [
+        "department",
+        "is_active",
+    ]
+
+    search_fields = [
+        "name",
+        "department__name",
+    ]
+
+    ordering_fields = [
+        "id",
+        "name",
+        "created_at",
+        "updated_at",
+        "department__name",
+    ]
+
+    ordering = [
+        "name",
+    ]
+
+    def get_queryset(self):
+        return Designation.objects.select_related(
+            "department",
+        ).all()
 
     def get_permissions(self):
         """
