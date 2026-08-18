@@ -24,6 +24,12 @@ import {
   type DesignationListResponse,
 } from "../api/departments"
 
+import {
+  getUsers,
+  type AuthUser,
+  type UserListResponse,
+} from "../api/accounts"
+
 const emptyForm: EmployeePayload = {
   user: 0,
   employee_id: "",
@@ -61,6 +67,9 @@ function Employees() {
 
   const [designations, setDesignations] =
     useState<Designation[]>([])
+
+  const [users, setUsers] =
+    useState<AuthUser[]>([])
 
   const [isLoading, setIsLoading] =
     useState(true)
@@ -136,6 +145,22 @@ function Employees() {
     }
   }
 
+  const loadUsers = async () => {
+    const response =
+      await getUsers()
+
+    if (Array.isArray(response)) {
+      setUsers(response)
+    } else {
+      const paginated =
+        response as UserListResponse
+
+      setUsers(
+        paginated.results ?? [],
+      )
+    }
+  }
+
   const loadData = async () => {
     try {
       setIsLoading(true)
@@ -145,6 +170,7 @@ function Employees() {
         loadEmployees(),
         loadDepartments(),
         loadDesignations(),
+        loadUsers(),
       ])
     } catch {
       setError(
@@ -238,7 +264,7 @@ function Employees() {
 
     if (!form.user) {
       setError(
-        "User ID is required.",
+        "User is required.",
       )
       return
     }
@@ -625,13 +651,11 @@ function Employees() {
               }}
             >
               <label>
-                User ID
+                User
 
-                <input
-                  type="number"
+                <select
                   value={
-                    form.user ||
-                    ""
+                    form.user || ""
                   }
                   onChange={(
                     event,
@@ -663,7 +687,41 @@ function Employees() {
                     boxSizing:
                       "border-box",
                   }}
-                />
+                >
+                  <option value="">
+                    Select user
+                  </option>
+
+                  {users
+                    .filter(
+                      (user) =>
+                        user.is_active &&
+                        (
+                          editingId !==
+                            null ||
+                          !employees.some(
+                            (employee) =>
+                              employee.user ===
+                              user.id,
+                          )
+                        ),
+                    )
+                    .map(
+                      (user) => (
+                        <option
+                          key={user.id}
+                          value={user.id}
+                        >
+                          {user.first_name ||
+                          user.last_name
+                            ? `${user.first_name} ${user.last_name}`.trim()
+                            : user.username}
+                          {" — "}
+                          {user.username}
+                        </option>
+                      ),
+                    )}
+                </select>
               </label>
 
               <label>
