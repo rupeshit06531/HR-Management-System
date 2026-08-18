@@ -827,3 +827,128 @@ class LeaveAPITestCase(APITestCase):
             "start_date",
             response.data,
         )
+
+    def test_approved_leave_blocks_overlapping_leave(self):
+        self.authenticate(self.hr_user)
+
+        self.create_leave(
+            self.employee,
+            start_date="2027-03-01",
+            end_date="2027-03-05",
+            status_value="approved",
+            reason="Approved leave",
+        )
+
+        payload = {
+            "employee": self.employee.id,
+            "leave_type": "casual",
+            "start_date": "2027-03-04",
+            "end_date": "2027-03-08",
+            "reason": "Overlapping approved leave",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "start_date",
+            response.data,
+        )
+
+    def test_leave_reason_is_trimmed(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "employee": self.employee.id,
+            "leave_type": "casual",
+            "start_date": "2027-03-10",
+            "end_date": "2027-03-11",
+            "reason": "  Family function  ",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        leave = Leave.objects.get(
+            employee=self.employee,
+            start_date=date(2027, 3, 10),
+        )
+
+        self.assertEqual(
+            leave.reason,
+            "Family function",
+        )
+
+    def test_empty_leave_reason_is_rejected(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "employee": self.employee.id,
+            "leave_type": "casual",
+            "start_date": "2027-03-15",
+            "end_date": "2027-03-16",
+            "reason": "   ",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "reason",
+            response.data,
+        )
+
+    def test_manager_can_view_own_leave(self):
+        self.authenticate(self.manager_user)
+
+        Leave.objects.create(
+            employee=self.manager_employee,
+            leave_type="casual",
+            start_date=date(2027, 3, 20),
+            end_date=date(2027, 3, 21),
+            reason="Manager own leave",
+            status="pending",
+        )
+
+        response = self.client.get(
+            self.url,
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["count"],
+            1,
+        )
+
+        self.assertEqual(
+            response.data["results"][0]["employee"],
+            self.manager_employee.id,
+        )
