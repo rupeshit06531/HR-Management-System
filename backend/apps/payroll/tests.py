@@ -1342,3 +1342,131 @@ class PayrollAPITestCase(APITestCase):
             results[1]["id"],
             first_payroll.id,
         )
+
+    def test_hr_can_read_payroll(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+    def test_hr_cannot_create_payroll(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.post(
+            self.url,
+            {
+                "employee": self.employee.id,
+                "month": "2030-03-01",
+                "basic_salary": "50000.00",
+                "allowances": "5000.00",
+                "deductions": "2000.00",
+                "payment_status": Payroll.PaymentStatus.PENDING,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertFalse(
+            Payroll.objects.filter(
+                employee=self.employee,
+                month=date(2030, 3, 1),
+            ).exists()
+        )
+
+    def test_hr_cannot_update_payroll(self):
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2030, 4, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.patch(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+            {
+                "basic_salary": "60000.00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        payroll.refresh_from_db()
+
+        self.assertEqual(
+            payroll.basic_salary,
+            Decimal("50000.00"),
+        )
+
+    def test_hr_cannot_delete_payroll(self):
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2030, 5, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.delete(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Payroll.objects.filter(
+                pk=payroll.id,
+            ).exists()
+        )
+
+    def test_unauthenticated_user_cannot_read_payroll(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_unauthenticated_user_cannot_create_payroll(self):
+        response = self.client.post(
+            self.url,
+            {
+                "employee": self.employee.id,
+                "month": "2030-06-01",
+                "basic_salary": "50000.00",
+                "allowances": "5000.00",
+                "deductions": "2000.00",
+                "payment_status": Payroll.PaymentStatus.PENDING,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
