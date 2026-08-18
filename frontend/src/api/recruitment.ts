@@ -16,6 +16,10 @@ export interface Candidate {
   status: string
   interview_notes: string
   hr_notes: string
+  experience_years: number
+  expected_salary: string | null
+  offer_date: string | null
+  joining_date: string | null
   created_at: string
   updated_at: string
 }
@@ -39,6 +43,10 @@ export interface CandidatePayload {
   status: string
   interview_notes: string
   hr_notes: string
+  experience_years?: number
+  expected_salary?: string | null
+  offer_date?: string | null
+  joining_date?: string | null
 }
 
 export const getCandidates = async (): Promise<
@@ -116,6 +124,34 @@ export const createCandidate = async (
     data.hr_notes,
   )
 
+  if (data.experience_years !== undefined) {
+    formData.append(
+      "experience_years",
+      String(data.experience_years),
+    )
+  }
+
+  if (data.expected_salary !== undefined) {
+    formData.append(
+      "expected_salary",
+      data.expected_salary ?? "",
+    )
+  }
+
+  if (data.offer_date) {
+    formData.append(
+      "offer_date",
+      data.offer_date,
+    )
+  }
+
+  if (data.joining_date) {
+    formData.append(
+      "joining_date",
+      data.joining_date,
+    )
+  }
+
   const response =
     await apiClient.post<Candidate>(
       "/recruitment/",
@@ -189,6 +225,34 @@ export const updateCandidate = async (
     "hr_notes",
     data.hr_notes,
   )
+
+  if (data.experience_years !== undefined) {
+    formData.append(
+      "experience_years",
+      String(data.experience_years),
+    )
+  }
+
+  if (data.expected_salary !== undefined) {
+    formData.append(
+      "expected_salary",
+      data.expected_salary ?? "",
+    )
+  }
+
+  if (data.offer_date) {
+    formData.append(
+      "offer_date",
+      data.offer_date,
+    )
+  }
+
+  if (data.joining_date) {
+    formData.append(
+      "joining_date",
+      data.joining_date,
+    )
+  }
 
   const response =
     await apiClient.put<Candidate>(
