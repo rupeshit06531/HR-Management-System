@@ -1,4 +1,3 @@
-from django.db.models import Q
 from rest_framework import serializers
 
 from apps.accounts.models import User
@@ -117,11 +116,17 @@ class LeaveSerializer(serializers.ModelSerializer):
                 }
             )
 
+        # Only active leave requests should block a new request.
+        #
+        # Rejected requests must not prevent the employee
+        # from applying for the same dates again.
         if employee and start_date and end_date:
             queryset = Leave.objects.filter(
                 employee=employee,
                 start_date__lte=end_date,
                 end_date__gte=start_date,
+            ).exclude(
+                status="rejected",
             )
 
             if self.instance is not None:
@@ -134,8 +139,9 @@ class LeaveSerializer(serializers.ModelSerializer):
                     {
                         "start_date": (
                             "This leave period overlaps "
-                            "with an existing leave request "
-                            "for this employee."
+                            "with an existing pending or "
+                            "approved leave request for "
+                            "this employee."
                         )
                     }
                 )

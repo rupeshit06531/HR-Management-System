@@ -129,7 +129,7 @@ class LeaveViewSet(viewsets.ModelViewSet):
         if user.role == User.Role.MANAGER:
             try:
                 manager_employee = user.employee_profile
-            except Exception:
+            except Employee.DoesNotExist:
                 return queryset.none()
 
             return queryset.filter(
@@ -140,7 +140,7 @@ class LeaveViewSet(viewsets.ModelViewSet):
         if user.role == User.Role.EMPLOYEE:
             try:
                 employee = user.employee_profile
-            except Exception:
+            except Employee.DoesNotExist:
                 return queryset.none()
 
             return queryset.filter(
@@ -163,7 +163,7 @@ class LeaveViewSet(viewsets.ModelViewSet):
         if user.role == User.Role.EMPLOYEE:
             try:
                 employee = user.employee_profile
-            except Exception:
+            except Employee.DoesNotExist:
                 from rest_framework import serializers
 
                 raise serializers.ValidationError(

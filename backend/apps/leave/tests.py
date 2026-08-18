@@ -753,3 +753,77 @@ class LeaveAPITestCase(APITestCase):
                 reason="Database constraint test",
                 status="pending",
             )
+
+    def test_rejected_leave_does_not_block_new_leave(self):
+        self.authenticate(self.hr_user)
+
+        self.create_leave(
+            self.employee,
+            start_date="2027-01-01",
+            end_date="2027-01-05",
+            status_value="rejected",
+            reason="Previously rejected leave",
+        )
+
+        payload = {
+            "employee": self.employee.id,
+            "leave_type": "casual",
+            "start_date": "2027-01-01",
+            "end_date": "2027-01-05",
+            "reason": "New leave after rejection",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertTrue(
+            Leave.objects.filter(
+                employee=self.employee,
+                start_date=date(2027, 1, 1),
+                end_date=date(2027, 1, 5),
+                reason="New leave after rejection",
+            ).exists()
+        )
+
+    def test_pending_leave_still_blocks_overlapping_leave(self):
+        self.authenticate(self.hr_user)
+
+        self.create_leave(
+            self.employee,
+            start_date="2027-02-01",
+            end_date="2027-02-05",
+            status_value="pending",
+            reason="Pending leave",
+        )
+
+        payload = {
+            "employee": self.employee.id,
+            "leave_type": "sick",
+            "start_date": "2027-02-03",
+            "end_date": "2027-02-07",
+            "reason": "Overlapping pending leave",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "start_date",
+            response.data,
+        )
