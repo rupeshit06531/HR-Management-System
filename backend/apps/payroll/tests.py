@@ -1,4 +1,4 @@
-from datetime import date
+﻿from datetime import date
 from decimal import Decimal
 
 from django.utils import timezone
@@ -1214,7 +1214,7 @@ class PayrollAPITestCase(APITestCase):
             self.employee.id,
         )
 
-    def test_search_by_employee_id(self):
+    def test_search_by_employee_id_additional(self):
         self.authenticate(self.super_admin)
 
         Payroll.objects.create(
@@ -1245,7 +1245,7 @@ class PayrollAPITestCase(APITestCase):
             self.employee.id,
         )
 
-    def test_ordering_by_month(self):
+    def test_ordering_by_month_additional(self):
         self.authenticate(self.super_admin)
 
         Payroll.objects.create(
@@ -1353,7 +1353,7 @@ class PayrollAPITestCase(APITestCase):
             status.HTTP_200_OK,
         )
 
-    def test_hr_cannot_create_payroll(self):
+    def test_hr_cannot_create_payroll_additional(self):
         self.authenticate(self.hr_user)
 
         response = self.client.post(
@@ -1381,7 +1381,7 @@ class PayrollAPITestCase(APITestCase):
             ).exists()
         )
 
-    def test_hr_cannot_update_payroll(self):
+    def test_hr_cannot_update_payroll_additional(self):
         payroll = Payroll.objects.create(
             employee=self.employee,
             month=date(2030, 4, 1),
@@ -1415,7 +1415,7 @@ class PayrollAPITestCase(APITestCase):
             Decimal("50000.00"),
         )
 
-    def test_hr_cannot_delete_payroll(self):
+    def test_hr_cannot_delete_payroll_additional(self):
         payroll = Payroll.objects.create(
             employee=self.employee,
             month=date(2030, 5, 1),
@@ -1470,3 +1470,5 @@ class PayrollAPITestCase(APITestCase):
             response.status_code,
             status.HTTP_401_UNAUTHORIZED,
         )
+
+
