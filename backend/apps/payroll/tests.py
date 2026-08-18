@@ -612,3 +612,87 @@ class PayrollAPITestCase(APITestCase):
                 payment_status="pending",
                 paid_at=timezone.now(),
             )
+
+    def test_hr_cannot_create_payroll(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "employee": self.employee.id,
+            "month": "2028-03-01",
+            "basic_salary": "50000.00",
+            "allowances": "5000.00",
+            "deductions": "2000.00",
+            "payment_status": "pending",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_hr_cannot_update_payroll(self):
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2028, 4, 1),
+            basic_salary=Decimal("50000.00"),
+            allowances=Decimal("5000.00"),
+            deductions=Decimal("2000.00"),
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.patch(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+            {
+                "basic_salary": "60000.00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        payroll.refresh_from_db()
+
+        self.assertEqual(
+            payroll.basic_salary,
+            Decimal("50000.00"),
+        )
+
+    def test_hr_cannot_delete_payroll(self):
+        payroll = Payroll.objects.create(
+            employee=self.employee,
+            month=date(2028, 5, 1),
+            basic_salary=Decimal("50000.00"),
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.delete(
+            reverse(
+                "payroll-detail",
+                kwargs={"pk": payroll.id},
+            ),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Payroll.objects.filter(
+                pk=payroll.id,
+            ).exists()
+        )
