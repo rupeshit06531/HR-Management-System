@@ -114,6 +114,7 @@ class PayrollSerializer(serializers.ModelSerializer):
             ),
         )
 
+        # Existing payroll identity is immutable.
         if self.instance is not None:
             if (
                 "employee" in attrs
@@ -141,6 +142,33 @@ class PayrollSerializer(serializers.ModelSerializer):
                     }
                 )
 
+            # Financial values of paid payroll are immutable.
+            if (
+                self.instance.payment_status
+                == Payroll.PaymentStatus.PAID
+            ):
+                financial_fields = [
+                    "basic_salary",
+                    "allowances",
+                    "deductions",
+                ]
+
+                for field in financial_fields:
+                    if (
+                        field in attrs
+                        and attrs[field]
+                        != getattr(self.instance, field)
+                    ):
+                        raise serializers.ValidationError(
+                            {
+                                field: (
+                                    "Financial values of a paid "
+                                    "payroll cannot be changed."
+                                )
+                            }
+                        )
+
+        # Paid payroll cannot return to pending.
         if (
             self.instance is not None
             and self.instance.payment_status
@@ -157,6 +185,7 @@ class PayrollSerializer(serializers.ModelSerializer):
                 }
             )
 
+        # Payment date of paid payroll is immutable.
         if (
             self.instance is not None
             and self.instance.payment_status
@@ -173,6 +202,7 @@ class PayrollSerializer(serializers.ModelSerializer):
                 }
             )
 
+        # Salary values cannot be negative.
         if basic_salary is not None and basic_salary < 0:
             raise serializers.ValidationError(
                 {
@@ -200,6 +230,7 @@ class PayrollSerializer(serializers.ModelSerializer):
                 }
             )
 
+        # Net salary cannot be negative.
         if basic_salary is not None:
             gross_salary = (
                 basic_salary + allowances
@@ -219,6 +250,7 @@ class PayrollSerializer(serializers.ModelSerializer):
                     }
                 )
 
+        # Pending payroll must not have paid_at.
         if payment_status == Payroll.PaymentStatus.PENDING:
             if paid_at is not None:
                 raise serializers.ValidationError(
@@ -230,6 +262,7 @@ class PayrollSerializer(serializers.ModelSerializer):
                     }
                 )
 
+        # Paid payroll must have paid_at.
         elif payment_status == Payroll.PaymentStatus.PAID:
             if paid_at is None:
                 raise serializers.ValidationError(
@@ -241,6 +274,8 @@ class PayrollSerializer(serializers.ModelSerializer):
                     }
                 )
 
+        # Prevent duplicate payroll for the same
+        # employee and month.
         if employee is not None and month is not None:
             duplicate_queryset = Payroll.objects.filter(
                 employee=employee,
