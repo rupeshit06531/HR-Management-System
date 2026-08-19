@@ -25,9 +25,10 @@ interface AuthContextValue {
   logout: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(
-  undefined,
-)
+const AuthContext =
+  createContext<AuthContextValue | undefined>(
+    undefined,
+  )
 
 interface AuthProviderProps {
   children: ReactNode
@@ -36,16 +37,31 @@ interface AuthProviderProps {
 export function AuthProvider({
   children,
 }: AuthProviderProps) {
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [user, setUser] =
+    useState<AuthUser | null>(null)
 
-  const [accessToken, setAccessToken] = useState<
-    string | null
-  >(() => localStorage.getItem("access_token"))
+  const [accessToken, setAccessToken] =
+    useState<string | null>(() =>
+      localStorage.getItem("access_token"),
+    )
 
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] =
+    useState(true)
 
   useEffect(() => {
     let isMounted = true
+
+    const clearAuthentication = () => {
+      localStorage.removeItem("access_token")
+      localStorage.removeItem("refresh_token")
+
+      if (!isMounted) {
+        return
+      }
+
+      setAccessToken(null)
+      setUser(null)
+    }
 
     const initializeAuth = async () => {
       const storedAccessToken =
@@ -54,8 +70,13 @@ export function AuthProvider({
       const storedRefreshToken =
         localStorage.getItem("refresh_token")
 
-      if (!storedAccessToken && !storedRefreshToken) {
+      if (
+        !storedAccessToken &&
+        !storedRefreshToken
+      ) {
         if (isMounted) {
+          setAccessToken(null)
+          setUser(null)
           setIsLoading(false)
         }
 
@@ -65,27 +86,28 @@ export function AuthProvider({
       try {
         if (storedAccessToken) {
           try {
-            const currentUser = await getCurrentUser()
+            const currentUser =
+              await getCurrentUser()
 
             if (!isMounted) {
               return
             }
 
-            setUser(currentUser)
             setAccessToken(storedAccessToken)
+            setUser(currentUser)
+            setIsLoading(false)
 
             return
           } catch {
-            if (!storedRefreshToken) {
-              throw new Error(
-                "Stored access token is invalid and no refresh token is available.",
-              )
-            }
+            // Access token may have expired.
+            // Continue with refresh token flow.
           }
         }
 
         const latestRefreshToken =
-          localStorage.getItem("refresh_token")
+          localStorage.getItem(
+            "refresh_token",
+          )
 
         if (!latestRefreshToken) {
           throw new Error(
@@ -93,9 +115,10 @@ export function AuthProvider({
           )
         }
 
-        const response = await refreshToken({
-          refresh: latestRefreshToken,
-        })
+        const response =
+          await refreshToken({
+            refresh: latestRefreshToken,
+          })
 
         localStorage.setItem(
           "access_token",
@@ -115,7 +138,8 @@ export function AuthProvider({
 
         setAccessToken(response.access)
 
-        const currentUser = await getCurrentUser()
+        const currentUser =
+          await getCurrentUser()
 
         if (!isMounted) {
           return
@@ -123,13 +147,7 @@ export function AuthProvider({
 
         setUser(currentUser)
       } catch {
-        localStorage.removeItem("access_token")
-        localStorage.removeItem("refresh_token")
-
-        if (isMounted) {
-          setAccessToken(null)
-          setUser(null)
-        }
+        clearAuthentication()
       } finally {
         if (isMounted) {
           setIsLoading(false)
@@ -147,7 +165,8 @@ export function AuthProvider({
   const login = async (
     credentials: LoginRequest,
   ): Promise<void> => {
-    const response = await loginApi(credentials)
+    const response =
+      await loginApi(credentials)
 
     localStorage.setItem(
       "access_token",
@@ -165,7 +184,9 @@ export function AuthProvider({
 
   const logout = async (): Promise<void> => {
     const storedRefreshToken =
-      localStorage.getItem("refresh_token")
+      localStorage.getItem(
+        "refresh_token",
+      )
 
     try {
       if (storedRefreshToken) {
@@ -174,8 +195,13 @@ export function AuthProvider({
         })
       }
     } finally {
-      localStorage.removeItem("access_token")
-      localStorage.removeItem("refresh_token")
+      localStorage.removeItem(
+        "access_token",
+      )
+
+      localStorage.removeItem(
+        "refresh_token",
+      )
 
       setAccessToken(null)
       setUser(null)
@@ -186,9 +212,9 @@ export function AuthProvider({
     () => ({
       user,
       accessToken,
-      isAuthenticated: Boolean(
-        accessToken && user,
-      ),
+      isAuthenticated:
+        Boolean(accessToken) &&
+        Boolean(user),
       isLoading,
       login,
       logout,
@@ -208,7 +234,8 @@ export function AuthProvider({
 }
 
 export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext)
+  const context =
+    useContext(AuthContext)
 
   if (!context) {
     throw new Error(
