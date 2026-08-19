@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.db import IntegrityError
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -8,7 +9,6 @@ from apps.accounts.models import User
 from apps.departments.models import Department
 
 from .models import Candidate
-from django.db import IntegrityError
 
 
 class CandidateAPITestCase(APITestCase):
