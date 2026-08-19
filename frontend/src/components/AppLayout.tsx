@@ -53,6 +53,13 @@ const navigationItems = [
   },
 ]
 
+const roleLabels: Record<string, string> = {
+  SUPER_ADMIN: "Super Admin",
+  HR: "Human Resources",
+  MANAGER: "Manager",
+  EMPLOYEE: "Employee",
+}
+
 function AppLayout() {
   const navigate = useNavigate()
 
@@ -63,10 +70,21 @@ function AppLayout() {
 
   const handleLogout = async () => {
     await logout()
+
     navigate("/login", {
       replace: true,
     })
   }
+
+  const displayName =
+    user?.first_name?.trim() ||
+    user?.username ||
+    "User"
+
+  const displayRole =
+    roleLabels[user?.role ?? ""] ||
+    user?.role ||
+    "Employee"
 
   return (
     <div
@@ -76,13 +94,14 @@ function AppLayout() {
         background: "#f5f7fb",
         color: "#172033",
         fontFamily:
-          "Inter, Arial, Helvetica, sans-serif",
+          '"Inter", "Segoe UI", Arial, Helvetica, sans-serif',
       }}
     >
       <aside
         style={{
           width: "250px",
           minHeight: "100vh",
+          flexShrink: 0,
           background: "#111827",
           color: "#ffffff",
           padding: "24px 16px",
@@ -168,15 +187,17 @@ function AppLayout() {
       >
         <header
           style={{
-            height: "72px",
+            minHeight: "72px",
             background: "#ffffff",
             borderBottom:
               "1px solid #e5e7eb",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "0 28px",
+            gap: "20px",
+            padding: "14px 28px",
             boxSizing: "border-box",
+            flexWrap: "wrap",
           }}
         >
           <div>
@@ -184,6 +205,7 @@ function AppLayout() {
               style={{
                 fontSize: "18px",
                 fontWeight: 700,
+                color: "#111827",
               }}
             >
               Human Resources
@@ -216,11 +238,10 @@ function AppLayout() {
                 style={{
                   fontSize: "14px",
                   fontWeight: 700,
+                  color: "#111827",
                 }}
               >
-                {user?.first_name ||
-                  user?.username ||
-                  "User"}
+                {displayName}
               </div>
 
               <div
@@ -230,7 +251,7 @@ function AppLayout() {
                   color: "#6b7280",
                 }}
               >
-                {user?.role || "EMPLOYEE"}
+                {displayRole}
               </div>
             </div>
 
@@ -240,7 +261,8 @@ function AppLayout() {
                 void handleLogout()
               }}
               style={{
-                border: "1px solid #d1d5db",
+                border:
+                  "1px solid #d1d5db",
                 background: "#ffffff",
                 color: "#374151",
                 borderRadius: "7px",
@@ -258,6 +280,7 @@ function AppLayout() {
         <main
           style={{
             flex: 1,
+            width: "100%",
             padding: "28px",
             boxSizing: "border-box",
             overflowX: "auto",
