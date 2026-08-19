@@ -9,10 +9,15 @@ class HolidayAdmin(admin.ModelAdmin):
         "id",
         "name",
         "date",
-        "description",
+        "holiday_type",
+        "is_active",
+        "created_at",
+        "updated_at",
     )
 
     list_filter = (
+        "holiday_type",
+        "is_active",
         "date",
     )
 
@@ -23,4 +28,7 @@ class HolidayAdmin(admin.ModelAdmin):
 
     ordering = (
         "date",
+        "name",
     )
+
+    list_per_page = 25
