@@ -51,73 +51,126 @@ class CandidateSerializer(serializers.ModelSerializer):
         return f"{obj.first_name} {obj.last_name}".strip()
 
     def validate(self, attrs):
-        first_name = attrs.get(
+        first_name = self._get_value(
+            attrs,
             "first_name",
-            getattr(self.instance, "first_name", None),
+            None,
         )
 
-        last_name = attrs.get(
+        last_name = self._get_value(
+            attrs,
             "last_name",
-            getattr(self.instance, "last_name", ""),
+            "",
         )
 
-        email = attrs.get(
+        email = self._get_value(
+            attrs,
             "email",
-            getattr(self.instance, "email", None),
+            None,
         )
 
-        phone = attrs.get(
+        phone = self._get_value(
+            attrs,
             "phone",
-            getattr(self.instance, "phone", None),
+            None,
         )
 
-        job_title = attrs.get(
+        job_title = self._get_value(
+            attrs,
             "job_title",
-            getattr(self.instance, "job_title", None),
+            None,
         )
 
-        status_value = attrs.get(
+        status_value = self._get_value(
+            attrs,
             "status",
-            getattr(
-                self.instance,
-                "status",
-                Candidate.ApplicationStatus.APPLIED,
-            ),
+            Candidate.ApplicationStatus.APPLIED,
         )
 
-        interview_date = attrs.get(
+        interview_date = self._get_value(
+            attrs,
             "interview_date",
-            getattr(self.instance, "interview_date", None),
+            None,
         )
 
-        offer_date = attrs.get(
+        offer_date = self._get_value(
+            attrs,
             "offer_date",
-            getattr(self.instance, "offer_date", None),
+            None,
         )
 
-        joining_date = attrs.get(
+        joining_date = self._get_value(
+            attrs,
             "joining_date",
-            getattr(self.instance, "joining_date", None),
+            None,
         )
 
-        experience_years = attrs.get(
+        experience_years = self._get_value(
+            attrs,
             "experience_years",
-            getattr(
-                self.instance,
-                "experience_years",
-                0,
-            ),
+            0,
         )
 
-        expected_salary = attrs.get(
+        expected_salary = self._get_value(
+            attrs,
             "expected_salary",
-            getattr(
-                self.instance,
-                "expected_salary",
-                None,
-            ),
+            None,
         )
 
+        self._normalize_text_fields(
+            attrs=attrs,
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone=phone,
+            job_title=job_title,
+        )
+
+        self._validate_numeric_fields(
+            experience_years=experience_years,
+            expected_salary=expected_salary,
+        )
+
+        self._validate_interview_status(
+            status_value=status_value,
+            interview_date=interview_date,
+        )
+
+        self._validate_selected_status(
+            status_value=status_value,
+            offer_date=offer_date,
+            joining_date=joining_date,
+        )
+
+        self._validate_date_order(
+            offer_date=offer_date,
+            joining_date=joining_date,
+        )
+
+        return attrs
+
+    def _get_value(self, attrs, field_name, default):
+        if field_name in attrs:
+            return attrs[field_name]
+
+        if self.instance is not None:
+            return getattr(
+                self.instance,
+                field_name,
+                default,
+            )
+
+        return default
+
+    def _normalize_text_fields(
+        self,
+        attrs,
+        first_name,
+        last_name,
+        email,
+        phone,
+        job_title,
+    ):
         if first_name is not None:
             normalized_first_name = first_name.strip()
 
@@ -173,6 +226,11 @@ class CandidateSerializer(serializers.ModelSerializer):
 
             attrs["job_title"] = normalized_job_title
 
+    def _validate_numeric_fields(
+        self,
+        experience_years,
+        expected_salary,
+    ):
         if (
             experience_years is not None
             and experience_years < 0
@@ -197,6 +255,11 @@ class CandidateSerializer(serializers.ModelSerializer):
                 }
             )
 
+    def _validate_interview_status(
+        self,
+        status_value,
+        interview_date,
+    ):
         if (
             status_value
             == Candidate.ApplicationStatus.INTERVIEW
@@ -225,6 +288,12 @@ class CandidateSerializer(serializers.ModelSerializer):
                 }
             )
 
+    def _validate_selected_status(
+        self,
+        status_value,
+        offer_date,
+        joining_date,
+    ):
         if (
             status_value
             == Candidate.ApplicationStatus.SELECTED
@@ -281,6 +350,11 @@ class CandidateSerializer(serializers.ModelSerializer):
                 }
             )
 
+    def _validate_date_order(
+        self,
+        offer_date,
+        joining_date,
+    ):
         if (
             offer_date is not None
             and joining_date is not None
@@ -294,5 +368,3 @@ class CandidateSerializer(serializers.ModelSerializer):
                     )
                 }
             )
-
-        return attrs
