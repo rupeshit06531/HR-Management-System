@@ -1414,3 +1414,67 @@ class CandidateAPITestCase(APITestCase):
                 offer_date=date(2026, 8, 25),
                 joining_date=date(2026, 8, 20),
             )
+
+    def test_manager_cannot_list_candidates(self):
+        self.authenticate(self.manager_user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_employee_cannot_list_candidates(self):
+        self.authenticate(self.employee_user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_manager_cannot_create_candidate(self):
+        self.authenticate(self.manager_user)
+
+        response = self.client.post(
+            self.url,
+            {
+                "first_name": "Manager",
+                "last_name": "Candidate",
+                "email": "manager_candidate@test.com",
+                "phone": "9876543401",
+                "job_title": "Software Engineer",
+                "department": self.department.id,
+                "status": Candidate.ApplicationStatus.APPLIED,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+    def test_employee_cannot_create_candidate(self):
+        self.authenticate(self.employee_user)
+
+        response = self.client.post(
+            self.url,
+            {
+                "first_name": "Employee",
+                "last_name": "Candidate",
+                "email": "employee_candidate@test.com",
+                "phone": "9876543402",
+                "job_title": "Software Engineer",
+                "department": self.department.id,
+                "status": Candidate.ApplicationStatus.APPLIED,
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
