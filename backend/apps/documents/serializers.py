@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from rest_framework import serializers
 
 from .models import Document
@@ -83,6 +85,40 @@ class DocumentSerializer(serializers.ModelSerializer):
         if value.size > max_file_size:
             raise serializers.ValidationError(
                 "Document file cannot exceed 10 MB."
+            )
+
+        filename = Path(value.name).name
+
+        if filename != value.name:
+            raise serializers.ValidationError(
+                "Invalid document filename."
+            )
+
+        if not filename.strip():
+            raise serializers.ValidationError(
+                "Document filename cannot be empty."
+            )
+
+        if filename.startswith("."):
+            raise serializers.ValidationError(
+                "Hidden document files are not allowed."
+            )
+
+        allowed_extensions = {
+            ".pdf",
+            ".doc",
+            ".docx",
+            ".txt",
+            ".jpg",
+            ".jpeg",
+            ".png",
+        }
+
+        extension = Path(filename).suffix.lower()
+
+        if extension not in allowed_extensions:
+            raise serializers.ValidationError(
+                "Unsupported document file type."
             )
 
         return value
