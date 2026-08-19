@@ -1,7 +1,11 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, permissions, viewsets
+from rest_framework import filters, viewsets
 
 from apps.accounts.models import User
+from apps.accounts.permissions import (
+    IsAdminOrSuperAdmin,
+    IsDocumentViewer,
+)
 
 from .models import Document
 from .serializers import DocumentSerializer
@@ -46,38 +50,23 @@ class DocumentViewSet(viewsets.ModelViewSet):
     ]
 
     def get_permissions(self):
-        user = self.request.user
-
         if self.action in {
             "create",
             "update",
             "partial_update",
             "destroy",
         }:
-            allowed = (
-                user.is_authenticated
-                and user.role in {
-                    User.Role.HR,
-                    User.Role.SUPER_ADMIN,
-                }
-            )
+            permission_classes = [
+                IsAdminOrSuperAdmin,
+            ]
         else:
-            allowed = (
-                user.is_authenticated
-                and user.role in {
-                    User.Role.HR,
-                    User.Role.SUPER_ADMIN,
-                    User.Role.EMPLOYEE,
-                }
-            )
-
-        if not allowed:
-            return [
-                permissions.IsAdminUser(),
+            permission_classes = [
+                IsDocumentViewer,
             ]
 
         return [
-            permissions.IsAuthenticated(),
+            permission()
+            for permission in permission_classes
         ]
 
     def get_queryset(self):
