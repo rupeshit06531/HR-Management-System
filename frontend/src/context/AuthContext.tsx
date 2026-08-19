@@ -34,6 +34,48 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
+const ACCESS_TOKEN_KEY = "access_token"
+const REFRESH_TOKEN_KEY = "refresh_token"
+
+function getStoredAccessToken(): string | null {
+  return localStorage.getItem(
+    ACCESS_TOKEN_KEY,
+  )
+}
+
+function getStoredRefreshToken(): string | null {
+  return localStorage.getItem(
+    REFRESH_TOKEN_KEY,
+  )
+}
+
+function clearStoredTokens(): void {
+  localStorage.removeItem(
+    ACCESS_TOKEN_KEY,
+  )
+
+  localStorage.removeItem(
+    REFRESH_TOKEN_KEY,
+  )
+}
+
+function storeTokens(
+  accessToken: string,
+  refreshTokenValue?: string,
+): void {
+  localStorage.setItem(
+    ACCESS_TOKEN_KEY,
+    accessToken,
+  )
+
+  if (refreshTokenValue) {
+    localStorage.setItem(
+      REFRESH_TOKEN_KEY,
+      refreshTokenValue,
+    )
+  }
+}
+
 export function AuthProvider({
   children,
 }: AuthProviderProps) {
@@ -41,8 +83,8 @@ export function AuthProvider({
     useState<AuthUser | null>(null)
 
   const [accessToken, setAccessToken] =
-    useState<string | null>(() =>
-      localStorage.getItem("access_token"),
+    useState<string | null>(
+      getStoredAccessToken,
     )
 
   const [isLoading, setIsLoading] =
@@ -51,24 +93,12 @@ export function AuthProvider({
   useEffect(() => {
     let isMounted = true
 
-    const clearAuthentication = () => {
-      localStorage.removeItem("access_token")
-      localStorage.removeItem("refresh_token")
-
-      if (!isMounted) {
-        return
-      }
-
-      setAccessToken(null)
-      setUser(null)
-    }
-
     const initializeAuth = async () => {
       const storedAccessToken =
-        localStorage.getItem("access_token")
+        getStoredAccessToken()
 
       const storedRefreshToken =
-        localStorage.getItem("refresh_token")
+        getStoredRefreshToken()
 
       if (
         !storedAccessToken &&
@@ -93,21 +123,20 @@ export function AuthProvider({
               return
             }
 
-            setAccessToken(storedAccessToken)
+            setAccessToken(
+              storedAccessToken,
+            )
             setUser(currentUser)
-            setIsLoading(false)
 
             return
           } catch {
             // Access token may have expired.
-            // Continue with refresh token flow.
+            // Continue with refresh-token recovery.
           }
         }
 
         const latestRefreshToken =
-          localStorage.getItem(
-            "refresh_token",
-          )
+          getStoredRefreshToken()
 
         if (!latestRefreshToken) {
           throw new Error(
@@ -117,26 +146,22 @@ export function AuthProvider({
 
         const response =
           await refreshToken({
-            refresh: latestRefreshToken,
+            refresh:
+              latestRefreshToken,
           })
 
-        localStorage.setItem(
-          "access_token",
+        storeTokens(
           response.access,
+          response.refresh,
         )
-
-        if (response.refresh) {
-          localStorage.setItem(
-            "refresh_token",
-            response.refresh,
-          )
-        }
 
         if (!isMounted) {
           return
         }
 
-        setAccessToken(response.access)
+        setAccessToken(
+          response.access,
+        )
 
         const currentUser =
           await getCurrentUser()
@@ -147,7 +172,12 @@ export function AuthProvider({
 
         setUser(currentUser)
       } catch {
-        clearAuthentication()
+        clearStoredTokens()
+
+        if (isMounted) {
+          setAccessToken(null)
+          setUser(null)
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false)
@@ -168,66 +198,60 @@ export function AuthProvider({
     const response =
       await loginApi(credentials)
 
-    localStorage.setItem(
-      "access_token",
+    storeTokens(
       response.access,
-    )
-
-    localStorage.setItem(
-      "refresh_token",
       response.refresh,
     )
 
-    setAccessToken(response.access)
+    setAccessToken(
+      response.access,
+    )
     setUser(response.user)
   }
 
   const logout = async (): Promise<void> => {
     const storedRefreshToken =
-      localStorage.getItem(
-        "refresh_token",
-      )
+      getStoredRefreshToken()
 
     try {
       if (storedRefreshToken) {
         await logoutApi({
-          refresh: storedRefreshToken,
+          refresh:
+            storedRefreshToken,
         })
       }
     } finally {
-      localStorage.removeItem(
-        "access_token",
-      )
-
-      localStorage.removeItem(
-        "refresh_token",
-      )
+      clearStoredTokens()
 
       setAccessToken(null)
       setUser(null)
     }
   }
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
-      accessToken,
-      isAuthenticated:
-        Boolean(accessToken) &&
-        Boolean(user),
-      isLoading,
-      login,
-      logout,
-    }),
-    [
-      user,
-      accessToken,
-      isLoading,
-    ],
-  )
+  const value =
+    useMemo<AuthContextValue>(
+      () => ({
+        user,
+        accessToken,
+        isAuthenticated:
+          Boolean(
+            accessToken && user,
+          ),
+        isLoading,
+        login,
+        logout,
+      }),
+      [
+        user,
+        accessToken,
+        isLoading,
+      ],
+    )
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={value}
+    >
       {children}
     </AuthContext.Provider>
   )
