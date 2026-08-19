@@ -159,6 +159,24 @@ class IsManagerOrHROrSuperAdmin(RolePermission):
     }
 
 
+class IsDocumentViewer(RolePermission):
+    """
+    Allows HR, Super Admin and Employee users to view
+    employee documents.
+
+    DocumentViewSet is responsible for limiting
+    Employee users to their own documents.
+    """
+
+    message = "Document access is required."
+
+    allowed_roles = {
+        User.Role.EMPLOYEE,
+        User.Role.HR,
+        User.Role.SUPER_ADMIN,
+    }
+
+
 class IsSuperAdmin(RolePermission):
     """
     Allows access only to Super Admin users.
