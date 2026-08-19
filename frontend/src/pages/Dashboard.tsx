@@ -101,7 +101,10 @@ const roleLabels: Record<string, string> = {
 function Dashboard() {
   const navigate = useNavigate()
 
-  const { user, isLoading } = useAuth()
+  const {
+    user,
+    isLoading,
+  } = useAuth()
 
   if (isLoading) {
     return (
@@ -135,17 +138,10 @@ function Dashboard() {
     user.role
 
   const visibleModules =
-    moduleItems.filter((item) =>
-      item.roles.includes(user.role),
+    moduleItems.filter(
+      (item) =>
+        item.roles.includes(user.role),
     )
-
-  const initials =
-    `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`
-      .trim()
-      .toUpperCase() ||
-    user.username
-      .slice(0, 2)
-      .toUpperCase()
 
   return (
     <div
@@ -153,6 +149,7 @@ function Dashboard() {
         width: "100%",
         fontFamily:
           '"Inter", "Segoe UI", Arial, sans-serif',
+        color: "#0f172a",
       }}
     >
       <header
@@ -208,7 +205,6 @@ function Dashboard() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
             padding: "9px 12px",
             background: "#ffffff",
             border: "1px solid #e2e8f0",
@@ -217,22 +213,11 @@ function Dashboard() {
               "0 2px 8px rgba(15,23,42,0.04)",
           }}
         >
-          <div
-            style={{
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              background: "#22c55e",
-              boxShadow:
-                "0 0 0 4px rgba(34,197,94,0.10)",
-            }}
-          />
-
           <span
             style={{
-              color: "#475569",
+              color: "#16a34a",
               fontSize: "12px",
-              fontWeight: 600,
+              fontWeight: 700,
             }}
           >
             System operational
@@ -297,36 +282,34 @@ function Dashboard() {
               }}
             />
 
-            <div>
-              <p
-                style={{
-                  margin: 0,
-                  color: "#64748b",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.06em",
-                }}
-              >
-                {card.label}
-              </p>
+            <p
+              style={{
+                margin: 0,
+                color: "#64748b",
+                fontSize: "11px",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              {card.label}
+            </p>
 
-              <h3
-                style={{
-                  margin: "8px 0 0",
-                  color: "#0f172a",
-                  fontSize:
-                    card.label === "Email"
-                      ? "14px"
-                      : "18px",
-                  lineHeight: 1.3,
-                  fontWeight: 750,
-                  wordBreak: "break-word",
-                }}
-              >
-                {card.value}
-              </h3>
-            </div>
+            <h3
+              style={{
+                margin: "8px 0 0",
+                color: "#0f172a",
+                fontSize:
+                  card.label === "Email"
+                    ? "14px"
+                    : "18px",
+                lineHeight: 1.3,
+                fontWeight: 750,
+                wordBreak: "break-word",
+              }}
+            >
+              {card.value}
+            </h3>
           </article>
         ))}
       </section>
@@ -477,8 +460,9 @@ function Dashboard() {
               }
               style={{
                 minHeight: "60px",
-                padding: "10px 14px",
-                border: "1px solid #e2e8f0",
+                padding: "12px 14px",
+                border:
+                  "1px solid #e2e8f0",
                 borderRadius: "10px",
                 background: "#f8fafc",
                 color: "#1e293b",
@@ -499,10 +483,7 @@ function Dashboard() {
       <section
         style={{
           marginTop: "18px",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          padding: "12px 14px",
+          padding: "14px 16px",
           background: "#ffffff",
           border: "1px solid #e2e8f0",
           borderRadius: "10px",
@@ -510,29 +491,16 @@ function Dashboard() {
           fontSize: "12px",
         }}
       >
-        <div
+        Signed in as{" "}
+        <strong
           style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "#dbeafe",
-            color: "#1d4ed8",
-            fontSize: "11px",
-            fontWeight: 800,
+            color: "#334155",
           }}
         >
-          {initials}
-        </div>
-
-        <span>
-          Signed in as{" "}
-          <strong>{displayName}</strong>
-          {" · "}
-          {currentRole}
-        </span>
+          {displayName}
+        </strong>
+        {" - "}
+        {currentRole}
       </section>
     </div>
   )
