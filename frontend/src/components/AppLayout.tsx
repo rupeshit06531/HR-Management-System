@@ -6,59 +6,118 @@ import {
 
 import { useAuth } from "../context/AuthContext"
 
-const navigationItems = [
+interface NavigationItem {
+  label: string
+  path: string
+  roles: string[]
+}
+
+const navigationItems: NavigationItem[] = [
   {
     label: "Dashboard",
     path: "/dashboard",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+      "MANAGER",
+      "EMPLOYEE",
+    ],
   },
   {
     label: "Employees",
     path: "/employees",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+      "MANAGER",
+    ],
   },
   {
     label: "Departments",
     path: "/departments",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+    ],
   },
   {
     label: "Attendance",
     path: "/attendance",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+      "MANAGER",
+      "EMPLOYEE",
+    ],
   },
   {
     label: "Leave",
     path: "/leave",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+      "MANAGER",
+      "EMPLOYEE",
+    ],
   },
   {
     label: "Payroll",
     path: "/payroll",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+      "EMPLOYEE",
+    ],
   },
   {
     label: "Performance",
     path: "/performance",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+      "MANAGER",
+      "EMPLOYEE",
+    ],
   },
   {
     label: "Recruitment",
     path: "/recruitment",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+    ],
   },
   {
     label: "Documents",
     path: "/documents",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+      "MANAGER",
+      "EMPLOYEE",
+    ],
   },
   {
     label: "Holidays",
     path: "/holidays",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+      "MANAGER",
+      "EMPLOYEE",
+    ],
   },
   {
     label: "Announcements",
     path: "/announcements",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+      "MANAGER",
+      "EMPLOYEE",
+    ],
   },
 ]
-
-const roleLabels: Record<string, string> = {
-  SUPER_ADMIN: "Super Admin",
-  HR: "Human Resources",
-  MANAGER: "Manager",
-  EMPLOYEE: "Employee",
-}
 
 function AppLayout() {
   const navigate = useNavigate()
@@ -76,15 +135,12 @@ function AppLayout() {
     })
   }
 
-  const displayName =
-    user?.first_name?.trim() ||
-    user?.username ||
-    "User"
-
-  const displayRole =
-    roleLabels[user?.role ?? ""] ||
-    user?.role ||
-    "Employee"
+  const visibleNavigationItems =
+    navigationItems.filter(
+      (item) =>
+        !user ||
+        item.roles.includes(user.role),
+    )
 
   return (
     <div
@@ -94,14 +150,13 @@ function AppLayout() {
         background: "#f5f7fb",
         color: "#172033",
         fontFamily:
-          '"Inter", "Segoe UI", Arial, Helvetica, sans-serif',
+          "Inter, Arial, Helvetica, sans-serif",
       }}
     >
       <aside
         style={{
           width: "250px",
           minHeight: "100vh",
-          flexShrink: 0,
           background: "#111827",
           color: "#ffffff",
           padding: "24px 16px",
@@ -148,32 +203,37 @@ function AppLayout() {
             gap: "6px",
           }}
         >
-          {navigationItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              style={({ isActive }) => ({
-                display: "block",
-                padding: "11px 12px",
-                borderRadius: "8px",
-                color: isActive
-                  ? "#ffffff"
-                  : "#cbd5e1",
-                background: isActive
-                  ? "#2563eb"
-                  : "transparent",
-                textDecoration: "none",
-                fontSize: "14px",
-                fontWeight: isActive
-                  ? 700
-                  : 500,
-                transition:
-                  "background 0.15s ease, color 0.15s ease",
-              })}
-            >
-              {item.label}
-            </NavLink>
-          ))}
+          {visibleNavigationItems.map(
+            (item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                style={({
+                  isActive,
+                }) => ({
+                  display: "block",
+                  padding: "11px 12px",
+                  borderRadius: "8px",
+                  color: isActive
+                    ? "#ffffff"
+                    : "#cbd5e1",
+                  background: isActive
+                    ? "#2563eb"
+                    : "transparent",
+                  textDecoration:
+                    "none",
+                  fontSize: "14px",
+                  fontWeight: isActive
+                    ? 700
+                    : 500,
+                  transition:
+                    "background 0.15s ease, color 0.15s ease",
+                })}
+              >
+                {item.label}
+              </NavLink>
+            ),
+          )}
         </nav>
       </aside>
 
@@ -187,17 +247,16 @@ function AppLayout() {
       >
         <header
           style={{
-            minHeight: "72px",
+            height: "72px",
             background: "#ffffff",
             borderBottom:
               "1px solid #e5e7eb",
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: "20px",
-            padding: "14px 28px",
+            justifyContent:
+              "space-between",
+            padding: "0 28px",
             boxSizing: "border-box",
-            flexWrap: "wrap",
           }}
         >
           <div>
@@ -205,7 +264,6 @@ function AppLayout() {
               style={{
                 fontSize: "18px",
                 fontWeight: 700,
-                color: "#111827",
               }}
             >
               Human Resources
@@ -218,7 +276,8 @@ function AppLayout() {
                 color: "#6b7280",
               }}
             >
-              Workforce management platform
+              Workforce management
+              platform
             </div>
           </div>
 
@@ -238,10 +297,11 @@ function AppLayout() {
                 style={{
                   fontSize: "14px",
                   fontWeight: 700,
-                  color: "#111827",
                 }}
               >
-                {displayName}
+                {user?.first_name ||
+                  user?.username ||
+                  "User"}
               </div>
 
               <div
@@ -251,7 +311,8 @@ function AppLayout() {
                   color: "#6b7280",
                 }}
               >
-                {displayRole}
+                {user?.role ||
+                  "EMPLOYEE"}
               </div>
             </div>
 
@@ -280,7 +341,6 @@ function AppLayout() {
         <main
           style={{
             flex: 1,
-            width: "100%",
             padding: "28px",
             boxSizing: "border-box",
             overflowX: "auto",
