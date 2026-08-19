@@ -622,6 +622,153 @@ class DocumentAPITestCase(APITestCase):
             newer.title,
         )
 
+    def test_hr_can_update_document(self):
+        document = self.create_document(
+            title="Original HR Document",
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.patch(
+            reverse(
+                "documents-detail",
+                kwargs={"pk": document.pk},
+            ),
+            {
+                "title": "Updated HR Document",
+                "description": "Updated by HR.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        document.refresh_from_db()
+
+        self.assertEqual(
+            document.title,
+            "Updated HR Document",
+        )
+
+        self.assertEqual(
+            document.description,
+            "Updated by HR.",
+        )
+
+    def test_super_admin_can_update_document(self):
+        document = self.create_document(
+            title="Original Admin Document",
+        )
+
+        self.authenticate(self.super_admin)
+
+        response = self.client.patch(
+            reverse(
+                "documents-detail",
+                kwargs={"pk": document.pk},
+            ),
+            {
+                "title": "Updated Admin Document",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        document.refresh_from_db()
+
+        self.assertEqual(
+            document.title,
+            "Updated Admin Document",
+        )
+
+    def test_hr_can_delete_document(self):
+        document = self.create_document(
+            title="HR Delete Document",
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.delete(
+            reverse(
+                "documents-detail",
+                kwargs={"pk": document.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Document.objects.filter(
+                pk=document.pk,
+            ).exists()
+        )
+
+    def test_super_admin_can_delete_document(self):
+        document = self.create_document(
+            title="Admin Delete Document",
+        )
+
+        self.authenticate(self.super_admin)
+
+        response = self.client.delete(
+            reverse(
+                "documents-detail",
+                kwargs={"pk": document.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Document.objects.filter(
+                pk=document.pk,
+            ).exists()
+        )
+
+    def test_create_document_with_file_over_10_mb_is_rejected(self):
+        self.authenticate(self.hr_user)
+
+        large_file = SimpleUploadedFile(
+            "large-document.txt",
+            b"x" * (10 * 1024 * 1024 + 1),
+            content_type="text/plain",
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "employee": self.employee.id,
+                "title": "Large Document",
+                "document_type": "contract",
+                "file": large_file,
+                "description": "Oversized document.",
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "file",
+            response.data,
+        )
+
     def test_serializer_returns_expected_fields(self):
         self.authenticate(self.hr_user)
 
