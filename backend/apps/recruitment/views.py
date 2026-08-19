@@ -25,6 +25,7 @@ class CandidateViewSet(viewsets.ModelViewSet):
         "status",
         "application_date",
         "interview_date",
+        "job_title",
     ]
 
     search_fields = [
@@ -42,6 +43,7 @@ class CandidateViewSet(viewsets.ModelViewSet):
         "last_name",
         "email",
         "job_title",
+        "department__name",
         "application_date",
         "interview_date",
         "status",
