@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from rest_framework import serializers
 
 from .models import Document
@@ -87,19 +85,7 @@ class DocumentSerializer(serializers.ModelSerializer):
                 "Document file cannot exceed 10 MB."
             )
 
-        filename = Path(value.name).name
-
-        if filename != value.name:
-            raise serializers.ValidationError(
-                "Invalid document filename."
-            )
-
-        if not filename.strip():
-            raise serializers.ValidationError(
-                "Document filename cannot be empty."
-            )
-
-        if filename.startswith("."):
+        if value.name.startswith("."):
             raise serializers.ValidationError(
                 "Hidden document files are not allowed."
             )
@@ -114,7 +100,9 @@ class DocumentSerializer(serializers.ModelSerializer):
             ".png",
         }
 
-        extension = Path(filename).suffix.lower()
+        from pathlib import Path
+
+        extension = Path(value.name).suffix.lower()
 
         if extension not in allowed_extensions:
             raise serializers.ValidationError(

@@ -11,7 +11,6 @@ from apps.employees.models import Employee
 
 from .models import Document
 
-
 class DocumentAPITestCase(APITestCase):
 
     @classmethod
@@ -797,4 +796,70 @@ class DocumentAPITestCase(APITestCase):
         self.assertEqual(
             set(result.keys()),
             expected_fields,
+        )
+
+    def test_create_document_with_unsupported_file_extension_is_rejected(
+        self,
+    ):
+        self.authenticate(self.hr_user)
+
+        unsupported_file = SimpleUploadedFile(
+            "malicious.exe",
+            b"Executable content.",
+            content_type="application/octet-stream",
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "employee": self.employee.id,
+                "title": "Unsupported File Document",
+                "document_type": "other",
+                "file": unsupported_file,
+                "description": "Unsupported file type.",
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "file",
+            response.data,
+        )
+
+    def test_create_document_with_hidden_file_is_rejected(
+        self,
+    ):
+        self.authenticate(self.hr_user)
+
+        hidden_file = SimpleUploadedFile(
+            ".secret.txt",
+            b"Hidden document content.",
+            content_type="text/plain",
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "employee": self.employee.id,
+                "title": "Hidden File Document",
+                "document_type": "other",
+                "file": hidden_file,
+                "description": "Hidden file test.",
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        self.assertIn(
+            "file",
+            response.data,
         )
