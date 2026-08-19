@@ -1478,3 +1478,78 @@ class CandidateAPITestCase(APITestCase):
             response.status_code,
             status.HTTP_403_FORBIDDEN,
         )
+
+    def test_candidate_filter_by_job_title(self):
+        Candidate.objects.create(
+            first_name="Zoya",
+            last_name="Sharma",
+            email="zoya_job@test.com",
+            phone="9876543501",
+            job_title="QA Engineer",
+            department=self.department,
+            status=Candidate.ApplicationStatus.APPLIED,
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(
+            self.url,
+            {"job_title": "QA Engineer"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["job_title"],
+            "QA Engineer",
+        )
+
+    def test_candidate_ordering_by_department_name(self):
+        second_department = Department.objects.create(
+            name="Finance",
+            description="Finance test department",
+        )
+
+        Candidate.objects.create(
+            first_name="Ravi",
+            last_name="Kumar",
+            email="ravi_department@test.com",
+            phone="9876543502",
+            job_title="Accountant",
+            department=second_department,
+            status=Candidate.ApplicationStatus.APPLIED,
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(
+            self.url,
+            {"ordering": "department__name"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            results[0]["department_name"],
+            "Finance",
+        )
+
+        self.assertEqual(
+            results[1]["department_name"],
+            "Recruitment IT",
+        )
