@@ -40,22 +40,11 @@ export interface LogoutRequest {
 export async function login(
   credentials: LoginRequest,
 ): Promise<LoginResponse> {
-  const response = await apiClient.post<LoginResponse>(
-    "/login/",
-    credentials,
-  )
-
-  const { access, refresh } = response.data
-
-  localStorage.setItem(
-    "access_token",
-    access,
-  )
-
-  localStorage.setItem(
-    "refresh_token",
-    refresh,
-  )
+  const response =
+    await apiClient.post<LoginResponse>(
+      "/login/",
+      credentials,
+    )
 
   return response.data
 }
@@ -63,22 +52,11 @@ export async function login(
 export async function refreshToken(
   data: RefreshRequest,
 ): Promise<RefreshResponse> {
-  const response = await apiClient.post<RefreshResponse>(
-    "/token/refresh/",
-    data,
-  )
-
-  localStorage.setItem(
-    "access_token",
-    response.data.access,
-  )
-
-  if (response.data.refresh) {
-    localStorage.setItem(
-      "refresh_token",
-      response.data.refresh,
+  const response =
+    await apiClient.post<RefreshResponse>(
+      "/token/refresh/",
+      data,
     )
-  }
 
   return response.data
 }
@@ -86,26 +64,17 @@ export async function refreshToken(
 export async function logout(
   data: LogoutRequest,
 ): Promise<void> {
-  try {
-    await apiClient.post(
-      "/logout/",
-      data,
-    )
-  } finally {
-    localStorage.removeItem(
-      "access_token",
-    )
-
-    localStorage.removeItem(
-      "refresh_token",
-    )
-  }
+  await apiClient.post(
+    "/logout/",
+    data,
+  )
 }
 
 export async function getCurrentUser(): Promise<AuthUser> {
-  const response = await apiClient.get<AuthUser>(
-    "/me/",
-  )
+  const response =
+    await apiClient.get<AuthUser>(
+      "/me/",
+    )
 
   return response.data
 }
