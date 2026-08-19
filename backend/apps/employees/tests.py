@@ -29,6 +29,15 @@ class EmployeeAPITestCase(APITestCase):
             department=cls.department,
         )
 
+        cls.super_admin = User.objects.create_user(
+            username="employee_admin",
+            email="employee_admin@test.com",
+            password="TestPass@123",
+            first_name="Employee",
+            last_name="Admin",
+            role=User.Role.SUPER_ADMIN,
+        )
+
         cls.hr_user = User.objects.create_user(
             username="employee_hr",
             email="employee_hr@test.com",
@@ -684,6 +693,183 @@ class EmployeeAPITestCase(APITestCase):
         self.assertIn(
             "manager",
             response.data,
+        )
+
+    def test_hr_can_update_employee(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.patch(
+            reverse(
+                "employee-detail",
+                kwargs={"pk": self.employee.pk},
+            ),
+            {
+                "address": "Updated HR address",
+                "emergency_contact": "9876543210",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.employee.refresh_from_db()
+
+        self.assertEqual(
+            self.employee.address,
+            "Updated HR address",
+        )
+
+        self.assertEqual(
+            self.employee.emergency_contact,
+            "9876543210",
+        )
+
+    def test_super_admin_can_update_employee(self):
+        self.authenticate(self.super_admin)
+
+        response = self.client.patch(
+            reverse(
+                "employee-detail",
+                kwargs={"pk": self.employee.pk},
+            ),
+            {
+                "address": "Updated by super admin",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.employee.refresh_from_db()
+
+        self.assertEqual(
+            self.employee.address,
+            "Updated by super admin",
+        )
+
+    def test_manager_cannot_update_employee(self):
+        self.authenticate(self.manager_user)
+
+        response = self.client.patch(
+            reverse(
+                "employee-detail",
+                kwargs={"pk": self.employee.pk},
+            ),
+            {
+                "address": "Unauthorized manager update",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.employee.refresh_from_db()
+
+        self.assertNotEqual(
+            self.employee.address,
+            "Unauthorized manager update",
+        )
+
+    def test_hr_can_delete_employee(self):
+        delete_user = self.create_employee_user(
+            username="employee_delete_hr",
+            email="employee_delete_hr@test.com",
+            first_name="Delete",
+            last_name="HR",
+        )
+
+        employee = Employee.objects.create(
+            user=delete_user,
+            employee_id="EMP-DELETE-HR",
+            department=self.department,
+            designation=self.designation,
+            joining_date=date(2026, 1, 1),
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.delete(
+            reverse(
+                "employee-detail",
+                kwargs={"pk": employee.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Employee.objects.filter(
+                pk=employee.pk,
+            ).exists()
+        )
+
+    def test_super_admin_can_delete_employee(self):
+        delete_user = self.create_employee_user(
+            username="employee_delete_admin",
+            email="employee_delete_admin@test.com",
+            first_name="Delete",
+            last_name="Admin",
+        )
+
+        employee = Employee.objects.create(
+            user=delete_user,
+            employee_id="EMP-DELETE-ADMIN",
+            department=self.department,
+            designation=self.designation,
+            joining_date=date(2026, 1, 1),
+        )
+
+        self.authenticate(self.super_admin)
+
+        response = self.client.delete(
+            reverse(
+                "employee-detail",
+                kwargs={"pk": employee.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Employee.objects.filter(
+                pk=employee.pk,
+            ).exists()
+        )
+
+    def test_manager_cannot_delete_employee(self):
+        self.authenticate(self.manager_user)
+
+        response = self.client.delete(
+            reverse(
+                "employee-detail",
+                kwargs={"pk": self.employee.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Employee.objects.filter(
+                pk=self.employee.pk,
+            ).exists()
         )
 
     def test_employee_response_contains_enterprise_profile_fields(self):
