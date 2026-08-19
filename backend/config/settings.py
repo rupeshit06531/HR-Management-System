@@ -13,23 +13,43 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # ============================================================
 # ENVIRONMENT
 # ============================================================
 
-ENVIRONMENT = os.getenv("DJANGO_ENV", "development").lower()
+ENVIRONMENT = os.getenv(
+    "DJANGO_ENV",
+    "development",
+).strip().lower()
+
 
 DEBUG = os.getenv(
     "DJANGO_DEBUG",
-    "True",
-).lower() in ("true", "1", "yes")
+    "True" if ENVIRONMENT == "development" else "False",
+).strip().lower() in (
+    "true",
+    "1",
+    "yes",
+)
 
 
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
-    "dev-only-secret-key-change-in-production",
-)
+    "",
+).strip()
+
+
+if not SECRET_KEY:
+    if ENVIRONMENT == "production":
+        raise RuntimeError(
+            "DJANGO_SECRET_KEY must be configured "
+            "in production."
+        )
+
+    SECRET_KEY = (
+        "dev-only-secret-key-change-in-production-"
+        "hrms-local-development"
+    )
 
 
 ALLOWED_HOSTS = [
@@ -40,7 +60,6 @@ ALLOWED_HOSTS = [
     ).split(",")
     if host.strip()
 ]
-
 
 # ============================================================
 # APPLICATIONS
