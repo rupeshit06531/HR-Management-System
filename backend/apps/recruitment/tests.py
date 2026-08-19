@@ -1102,3 +1102,236 @@ class CandidateAPITestCase(APITestCase):
             response.data["joining_date"],
             "2026-09-01",
         )
+
+    def test_candidate_search_by_email(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(
+            self.url,
+            {"search": "amit@test.com"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["email"],
+            "amit@test.com",
+        )
+
+    def test_candidate_search_by_phone(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(
+            self.url,
+            {"search": "9876543210"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["phone"],
+            "9876543210",
+        )
+
+    def test_candidate_search_by_department_name(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(
+            self.url,
+            {"search": "Recruitment IT"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["department"],
+            self.department.id,
+        )
+
+    def test_candidate_ordering_by_first_name(self):
+        Candidate.objects.create(
+            first_name="Zoya",
+            last_name="Sharma",
+            email="zoya@test.com",
+            phone="9876543299",
+            job_title="QA Engineer",
+            department=self.department,
+            status=Candidate.ApplicationStatus.APPLIED,
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(
+            self.url,
+            {"ordering": "first_name"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            results[0]["first_name"],
+            "Amit",
+        )
+
+        self.assertEqual(
+            results[1]["first_name"],
+            "Zoya",
+        )
+
+    def test_candidate_serializer_returns_expected_fields(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": self.candidate.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        expected_fields = {
+            "id",
+            "first_name",
+            "last_name",
+            "full_name",
+            "email",
+            "phone",
+            "job_title",
+            "department",
+            "department_name",
+            "resume",
+            "application_date",
+            "interview_date",
+            "status",
+            "interview_notes",
+            "hr_notes",
+            "experience_years",
+            "expected_salary",
+            "offer_date",
+            "joining_date",
+            "created_at",
+            "updated_at",
+        }
+
+        self.assertEqual(
+            set(response.data.keys()),
+            expected_fields,
+        )
+
+        self.assertEqual(
+            response.data["full_name"],
+            "Amit Kumar",
+        )
+
+        self.assertEqual(
+            response.data["department_name"],
+            "Recruitment IT",
+        )
+
+    def test_email_is_normalized_on_create(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.post(
+            self.url,
+            {
+                "first_name": "Email",
+                "last_name": "Normalized",
+                "email": "  NEWCANDIDATE@TEST.COM  ",
+                "phone": "9876543201",
+                "job_title": "Developer",
+                "department": self.department.id,
+                "status": "APPLIED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            response.data["email"],
+            "newcandidate@test.com",
+        )
+
+    def test_name_and_job_title_are_trimmed_on_create(self):
+        self.authenticate(self.hr_user)
+
+        response = self.client.post(
+            self.url,
+            {
+                "first_name": "  Rahul  ",
+                "last_name": "  Kumar  ",
+                "email": "rahul_trim@test.com",
+                "phone": " 9876543202 ",
+                "job_title": "  Backend Developer  ",
+                "department": self.department.id,
+                "status": "APPLIED",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        self.assertEqual(
+            response.data["first_name"],
+            "Rahul",
+        )
+
+        self.assertEqual(
+            response.data["last_name"],
+            "Kumar",
+        )
+
+        self.assertEqual(
+            response.data["phone"],
+            "9876543202",
+        )
+
+        self.assertEqual(
+            response.data["job_title"],
+            "Backend Developer",
+        )
