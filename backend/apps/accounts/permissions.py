@@ -51,19 +51,6 @@ class IsAdminOrSuperAdmin(RolePermission):
     }
 
 
-class IsHROrSuperAdmin(RolePermission):
-    """
-    Allows access to HR and Super Admin users.
-    """
-
-    message = "HR or Super Admin permission is required."
-
-    allowed_roles = {
-        User.Role.HR,
-        User.Role.SUPER_ADMIN,
-    }
-
-
 class IsManagerOrAdmin(RolePermission):
     """
     Allows access to Manager, HR and Super Admin users.
@@ -145,20 +132,6 @@ class IsLeaveCreator(RolePermission):
     }
 
 
-class IsManagerOrHROrSuperAdmin(RolePermission):
-    """
-    Allows access to Manager, HR and Super Admin users.
-    """
-
-    message = "Manager, HR or Super Admin permission is required."
-
-    allowed_roles = {
-        User.Role.MANAGER,
-        User.Role.HR,
-        User.Role.SUPER_ADMIN,
-    }
-
-
 class IsDocumentViewer(RolePermission):
     """
     Allows HR, Super Admin and Employee users to view
@@ -187,3 +160,11 @@ class IsSuperAdmin(RolePermission):
     allowed_roles = {
         User.Role.SUPER_ADMIN,
     }
+
+
+# Backward-compatible aliases.
+#
+# These names are kept so existing app imports continue
+# to work without requiring changes across multiple apps.
+IsHROrSuperAdmin = IsAdminOrSuperAdmin
+IsManagerOrHROrSuperAdmin = IsManagerOrAdmin
