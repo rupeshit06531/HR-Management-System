@@ -8,6 +8,7 @@ from apps.accounts.models import User
 from apps.departments.models import Department
 
 from .models import Candidate
+from django.db import IntegrityError
 
 
 class CandidateAPITestCase(APITestCase):
@@ -1335,3 +1336,81 @@ class CandidateAPITestCase(APITestCase):
             response.data["job_title"],
             "Backend Developer",
         )
+
+    def test_database_rejects_negative_experience_years(self):
+        with self.assertRaises(IntegrityError):
+            Candidate.objects.create(
+                first_name="Invalid",
+                last_name="Experience",
+                email="db_negative_experience@test.com",
+                phone="9876543301",
+                job_title="Developer",
+                department=self.department,
+                experience_years=-1,
+                status=Candidate.ApplicationStatus.APPLIED,
+            )
+
+    def test_database_rejects_negative_expected_salary(self):
+        with self.assertRaises(IntegrityError):
+            Candidate.objects.create(
+                first_name="Invalid",
+                last_name="Salary",
+                email="db_negative_salary@test.com",
+                phone="9876543302",
+                job_title="Developer",
+                department=self.department,
+                expected_salary=-50000,
+                status=Candidate.ApplicationStatus.APPLIED,
+            )
+
+    def test_database_rejects_selected_candidate_without_offer_date(self):
+        with self.assertRaises(IntegrityError):
+            Candidate.objects.create(
+                first_name="Invalid",
+                last_name="Selected",
+                email="db_selected_offer@test.com",
+                phone="9876543303",
+                job_title="Developer",
+                department=self.department,
+                status=Candidate.ApplicationStatus.SELECTED,
+                joining_date=date(2026, 9, 1),
+            )
+
+    def test_database_rejects_selected_candidate_without_joining_date(self):
+        with self.assertRaises(IntegrityError):
+            Candidate.objects.create(
+                first_name="Invalid",
+                last_name="Selected",
+                email="db_selected_joining@test.com",
+                phone="9876543304",
+                job_title="Developer",
+                department=self.department,
+                status=Candidate.ApplicationStatus.SELECTED,
+                offer_date=date(2026, 8, 25),
+            )
+
+    def test_database_rejects_interview_candidate_without_interview_date(self):
+        with self.assertRaises(IntegrityError):
+            Candidate.objects.create(
+                first_name="Invalid",
+                last_name="Interview",
+                email="db_interview_date@test.com",
+                phone="9876543305",
+                job_title="Developer",
+                department=self.department,
+                status=Candidate.ApplicationStatus.INTERVIEW,
+            )
+
+    def test_database_rejects_joining_date_before_offer_date(self):
+        with self.assertRaises(IntegrityError):
+            Candidate.objects.create(
+                first_name="Invalid",
+                last_name="Dates",
+                email="db_invalid_dates@test.com",
+                phone="9876543306",
+                job_title="Developer",
+                department=self.department,
+                status=Candidate.ApplicationStatus.SELECTED,
+                offer_date=date(2026, 8, 25),
+                joining_date=date(2026, 8, 20),
+            )
