@@ -16,10 +16,14 @@ function Login() {
     login,
   } = useAuth()
 
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [username, setUsername] =
+    useState("")
+  const [password, setPassword] =
+    useState("")
+  const [error, setError] =
+    useState("")
+  const [isSubmitting, setIsSubmitting] =
+    useState(false)
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -38,7 +42,10 @@ function Login() {
   ) => {
     event.preventDefault()
 
-    if (!username.trim() || !password) {
+    if (
+      !username.trim() ||
+      !password
+    ) {
       setError(
         "Username and password are required.",
       )
@@ -188,26 +195,6 @@ function Login() {
             zIndex: 1,
           }}
         >
-          <div
-            style={{
-              width: "52px",
-              height: "52px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "24px",
-              borderRadius: "14px",
-              background: "#2563eb",
-              boxShadow:
-                "0 12px 28px rgba(37, 99, 235, 0.35)",
-              fontSize: "20px",
-              fontWeight: 800,
-              letterSpacing: "-0.04em",
-            }}
-          >
-            HR
-          </div>
-
           <p
             style={{
               margin: "0 0 10px",
@@ -245,9 +232,10 @@ function Login() {
               lineHeight: 1.75,
             }}
           >
-            A centralized platform for managing
-            employees, attendance, leave, payroll,
-            performance and recruitment.
+            A centralized platform for
+            managing employees, attendance,
+            leave, payroll, performance and
+            recruitment.
           </p>
 
           <div
@@ -261,16 +249,13 @@ function Login() {
           >
             {[
               "Employee Management",
-              "Attendance & Leave",
+              "Attendance and Leave",
               "Payroll Management",
-              "Performance & Recruitment",
+              "Performance and Recruitment",
             ].map((item) => (
               <div
                 key={item}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "9px",
                   padding: "11px 12px",
                   border:
                     "1px solid rgba(255,255,255,0.09)",
@@ -282,16 +267,6 @@ function Login() {
                   fontWeight: 600,
                 }}
               >
-                <span
-                  style={{
-                    width: "7px",
-                    height: "7px",
-                    flexShrink: 0,
-                    borderRadius: "50%",
-                    background: "#60a5fa",
-                  }}
-                />
-
                 {item}
               </div>
             ))}
@@ -304,7 +279,8 @@ function Login() {
               fontSize: "11px",
             }}
           >
-            Secure • Centralized • Role-based
+            Secure access. Centralized
+            management. Role-based access.
           </p>
         </div>
       </section>
@@ -375,9 +351,6 @@ function Login() {
             <div
               role="alert"
               style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "10px",
                 marginBottom: "20px",
                 padding: "12px 14px",
                 border:
@@ -389,15 +362,7 @@ function Login() {
                 lineHeight: 1.5,
               }}
             >
-              <span
-                style={{
-                  fontWeight: 800,
-                }}
-              >
-                !
-              </span>
-
-              <span>{error}</span>
+              {error}
             </div>
           )}
 
@@ -434,7 +399,9 @@ function Login() {
                 type="text"
                 value={username}
                 onChange={(event) =>
-                  setUsername(event.target.value)
+                  setUsername(
+                    event.target.value,
+                  )
                 }
                 autoComplete="username"
                 placeholder="Enter your username"
@@ -479,7 +446,9 @@ function Login() {
                 type="password"
                 value={password}
                 onChange={(event) =>
-                  setPassword(event.target.value)
+                  setPassword(
+                    event.target.value,
+                  )
                 }
                 autoComplete="current-password"
                 placeholder="Enter your password"
@@ -544,8 +513,13 @@ function Login() {
               fontSize: "11px",
             }}
           >
-            <span>HR Management System</span>
-            <span>Authorized access only</span>
+            <span>
+              HR Management System
+            </span>
+
+            <span>
+              Authorized access only
+            </span>
           </div>
         </div>
       </section>
