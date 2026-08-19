@@ -25,49 +25,57 @@ interface RefreshResponse {
 
 let refreshPromise: Promise<string> | null = null
 
-const refreshAccessToken = async (): Promise<string> => {
-  const refreshToken =
-    localStorage.getItem("refresh_token")
+const refreshAccessToken =
+  async (): Promise<string> => {
+    const storedRefreshToken =
+      localStorage.getItem(
+        "refresh_token",
+      )
 
-  if (!refreshToken) {
-    throw new Error("Refresh token is missing.")
-  }
+    if (!storedRefreshToken) {
+      throw new Error(
+        "Refresh token is missing.",
+      )
+    }
 
-  const response =
-    await axios.post<RefreshResponse>(
-      `${API_BASE_URL}/accounts/token/refresh/`,
-      {
-        refresh: refreshToken,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
+    const response =
+      await axios.post<RefreshResponse>(
+        `${API_BASE_URL}/token/refresh/`,
+        {
+          refresh: storedRefreshToken,
         },
-      },
-    )
+        {
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+        },
+      )
 
-  const newAccessToken =
-    response.data.access
+    const newAccessToken =
+      response.data.access
 
-  localStorage.setItem(
-    "access_token",
-    newAccessToken,
-  )
-
-  if (response.data.refresh) {
     localStorage.setItem(
-      "refresh_token",
-      response.data.refresh,
+      "access_token",
+      newAccessToken,
     )
-  }
 
-  return newAccessToken
-}
+    if (response.data.refresh) {
+      localStorage.setItem(
+        "refresh_token",
+        response.data.refresh,
+      )
+    }
+
+    return newAccessToken
+  }
 
 apiClient.interceptors.request.use(
   (config) => {
     const accessToken =
-      localStorage.getItem("access_token")
+      localStorage.getItem(
+        "access_token",
+      )
 
     if (accessToken) {
       config.headers.Authorization =
@@ -76,11 +84,13 @@ apiClient.interceptors.request.use(
 
     return config
   },
-  (error) => Promise.reject(error),
+  (error) =>
+    Promise.reject(error),
 )
 
 apiClient.interceptors.response.use(
   (response) => response,
+
   async (error: AxiosError) => {
     const originalRequest =
       error.config as
@@ -100,13 +110,13 @@ apiClient.interceptors.response.use(
 
     if (
       requestUrl.includes(
-        "/accounts/login/",
+        "/login/",
       ) ||
       requestUrl.includes(
-        "/accounts/token/refresh/",
+        "/token/refresh/",
       ) ||
       requestUrl.includes(
-        "/accounts/logout/",
+        "/logout/",
       )
     ) {
       return Promise.reject(error)
@@ -117,9 +127,11 @@ apiClient.interceptors.response.use(
     try {
       if (!refreshPromise) {
         refreshPromise =
-          refreshAccessToken().finally(() => {
-            refreshPromise = null
-          })
+          refreshAccessToken().finally(
+            () => {
+              refreshPromise = null
+            },
+          )
       }
 
       const newAccessToken =
@@ -140,7 +152,9 @@ apiClient.interceptors.response.use(
         "refresh_token",
       )
 
-      return Promise.reject(refreshError)
+      return Promise.reject(
+        refreshError,
+      )
     }
   },
 )
