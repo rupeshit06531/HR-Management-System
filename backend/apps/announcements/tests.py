@@ -1,4 +1,5 @@
-from datetime import timedelta
+from datetime import date, timedelta
+
 
 from django.urls import reverse
 from django.utils import timezone
@@ -6,10 +7,10 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.accounts.models import User
-from apps.departments.models import Department
+from apps.departments.models import Department, Designation
+from apps.employees.models import Employee
 
 from .models import Announcement
-
 
 class AnnouncementAPITestCase(APITestCase):
 
@@ -18,6 +19,11 @@ class AnnouncementAPITestCase(APITestCase):
         cls.department = Department.objects.create(
             name="Announcement Engineering",
             description="Announcement test department",
+        )
+
+        cls.designation = Designation.objects.create(
+            name="Announcement Engineer",
+            department=cls.department,
         )
 
         cls.super_admin = User.objects.create_user(
@@ -686,4 +692,427 @@ class AnnouncementAPITestCase(APITestCase):
         self.assertEqual(
             response.status_code,
             status.HTTP_404_NOT_FOUND,
+        )
+
+    def test_hr_can_update_announcement(self):
+        announcement = Announcement.objects.create(
+            title="Original HR Announcement",
+            message="Original message.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.ALL,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.patch(
+            reverse(
+                "announcement-detail",
+                kwargs={"pk": announcement.pk},
+            ),
+            {
+                "title": "Updated HR Announcement",
+                "message": "Updated message.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        announcement.refresh_from_db()
+
+        self.assertEqual(
+            announcement.title,
+            "Updated HR Announcement",
+        )
+
+        self.assertEqual(
+            announcement.message,
+            "Updated message.",
+        )
+
+
+    def test_super_admin_can_update_announcement(self):
+        announcement = Announcement.objects.create(
+            title="Original Admin Announcement",
+            message="Original message.",
+            created_by=self.super_admin,
+            target_audience=Announcement.TargetAudience.ALL,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.super_admin)
+
+        response = self.client.patch(
+            reverse(
+                "announcement-detail",
+                kwargs={"pk": announcement.pk},
+            ),
+            {
+                "message": "Updated by super admin.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        announcement.refresh_from_db()
+
+        self.assertEqual(
+            announcement.message,
+            "Updated by super admin.",
+        )
+
+
+    def test_manager_cannot_update_announcement(self):
+        announcement = Announcement.objects.create(
+            title="Protected Announcement",
+            message="Original message.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.ALL,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.manager_user)
+
+        response = self.client.patch(
+            reverse(
+                "announcement-detail",
+                kwargs={"pk": announcement.pk},
+            ),
+            {
+                "message": "Unauthorized update.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        announcement.refresh_from_db()
+
+        self.assertEqual(
+            announcement.message,
+            "Original message.",
+        )
+
+
+    def test_employee_cannot_update_announcement(self):
+        announcement = Announcement.objects.create(
+            title="Employee Protected Announcement",
+            message="Original message.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.ALL,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.employee_user)
+
+        response = self.client.patch(
+            reverse(
+                "announcement-detail",
+                kwargs={"pk": announcement.pk},
+            ),
+            {
+                "message": "Unauthorized employee update.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        announcement.refresh_from_db()
+
+        self.assertEqual(
+            announcement.message,
+            "Original message.",
+        )
+
+
+    def test_hr_can_delete_announcement(self):
+        announcement = Announcement.objects.create(
+            title="Delete HR Announcement",
+            message="Announcement to delete.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.ALL,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.delete(
+            reverse(
+                "announcement-detail",
+                kwargs={"pk": announcement.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Announcement.objects.filter(
+                pk=announcement.pk,
+            ).exists()
+        )
+
+
+    def test_super_admin_can_delete_announcement(self):
+        announcement = Announcement.objects.create(
+            title="Delete Admin Announcement",
+            message="Announcement to delete.",
+            created_by=self.super_admin,
+            target_audience=Announcement.TargetAudience.ALL,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.super_admin)
+
+        response = self.client.delete(
+            reverse(
+                "announcement-detail",
+                kwargs={"pk": announcement.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Announcement.objects.filter(
+                pk=announcement.pk,
+            ).exists()
+        )
+
+
+    def test_manager_cannot_delete_announcement(self):
+        announcement = Announcement.objects.create(
+            title="Protected Delete Announcement",
+            message="Announcement must remain.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.ALL,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.manager_user)
+
+        response = self.client.delete(
+            reverse(
+                "announcement-detail",
+                kwargs={"pk": announcement.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Announcement.objects.filter(
+                pk=announcement.pk,
+            ).exists()
+        )
+
+
+    def test_employee_cannot_delete_announcement(self):
+        announcement = Announcement.objects.create(
+            title="Employee Protected Delete",
+            message="Announcement must remain.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.ALL,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.employee_user)
+
+        response = self.client.delete(
+            reverse(
+                "announcement-detail",
+                kwargs={"pk": announcement.pk},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertTrue(
+            Announcement.objects.filter(
+                pk=announcement.pk,
+            ).exists()
+        )
+
+
+    def test_employee_can_see_department_announcement_for_own_department(self):
+        from apps.employees.models import Employee
+
+        Employee.objects.create(
+            user=self.employee_user,
+            employee_id="ANN-EMP-001",
+            department=self.department,
+            designation=self.designation,
+            joining_date=date(2026, 8, 1),
+        )
+
+        Announcement.objects.create(
+            title="Engineering Only",
+            message="Engineering department announcement.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.DEPARTMENT,
+            department=self.department,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.employee_user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            1,
+        )
+
+        self.assertEqual(
+            results[0]["title"],
+            "Engineering Only",
+        )
+
+
+    def test_employee_cannot_see_department_announcement_for_other_department(self):
+        from apps.employees.models import Employee
+
+        other_department = Department.objects.create(
+            name="Announcement Finance",
+            description="Finance test department",
+        )
+
+        Employee.objects.create(
+            user=self.employee_user,
+            employee_id="ANN-EMP-002",
+            department=self.department,
+            designation=self.designation,
+            joining_date=date(2026, 8, 1),
+        )
+
+        Announcement.objects.create(
+            title="Finance Only",
+            message="Finance department announcement.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.DEPARTMENT,
+            department=other_department,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.employee_user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        results = response.data["results"]
+
+        self.assertEqual(
+            len(results),
+            0,
+        )
+
+
+    def test_hr_can_see_department_announcements(self):
+        Announcement.objects.create(
+            title="HR Visibility Test",
+            message="Department announcement.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.DEPARTMENT,
+            department=self.department,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.hr_user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["count"],
+            1,
+        )
+
+
+    def test_manager_can_see_all_and_manager_announcements(self):
+        Announcement.objects.create(
+            title="All Employees",
+            message="Visible to everyone.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.ALL,
+            publish_date=timezone.now(),
+        )
+
+        Announcement.objects.create(
+            title="Managers Only",
+            message="Visible to managers.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.MANAGERS,
+            publish_date=timezone.now(),
+        )
+
+        Announcement.objects.create(
+            title="Department Only",
+            message="Not visible to managers through department audience.",
+            created_by=self.hr_user,
+            target_audience=Announcement.TargetAudience.DEPARTMENT,
+            department=self.department,
+            publish_date=timezone.now(),
+        )
+
+        self.authenticate(self.manager_user)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        titles = {
+            result["title"]
+            for result in response.data["results"]
+        }
+
+        self.assertEqual(
+            titles,
+            {
+                "All Employees",
+                "Managers Only",
+            },
         )
