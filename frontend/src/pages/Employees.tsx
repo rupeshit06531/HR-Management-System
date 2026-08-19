@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -57,6 +58,51 @@ const employmentStatuses = [
   "RESIGNED",
   "TERMINATED",
 ]
+
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  padding: "28px",
+  boxSizing: "border-box",
+  background: "#f8fafc",
+  fontFamily:
+    'Inter, "Segoe UI", Roboto, Arial, sans-serif',
+  color: "#0f172a",
+}
+
+const containerStyle: CSSProperties = {
+  width: "100%",
+  maxWidth: "1440px",
+  margin: "0 auto",
+}
+
+const cardStyle: CSSProperties = {
+  background: "#ffffff",
+  border: "1px solid #e2e8f0",
+  borderRadius: "14px",
+  boxShadow:
+    "0 2px 8px rgba(15, 23, 42, 0.04)",
+}
+
+const inputStyle: CSSProperties = {
+  width: "100%",
+  minHeight: "42px",
+  padding: "9px 12px",
+  boxSizing: "border-box",
+  border: "1px solid #cbd5e1",
+  borderRadius: "8px",
+  background: "#ffffff",
+  color: "#0f172a",
+  fontSize: "13px",
+  outline: "none",
+}
+
+const labelStyle: CSSProperties = {
+  display: "grid",
+  gap: "7px",
+  color: "#334155",
+  fontSize: "12px",
+  fontWeight: 700,
+}
 
 function Employees() {
   const [employees, setEmployees] =
@@ -201,6 +247,20 @@ function Employees() {
       form.department,
     ])
 
+  const activeEmployees = useMemo(
+    () =>
+      employees.filter(
+        (employee) =>
+          employee.employment_status ===
+          "ACTIVE",
+      ).length,
+    [employees],
+  )
+
+  const inactiveEmployees =
+    employees.length -
+    activeEmployees
+
   const resetForm = () => {
     setForm({
       ...emptyForm,
@@ -263,9 +323,7 @@ function Employees() {
     setSuccess(null)
 
     if (!form.user) {
-      setError(
-        "User is required.",
-      )
+      setError("User is required.")
       return
     }
 
@@ -463,43 +521,88 @@ function Employees() {
     )
   }
 
+  const getStatusStyle = (
+    status: string,
+  ): CSSProperties => {
+    if (status === "ACTIVE") {
+      return {
+        color: "#166534",
+        background: "#dcfce7",
+      }
+    }
+
+    if (status === "INACTIVE") {
+      return {
+        color: "#475569",
+        background: "#e2e8f0",
+      }
+    }
+
+    if (status === "RESIGNED") {
+      return {
+        color: "#92400e",
+        background: "#fef3c7",
+      }
+    }
+
+    return {
+      color: "#991b1b",
+      background: "#fee2e2",
+    }
+  }
+
+  const getUserName = (
+    userId: number,
+  ) => {
+    const user = users.find(
+      (item) => item.id === userId,
+    )
+
+    if (!user) {
+      return String(userId)
+    }
+
+    const fullName =
+      `${user.first_name} ${user.last_name}`.trim()
+
+    return fullName || user.username
+  }
+
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "32px",
-        backgroundColor:
-          "#f5f7fa",
-        fontFamily:
-          "Arial, sans-serif",
-        boxSizing: "border-box",
-      }}
-    >
-      <section
-        style={{
-          maxWidth:
-            "1400px",
-          margin: "0 auto",
-        }}
-      >
+    <main style={pageStyle}>
+      <section style={containerStyle}>
         <header
           style={{
             display: "flex",
-            alignItems:
-              "center",
-            justifyContent:
-              "space-between",
-            gap: "16px",
-            marginBottom:
-              "24px",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            gap: "20px",
+            marginBottom: "24px",
+            flexWrap: "wrap",
           }}
         >
           <div>
+            <p
+              style={{
+                margin: "0 0 7px",
+                color: "#2563eb",
+                fontSize: "11px",
+                fontWeight: 800,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+              }}
+            >
+              Workforce Management
+            </p>
+
             <h1
               style={{
                 margin: 0,
-                color:
-                  "#111827",
+                color: "#0f172a",
+                fontSize: "30px",
+                lineHeight: 1.2,
+                fontWeight: 800,
+                letterSpacing: "-0.025em",
               }}
             >
               Employees
@@ -507,50 +610,129 @@ function Employees() {
 
             <p
               style={{
-                color:
-                  "#6b7280",
+                margin: "8px 0 0",
+                color: "#64748b",
+                fontSize: "14px",
               }}
             >
-              Employee management
+              Manage employee records,
+              organizational structure and
+              employment information.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={
-              handleAdd
-            }
+            onClick={handleAdd}
             style={{
-              padding:
-                "10px 16px",
+              minHeight: "42px",
+              padding: "0 16px",
               border: "none",
-              borderRadius:
-                "6px",
-              backgroundColor:
-                "#2563eb",
-              color:
-                "#ffffff",
-              cursor:
-                "pointer",
+              borderRadius: "8px",
+              background: "#2563eb",
+              color: "#ffffff",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: 700,
+              boxShadow:
+                "0 5px 14px rgba(37, 99, 235, 0.18)",
             }}
           >
             Add Employee
           </button>
         </header>
 
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(3, minmax(0, 1fr))",
+            gap: "14px",
+            marginBottom: "20px",
+          }}
+        >
+          {[
+            {
+              label: "Total Employees",
+              value: employees.length,
+              detail:
+                "All employee records",
+            },
+            {
+              label: "Active Employees",
+              value: activeEmployees,
+              detail:
+                "Currently employed",
+            },
+            {
+              label: "Other Status",
+              value: inactiveEmployees,
+              detail:
+                "Inactive, resigned or terminated",
+            },
+          ].map((item) => (
+            <section
+              key={item.label}
+              style={{
+                ...cardStyle,
+                padding: "18px 20px",
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                  color: "#64748b",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                }}
+              >
+                {item.label}
+              </p>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: "8px",
+                  marginTop: "8px",
+                }}
+              >
+                <strong
+                  style={{
+                    color: "#0f172a",
+                    fontSize: "27px",
+                    lineHeight: 1,
+                  }}
+                >
+                  {item.value}
+                </strong>
+              </div>
+
+              <p
+                style={{
+                  margin: "7px 0 0",
+                  color: "#94a3b8",
+                  fontSize: "11px",
+                }}
+              >
+                {item.detail}
+              </p>
+            </section>
+          ))}
+        </section>
+
         {error && (
           <section
+            role="alert"
             style={{
-              padding:
-                "16px",
-              marginBottom:
-                "20px",
-              backgroundColor:
-                "#fee2e2",
-              borderRadius:
-                "8px",
-              color:
-                "#991b1b",
+              ...cardStyle,
+              padding: "13px 16px",
+              marginBottom: "18px",
+              borderColor: "#fecaca",
+              background: "#fef2f2",
+              color: "#991b1b",
+              fontSize: "13px",
+              fontWeight: 600,
             }}
           >
             {error}
@@ -559,17 +741,16 @@ function Employees() {
 
         {success && (
           <section
+            role="status"
             style={{
-              padding:
-                "16px",
-              marginBottom:
-                "20px",
-              backgroundColor:
-                "#dcfce7",
-              borderRadius:
-                "8px",
-              color:
-                "#166534",
+              ...cardStyle,
+              padding: "13px 16px",
+              marginBottom: "18px",
+              borderColor: "#bbf7d0",
+              background: "#f0fdf4",
+              color: "#166534",
+              fontSize: "13px",
+              fontWeight: 600,
             }}
           >
             {success}
@@ -579,59 +760,69 @@ function Employees() {
         {showForm && (
           <section
             style={{
-              backgroundColor:
-                "#ffffff",
-              padding:
-                "24px",
-              borderRadius:
-                "10px",
-              marginBottom:
-                "24px",
-              boxShadow:
-                "0 1px 3px rgba(0, 0, 0, 0.08)",
+              ...cardStyle,
+              marginBottom: "20px",
+              overflow: "hidden",
             }}
           >
             <div
               style={{
-                display:
-                  "flex",
-                alignItems:
-                  "center",
-                justifyContent:
-                  "space-between",
-                marginBottom:
-                  "20px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "16px",
+                padding: "18px 20px",
+                borderBottom:
+                  "1px solid #e2e8f0",
+                background: "#f8fafc",
+                flexWrap: "wrap",
               }}
             >
-              <h2
-                style={{
-                  margin: 0,
-                  color:
-                    "#111827",
-                }}
-              >
-                {editingId !==
-                null
-                  ? "Edit Employee"
-                  : "Add Employee"}
-              </h2>
+              <div>
+                <p
+                  style={{
+                    margin: "0 0 4px",
+                    color: "#2563eb",
+                    fontSize: "10px",
+                    fontWeight: 800,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Employee Record
+                </p>
+
+                <h2
+                  style={{
+                    margin: 0,
+                    color: "#0f172a",
+                    fontSize: "18px",
+                    fontWeight: 800,
+                  }}
+                >
+                  {editingId !== null
+                    ? "Edit Employee"
+                    : "Add Employee"}
+                </h2>
+              </div>
 
               <button
                 type="button"
-                onClick={
-                  resetForm
-                }
+                onClick={resetForm}
+                disabled={isSubmitting}
                 style={{
-                  padding:
-                    "8px 14px",
+                  minHeight: "36px",
+                  padding: "0 13px",
                   border:
-                    "1px solid #d1d5db",
-                  borderRadius:
-                    "6px",
-                  backgroundColor:
-                    "#ffffff",
-                  cursor:
-                    "pointer",
+                    "1px solid #cbd5e1",
+                  borderRadius: "7px",
+                  background: "#ffffff",
+                  color: "#475569",
+                  cursor: isSubmitting
+                    ? "not-allowed"
+                    : "pointer",
+                  fontSize: "12px",
+                  fontWeight: 700,
                 }}
               >
                 Cancel
@@ -639,54 +830,32 @@ function Employees() {
             </div>
 
             <form
-              onSubmit={
-                handleSubmit
-              }
+              onSubmit={handleSubmit}
               style={{
-                display:
-                  "grid",
+                display: "grid",
                 gridTemplateColumns:
-                  "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: "16px",
+                  "repeat(3, minmax(0, 1fr))",
+                gap: "18px",
+                padding: "22px",
               }}
             >
-              <label>
+              <label style={labelStyle}>
                 User
-
                 <select
-                  value={
-                    form.user || ""
-                  }
-                  onChange={(
-                    event,
-                  ) =>
+                  value={form.user || ""}
+                  onChange={(event) =>
                     setForm(
-                      (
-                        current,
-                      ) => ({
+                      (current) => ({
                         ...current,
-                        user:
-                          Number(
-                            event
-                              .target
-                              .value,
-                          ),
+                        user: Number(
+                          event.target.value,
+                        ),
                       }),
                     )
                   }
                   required
-                  style={{
-                    display:
-                      "block",
-                    width:
-                      "100%",
-                    marginTop:
-                      "6px",
-                    padding:
-                      "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  disabled={isSubmitting}
+                  style={inputStyle}
                 >
                   <option value="">
                     Select user
@@ -706,129 +875,81 @@ function Employees() {
                           )
                         ),
                     )
-                    .map(
-                      (user) => (
-                        <option
-                          key={user.id}
-                          value={user.id}
-                        >
-                          {user.first_name ||
-                          user.last_name
-                            ? `${user.first_name} ${user.last_name}`.trim()
-                            : user.username}
-                          {" — "}
-                          {user.username}
-                        </option>
-                      ),
-                    )}
+                    .map((user) => (
+                      <option
+                        key={user.id}
+                        value={user.id}
+                      >
+                        {getUserName(user.id)}
+                        {" - "}
+                        {user.username}
+                      </option>
+                    ))}
                 </select>
               </label>
 
-              <label>
+              <label style={labelStyle}>
                 Employee ID
-
                 <input
                   type="text"
                   value={
                     form.employee_id
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setForm(
-                      (
-                        current,
-                      ) => ({
+                      (current) => ({
                         ...current,
                         employee_id:
-                          event
-                            .target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
                   required
-                  style={{
-                    display:
-                      "block",
-                    width:
-                      "100%",
-                    marginTop:
-                      "6px",
-                    padding:
-                      "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  disabled={isSubmitting}
+                  placeholder="e.g. EMP-001"
+                  style={inputStyle}
                 />
               </label>
 
-              <label>
+              <label style={labelStyle}>
                 Department
-
                 <select
                   value={
-                    form.department ??
-                    ""
+                    form.department ?? ""
                   }
-                  onChange={(
-                    event,
-                  ) => {
+                  onChange={(event) => {
                     const departmentId =
-                      event
-                        .target
-                        .value
+                      event.target.value
                         ? Number(
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                           )
                         : null
 
                     setForm(
-                      (
-                        current,
-                      ) => ({
+                      (current) => ({
                         ...current,
                         department:
                           departmentId,
-                        designation:
-                          null,
+                        designation: null,
                       }),
                     )
                   }}
-                  style={{
-                    display:
-                      "block",
-                    width:
-                      "100%",
-                    marginTop:
-                      "6px",
-                    padding:
-                      "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  disabled={isSubmitting}
+                  style={inputStyle}
                 >
                   <option value="">
                     Select department
                   </option>
 
                   {departments.map(
-                    (
-                      department,
-                    ) => (
+                    (department) => (
                       <option
-                        key={
-                          department.id
-                        }
+                        key={department.id}
                         value={
                           department.id
                         }
                       >
-                        {
-                          department.name
-                        }
+                        {department.name}
                         {!department.is_active
                           ? " (Inactive)"
                           : ""}
@@ -838,51 +959,39 @@ function Employees() {
                 </select>
               </label>
 
-              <label>
+              <label style={labelStyle}>
                 Designation
-
                 <select
                   value={
-                    form.designation ??
-                    ""
+                    form.designation ?? ""
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setForm(
-                      (
-                        current,
-                      ) => ({
+                      (current) => ({
                         ...current,
                         designation:
-                          event
-                            .target
-                            .value
+                          event.target.value
                             ? Number(
-                                event
-                                  .target
-                                  .value,
+                                event.target.value,
                               )
                             : null,
                       }),
                     )
                   }
                   disabled={
+                    isSubmitting ||
                     !form.department ||
                     filteredDesignations.length ===
                       0
                   }
                   style={{
-                    display:
-                      "block",
-                    width:
-                      "100%",
-                    marginTop:
-                      "6px",
-                    padding:
-                      "10px",
-                    boxSizing:
-                      "border-box",
+                    ...inputStyle,
+                    background:
+                      !form.department ||
+                      filteredDesignations.length ===
+                        0
+                        ? "#f8fafc"
+                        : "#ffffff",
                   }}
                 >
                   <option value="">
@@ -895,9 +1004,7 @@ function Employees() {
                   </option>
 
                   {filteredDesignations.map(
-                    (
-                      designation,
-                    ) => (
+                    (designation) => (
                       <option
                         key={
                           designation.id
@@ -906,9 +1013,7 @@ function Employees() {
                           designation.id
                         }
                       >
-                        {
-                          designation.name
-                        }
+                        {designation.name}
                         {!designation.is_active
                           ? " (Inactive)"
                           : ""}
@@ -918,357 +1023,251 @@ function Employees() {
                 </select>
               </label>
 
-              <label>
+              <label style={labelStyle}>
                 Joining Date
-
                 <input
                   type="date"
                   value={
                     form.joining_date
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setForm(
-                      (
-                        current,
-                      ) => ({
+                      (current) => ({
                         ...current,
                         joining_date:
-                          event
-                            .target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
                   required
-                  style={{
-                    display:
-                      "block",
-                    width:
-                      "100%",
-                    marginTop:
-                      "6px",
-                    padding:
-                      "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  disabled={isSubmitting}
+                  style={inputStyle}
                 />
               </label>
 
-              <label>
+              <label style={labelStyle}>
                 Employment Type
-
                 <select
                   value={
                     form.employment_type
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setForm(
-                      (
-                        current,
-                      ) => ({
+                      (current) => ({
                         ...current,
                         employment_type:
-                          event
-                            .target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
-                  style={{
-                    display:
-                      "block",
-                    width:
-                      "100%",
-                    marginTop:
-                      "6px",
-                    padding:
-                      "10px",
-                  }}
+                  disabled={isSubmitting}
+                  style={inputStyle}
                 >
                   {employmentTypes.map(
-                    (
-                      type,
-                    ) => (
+                    (type) => (
                       <option
-                        key={
-                          type
-                        }
-                        value={
-                          type
-                        }
+                        key={type}
+                        value={type}
                       >
-                        {formatValue(
-                          type,
-                        )}
+                        {formatValue(type)}
                       </option>
                     ),
                   )}
                 </select>
               </label>
 
-              <label>
+              <label style={labelStyle}>
                 Employment Status
-
                 <select
                   value={
                     form.employment_status
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setForm(
-                      (
-                        current,
-                      ) => ({
+                      (current) => ({
                         ...current,
                         employment_status:
-                          event
-                            .target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
-                  style={{
-                    display:
-                      "block",
-                    width:
-                      "100%",
-                    marginTop:
-                      "6px",
-                    padding:
-                      "10px",
-                  }}
+                  disabled={isSubmitting}
+                  style={inputStyle}
                 >
                   {employmentStatuses.map(
-                    (
-                      status,
-                    ) => (
+                    (status) => (
                       <option
-                        key={
-                          status
-                        }
-                        value={
-                          status
-                        }
+                        key={status}
+                        value={status}
                       >
-                        {formatValue(
-                          status,
-                        )}
+                        {formatValue(status)}
                       </option>
                     ),
                   )}
                 </select>
               </label>
 
-              <label>
+              <label style={labelStyle}>
                 Manager ID
-
                 <input
                   type="number"
+                  min="1"
                   value={
-                    form.manager ??
-                    ""
+                    form.manager ?? ""
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setForm(
-                      (
-                        current,
-                      ) => ({
+                      (current) => ({
                         ...current,
                         manager:
-                          event
-                            .target
-                            .value
+                          event.target.value
                             ? Number(
-                                event
-                                  .target
-                                  .value,
+                                event.target.value,
                               )
                             : null,
                       }),
                     )
                   }
-                  style={{
-                    display:
-                      "block",
-                    width:
-                      "100%",
-                    marginTop:
-                      "6px",
-                    padding:
-                      "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  disabled={isSubmitting}
+                  placeholder="Optional"
+                  style={inputStyle}
                 />
               </label>
 
-              <label>
+              <label style={labelStyle}>
                 Date of Birth
-
                 <input
                   type="date"
                   value={
                     form.date_of_birth ??
                     ""
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setForm(
-                      (
-                        current,
-                      ) => ({
+                      (current) => ({
                         ...current,
                         date_of_birth:
-                          event
-                            .target
-                            .value ||
+                          event.target.value ||
                           null,
                       }),
                     )
                   }
-                  style={{
-                    display:
-                      "block",
-                    width:
-                      "100%",
-                    marginTop:
-                      "6px",
-                    padding:
-                      "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  disabled={isSubmitting}
+                  style={inputStyle}
                 />
               </label>
 
-              <label>
+              <label style={labelStyle}>
                 Emergency Contact
-
                 <input
                   type="text"
                   value={
                     form.emergency_contact ??
                     ""
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setForm(
-                      (
-                        current,
-                      ) => ({
+                      (current) => ({
                         ...current,
                         emergency_contact:
-                          event
-                            .target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
-                  style={{
-                    display:
-                      "block",
-                    width:
-                      "100%",
-                    marginTop:
-                      "6px",
-                    padding:
-                      "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  disabled={isSubmitting}
+                  placeholder="Phone number"
+                  style={inputStyle}
                 />
               </label>
 
               <label
                 style={{
-                  gridColumn:
-                    "1 / -1",
+                  ...labelStyle,
+                  gridColumn: "1 / -1",
                 }}
               >
                 Address
-
                 <textarea
                   value={
-                    form.address ??
-                    ""
+                    form.address ?? ""
                   }
-                  onChange={(
-                    event,
-                  ) =>
+                  onChange={(event) =>
                     setForm(
-                      (
-                        current,
-                      ) => ({
+                      (current) => ({
                         ...current,
                         address:
-                          event
-                            .target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
+                  disabled={isSubmitting}
                   rows={3}
+                  placeholder="Employee residential address"
                   style={{
-                    display:
-                      "block",
-                    width:
-                      "100%",
-                    marginTop:
-                      "6px",
-                    padding:
-                      "10px",
-                    boxSizing:
-                      "border-box",
-                    resize:
-                      "vertical",
+                    ...inputStyle,
+                    resize: "vertical",
+                    minHeight: "84px",
                   }}
                 />
               </label>
 
               <div
                 style={{
-                  gridColumn:
-                    "1 / -1",
+                  gridColumn: "1 / -1",
+                  display: "flex",
+                  justifyContent:
+                    "flex-end",
+                  gap: "10px",
+                  paddingTop: "2px",
+                  borderTop:
+                    "1px solid #e2e8f0",
                 }}
               >
                 <button
-                  type="submit"
-                  disabled={
-                    isSubmitting
-                  }
+                  type="button"
+                  onClick={resetForm}
+                  disabled={isSubmitting}
                   style={{
-                    padding:
-                      "10px 18px",
+                    minHeight: "40px",
+                    padding: "0 15px",
                     border:
-                      "none",
-                    borderRadius:
-                      "6px",
-                    backgroundColor:
+                      "1px solid #cbd5e1",
+                    borderRadius: "8px",
+                    background: "#ffffff",
+                    color: "#475569",
+                    cursor: isSubmitting
+                      ? "not-allowed"
+                      : "pointer",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  style={{
+                    minHeight: "40px",
+                    padding: "0 18px",
+                    border: "none",
+                    borderRadius: "8px",
+                    background:
                       isSubmitting
-                        ? "#9ca3af"
-                        : "#16a34a",
-                    color:
-                      "#ffffff",
-                    cursor:
-                      isSubmitting
-                        ? "not-allowed"
-                        : "pointer",
+                        ? "#93c5fd"
+                        : "#2563eb",
+                    color: "#ffffff",
+                    cursor: isSubmitting
+                      ? "not-allowed"
+                      : "pointer",
+                    fontSize: "12px",
+                    fontWeight: 800,
                   }}
                 >
                   {isSubmitting
                     ? "Saving..."
-                    : editingId !==
-                        null
+                    : editingId !== null
                       ? "Update Employee"
                       : "Save Employee"}
                 </button>
@@ -1278,268 +1277,567 @@ function Employees() {
         )}
 
         {isLoading && (
-          <p>
-            Loading employees...
-          </p>
+          <section
+            style={{
+              ...cardStyle,
+              padding: "48px 20px",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                width: "30px",
+                height: "30px",
+                margin: "0 auto 12px",
+                border:
+                  "3px solid #dbeafe",
+                borderTopColor:
+                  "#2563eb",
+                borderRadius: "50%",
+                animation:
+                  "employees-spin 0.8s linear infinite",
+              }}
+            />
+
+            <p
+              style={{
+                margin: 0,
+                color: "#64748b",
+                fontSize: "13px",
+                fontWeight: 600,
+              }}
+            >
+              Loading employees...
+            </p>
+
+            <style>
+              {`
+                @keyframes employees-spin {
+                  to {
+                    transform: rotate(360deg);
+                  }
+                }
+              `}
+            </style>
+          </section>
         )}
 
         {!isLoading &&
           !error &&
-          employees.length ===
-            0 && (
+          employees.length === 0 && (
             <section
               style={{
-                backgroundColor:
-                  "#ffffff",
-                padding:
-                  "24px",
-                borderRadius:
-                  "8px",
+                ...cardStyle,
+                padding: "50px 20px",
+                textAlign: "center",
               }}
             >
-              <p>
-                No employees
-                found.
+              <h2
+                style={{
+                  margin: "0 0 8px",
+                  color: "#334155",
+                  fontSize: "18px",
+                }}
+              >
+                No employees found
+              </h2>
+
+              <p
+                style={{
+                  margin: 0,
+                  color: "#94a3b8",
+                  fontSize: "13px",
+                }}
+              >
+                Add your first employee
+                record to begin managing
+                the workforce.
               </p>
+
+              <button
+                type="button"
+                onClick={handleAdd}
+                style={{
+                  marginTop: "18px",
+                  minHeight: "38px",
+                  padding: "0 15px",
+                  border: "none",
+                  borderRadius: "8px",
+                  background: "#2563eb",
+                  color: "#ffffff",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                }}
+              >
+                Add Employee
+              </button>
             </section>
           )}
 
         {!isLoading &&
-          employees.length >
-            0 && (
+          employees.length > 0 && (
             <section
               style={{
-                backgroundColor:
-                  "#ffffff",
-                borderRadius:
-                  "8px",
-                overflow:
-                  "auto",
+                ...cardStyle,
+                overflow: "hidden",
               }}
             >
-              <table
+              <div
                 style={{
-                  width:
-                    "100%",
-                  borderCollapse:
-                    "collapse",
-                  minWidth:
-                    "1100px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent:
+                    "space-between",
+                  gap: "12px",
+                  padding: "16px 18px",
+                  borderBottom:
+                    "1px solid #e2e8f0",
+                  background: "#ffffff",
                 }}
               >
-                <thead>
-                  <tr>
-                    {[
-                      "Employee ID",
-                      "Name",
-                      "Department",
-                      "Designation",
-                      "Status",
-                      "Joining Date",
-                      "Actions",
-                    ].map(
-                      (
-                        heading,
-                      ) => (
-                        <th
-                          key={
-                            heading
-                          }
-                          style={{
-                            padding:
-                              "14px",
-                            textAlign:
-                              "left",
-                            borderBottom:
-                              "1px solid #e5e7eb",
-                          }}
-                        >
-                          {
-                            heading
-                          }
-                        </th>
-                      ),
-                    )}
-                  </tr>
-                </thead>
+                <div>
+                  <h2
+                    style={{
+                      margin: 0,
+                      color: "#0f172a",
+                      fontSize: "15px",
+                      fontWeight: 800,
+                    }}
+                  >
+                    Employee Directory
+                  </h2>
 
-                <tbody>
-                  {employees.map(
-                    (
-                      employee,
-                    ) => (
-                      <tr
-                        key={
-                          employee.id
-                        }
-                      >
-                        <td
-                          style={{
-                            padding:
-                              "14px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                          }}
-                        >
-                          {
-                            employee.employee_id
-                          }
-                        </td>
+                  <p
+                    style={{
+                      margin: "4px 0 0",
+                      color: "#94a3b8",
+                      fontSize: "11px",
+                    }}
+                  >
+                    {employees.length}{" "}
+                    employee
+                    {employees.length ===
+                    1
+                      ? ""
+                      : "s"}{" "}
+                    in the organization
+                  </p>
+                </div>
+              </div>
 
-                        <td
-                          style={{
-                            padding:
-                              "14px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                          }}
-                        >
-                          {
-                            employee.full_name ||
-                            "-"
-                          }
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "14px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                          }}
-                        >
-                          {getDepartmentName(
-                            employee.department,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "14px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                          }}
-                        >
-                          {getDesignationName(
-                            employee.designation,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "14px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                          }}
-                        >
-                          {formatValue(
-                            employee.employment_status,
-                          )}
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "14px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                          }}
-                        >
-                          {
-                            employee.joining_date
-                          }
-                        </td>
-
-                        <td
-                          style={{
-                            padding:
-                              "14px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                          }}
-                        >
-                          <div
+              <div
+                style={{
+                  width: "100%",
+                  overflowX: "auto",
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse:
+                      "collapse",
+                    minWidth: "1080px",
+                  }}
+                >
+                  <thead>
+                    <tr
+                      style={{
+                        background:
+                          "#f8fafc",
+                      }}
+                    >
+                      {[
+                        "Employee ID",
+                        "Employee",
+                        "Department",
+                        "Designation",
+                        "Status",
+                        "Joining Date",
+                        "Actions",
+                      ].map(
+                        (heading) => (
+                          <th
+                            key={heading}
+                            scope="col"
                             style={{
-                              display:
-                                "flex",
-                              gap:
-                                "8px",
+                              padding:
+                                "11px 14px",
+                              textAlign:
+                                "left",
+                              color:
+                                "#64748b",
+                              borderBottom:
+                                "1px solid #e2e8f0",
+                              fontSize:
+                                "10px",
+                              fontWeight:
+                                800,
+                              letterSpacing:
+                                "0.04em",
+                              textTransform:
+                                "uppercase",
+                              whiteSpace:
+                                "nowrap",
                             }}
                           >
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleEdit(
-                                  employee,
-                                )
-                              }
-                              style={{
-                                padding:
-                                  "7px 12px",
-                                border:
-                                  "1px solid #2563eb",
-                                borderRadius:
-                                  "6px",
-                                backgroundColor:
-                                  "#ffffff",
-                                color:
-                                  "#2563eb",
-                                cursor:
-                                  "pointer",
-                              }}
-                            >
-                              Edit
-                            </button>
+                            {heading}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
 
-                            <button
-                              type="button"
-                              disabled={
-                                deletingId ===
-                                employee.id
-                              }
-                              onClick={() =>
-                                void handleDelete(
-                                  employee.id,
-                                )
-                              }
+                  <tbody>
+                    {employees.map(
+                      (employee) => (
+                        <tr
+                          key={
+                            employee.id
+                          }
+                          style={{
+                            transition:
+                              "background 0.15s ease",
+                          }}
+                        >
+                          <td
+                            style={{
+                              padding:
+                                "14px",
+                              borderBottom:
+                                "1px solid #f1f5f9",
+                              color:
+                                "#334155",
+                              fontSize:
+                                "12px",
+                              fontWeight:
+                                700,
+                              whiteSpace:
+                                "nowrap",
+                            }}
+                          >
+                            {
+                              employee.employee_id
+                            }
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "14px",
+                              borderBottom:
+                                "1px solid #f1f5f9",
+                            }}
+                          >
+                            <div
                               style={{
-                                padding:
-                                  "7px 12px",
-                                border:
-                                  "none",
-                                borderRadius:
-                                  "6px",
-                                backgroundColor:
-                                  deletingId ===
-                                  employee.id
-                                    ? "#9ca3af"
-                                    : "#dc2626",
-                                color:
-                                  "#ffffff",
-                                cursor:
-                                  deletingId ===
-                                  employee.id
-                                    ? "not-allowed"
-                                    : "pointer",
+                                display:
+                                  "flex",
+                                alignItems:
+                                  "center",
+                                gap: "10px",
                               }}
                             >
-                              {deletingId ===
-                              employee.id
-                                ? "Deleting..."
-                                : "Delete"}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ),
-                  )}
-                </tbody>
-              </table>
+                              <div
+                                style={{
+                                  width:
+                                    "34px",
+                                  height:
+                                    "34px",
+                                  flexShrink:
+                                    0,
+                                  display:
+                                    "flex",
+                                  alignItems:
+                                    "center",
+                                  justifyContent:
+                                    "center",
+                                  borderRadius:
+                                    "9px",
+                                  background:
+                                    "#eff6ff",
+                                  color:
+                                    "#2563eb",
+                                  fontSize:
+                                    "12px",
+                                  fontWeight:
+                                    800,
+                                }}
+                              >
+                                {(
+                                  employee.full_name ||
+                                  "E"
+                                )
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </div>
+
+                              <div>
+                                <div
+                                  style={{
+                                    color:
+                                      "#0f172a",
+                                    fontSize:
+                                      "12px",
+                                    fontWeight:
+                                      700,
+                                  }}
+                                >
+                                  {employee.full_name ||
+                                    "-"}
+                                </div>
+
+                                <div
+                                  style={{
+                                    marginTop:
+                                      "3px",
+                                    color:
+                                      "#94a3b8",
+                                    fontSize:
+                                      "10px",
+                                  }}
+                                >
+                                  {
+                                    getUserName(
+                                      employee.user,
+                                    )
+                                  }
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "14px",
+                              borderBottom:
+                                "1px solid #f1f5f9",
+                              color:
+                                "#475569",
+                              fontSize:
+                                "12px",
+                            }}
+                          >
+                            {getDepartmentName(
+                              employee.department,
+                            )}
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "14px",
+                              borderBottom:
+                                "1px solid #f1f5f9",
+                              color:
+                                "#475569",
+                              fontSize:
+                                "12px",
+                            }}
+                          >
+                            {getDesignationName(
+                              employee.designation,
+                            )}
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "14px",
+                              borderBottom:
+                                "1px solid #f1f5f9",
+                            }}
+                          >
+                            <span
+                              style={{
+                                display:
+                                  "inline-flex",
+                                alignItems:
+                                  "center",
+                                minHeight:
+                                  "24px",
+                                padding:
+                                  "0 9px",
+                                borderRadius:
+                                  "999px",
+                                fontSize:
+                                  "10px",
+                                fontWeight:
+                                  800,
+                                ...getStatusStyle(
+                                  employee.employment_status,
+                                ),
+                              }}
+                            >
+                              {formatValue(
+                                employee.employment_status,
+                              )}
+                            </span>
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "14px",
+                              borderBottom:
+                                "1px solid #f1f5f9",
+                              color:
+                                "#475569",
+                              fontSize:
+                                "12px",
+                              whiteSpace:
+                                "nowrap",
+                            }}
+                          >
+                            {
+                              employee.joining_date
+                            }
+                          </td>
+
+                          <td
+                            style={{
+                              padding:
+                                "14px",
+                              borderBottom:
+                                "1px solid #f1f5f9",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display:
+                                  "flex",
+                                gap: "7px",
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleEdit(
+                                    employee,
+                                  )
+                                }
+                                style={{
+                                  minHeight:
+                                    "30px",
+                                  padding:
+                                    "0 10px",
+                                  border:
+                                    "1px solid #bfdbfe",
+                                  borderRadius:
+                                    "6px",
+                                  background:
+                                    "#eff6ff",
+                                  color:
+                                    "#1d4ed8",
+                                  cursor:
+                                    "pointer",
+                                  fontSize:
+                                    "11px",
+                                  fontWeight:
+                                    700,
+                                }}
+                              >
+                                Edit
+                              </button>
+
+                              <button
+                                type="button"
+                                disabled={
+                                  deletingId ===
+                                  employee.id
+                                }
+                                onClick={() =>
+                                  void handleDelete(
+                                    employee.id,
+                                  )
+                                }
+                                style={{
+                                  minHeight:
+                                    "30px",
+                                  padding:
+                                    "0 10px",
+                                  border:
+                                    "1px solid #fecaca",
+                                  borderRadius:
+                                    "6px",
+                                  background:
+                                    deletingId ===
+                                    employee.id
+                                      ? "#f1f5f9"
+                                      : "#fef2f2",
+                                  color:
+                                    deletingId ===
+                                    employee.id
+                                      ? "#94a3b8"
+                                      : "#b91c1c",
+                                  cursor:
+                                    deletingId ===
+                                    employee.id
+                                      ? "not-allowed"
+                                      : "pointer",
+                                  fontSize:
+                                    "11px",
+                                  fontWeight:
+                                    700,
+                                }}
+                              >
+                                {deletingId ===
+                                employee.id
+                                  ? "Deleting..."
+                                  : "Delete"}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ),
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </section>
           )}
       </section>
+
+      <style>
+        {`
+          @media (max-width: 1000px) {
+            main {
+              padding: 22px !important;
+            }
+
+            main section form {
+              grid-template-columns: repeat(
+                2,
+                minmax(0, 1fr)
+              ) !important;
+            }
+          }
+
+          @media (max-width: 680px) {
+            main {
+              padding: 16px !important;
+            }
+
+            main section form {
+              grid-template-columns: 1fr !important;
+            }
+
+            main section form label[style*="grid-column"] {
+              grid-column: auto !important;
+            }
+
+            main section form > div {
+              grid-column: auto !important;
+              flex-wrap: wrap;
+            }
+
+            main > section > section:first-of-type {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}
+      </style>
     </main>
   )
 }
