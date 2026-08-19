@@ -82,6 +82,14 @@ class CandidateAPITestCase(APITestCase):
             status.HTTP_200_OK,
         )
 
+    def test_unauthenticated_user_cannot_list_candidates(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
     def test_hr_can_create_candidate(self):
         self.authenticate(self.hr_user)
 
