@@ -445,6 +445,37 @@ class CandidateAPITestCase(APITestCase):
             Candidate.ApplicationStatus.SHORTLISTED,
         )
 
+    def test_hr_can_delete_candidate(self):
+        self.authenticate(self.hr_user)
+
+        candidate = Candidate.objects.create(
+            first_name="HR",
+            last_name="Delete",
+            email="hr_delete_candidate@test.com",
+            phone="9876543601",
+            job_title="Software Engineer",
+            department=self.department,
+            status=Candidate.ApplicationStatus.APPLIED,
+        )
+
+        response = self.client.delete(
+            reverse(
+                "recruitment-detail",
+                kwargs={"pk": candidate.id},
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_204_NO_CONTENT,
+        )
+
+        self.assertFalse(
+            Candidate.objects.filter(
+                pk=candidate.id,
+            ).exists()
+        )
+
     def test_candidate_delete(self):
         self.authenticate(self.hr_user)
 
