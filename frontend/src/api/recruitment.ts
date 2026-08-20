@@ -49,16 +49,15 @@ export interface CandidatePayload {
   joining_date?: string | null
 }
 
-export const getCandidates = async (): Promise<
-  CandidateListResponse | Candidate[]
-> => {
-  const response =
-    await apiClient.get<
-      CandidateListResponse | Candidate[]
-    >("/recruitment/")
+export const getCandidates =
+  async (): Promise<CandidateListResponse> => {
+    const response =
+      await apiClient.get<CandidateListResponse>(
+        "/recruitment/",
+      )
 
-  return response.data
-}
+    return response.data
+  }
 
 export const createCandidate = async (
   data: CandidatePayload,
