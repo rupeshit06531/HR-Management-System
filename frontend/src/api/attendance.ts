@@ -12,11 +12,9 @@ export interface Attendance {
   check_in_latitude: string | null
   check_in_longitude: string | null
   check_in_accuracy: string | null
-
   check_out_latitude: string | null
   check_out_longitude: string | null
   check_out_accuracy: string | null
-
   check_in_selfie: string | null
 
   status: string
@@ -37,27 +35,21 @@ export interface AttendancePayload {
   date: string
   check_in?: string | null
   check_out?: string | null
-
-  check_in_latitude?: number | string | null
-  check_in_longitude?: number | string | null
-  check_in_accuracy?: number | string | null
-
-  check_out_latitude?: number | string | null
-  check_out_longitude?: number | string | null
-  check_out_accuracy?: number | string | null
-
-  check_in_selfie?: File | null
-
   status: string
   remarks?: string
 }
 
-export interface PunchInPayload {
+export interface AttendancePunchInPayload {
   latitude: number
   longitude: number
   accuracy?: number | null
   selfie: File
   remarks?: string
+}
+
+export interface AttendancePunchInResponse {
+  message: string
+  attendance: Attendance
 }
 
 export const getAttendance =
@@ -103,9 +95,9 @@ export const deleteAttendance = async (
   )
 }
 
-export const punchIn = async (
-  data: PunchInPayload,
-): Promise<Attendance> => {
+export const punchInAttendance = async (
+  data: AttendancePunchInPayload,
+): Promise<AttendancePunchInResponse> => {
   const formData = new FormData()
 
   formData.append(
@@ -118,7 +110,8 @@ export const punchIn = async (
     String(data.longitude),
   )
 
-  if (data.accuracy !== undefined && data.accuracy !== null) {
+  if (data.accuracy !== undefined &&
+      data.accuracy !== null) {
     formData.append(
       "accuracy",
       String(data.accuracy),
@@ -128,7 +121,6 @@ export const punchIn = async (
   formData.append(
     "selfie",
     data.selfie,
-    data.selfie.name || "attendance-selfie.jpg",
   )
 
   if (data.remarks) {
@@ -139,7 +131,7 @@ export const punchIn = async (
   }
 
   const response =
-    await apiClient.post<Attendance>(
+    await apiClient.post<AttendancePunchInResponse>(
       "/attendance/punch-in/",
       formData,
     )
