@@ -24,6 +24,13 @@ class AttendanceSerializer(serializers.ModelSerializer):
             "date",
             "check_in",
             "check_out",
+            "check_in_latitude",
+            "check_in_longitude",
+            "check_in_accuracy",
+            "check_out_latitude",
+            "check_out_longitude",
+            "check_out_accuracy",
+            "check_in_selfie",
             "status",
             "remarks",
             "created_at",
@@ -89,16 +96,6 @@ class AttendanceSerializer(serializers.ModelSerializer):
                 }
             )
 
-        if check_in is not None and check_out is None:
-            raise serializers.ValidationError(
-                {
-                    "check_out": (
-                        "Check-out time is required when check-in "
-                        "time is provided."
-                    )
-                }
-            )
-
         if check_in is not None and check_out is not None:
             if check_out <= check_in:
                 raise serializers.ValidationError(
@@ -110,3 +107,63 @@ class AttendanceSerializer(serializers.ModelSerializer):
                 )
 
         return attrs
+
+class AttendancePunchInSerializer(serializers.Serializer):
+    latitude = serializers.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+    )
+
+    longitude = serializers.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+    )
+
+    accuracy = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        allow_null=True,
+    )
+
+    selfie = serializers.ImageField(
+        required=True,
+        allow_empty_file=False,
+    )
+
+    remarks = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
+
+    def validate_latitude(self, value):
+        if value < -90 or value > 90:
+            raise serializers.ValidationError(
+                "Latitude must be between -90 and 90."
+            )
+
+        return value
+
+    def validate_longitude(self, value):
+        if value < -180 or value > 180:
+            raise serializers.ValidationError(
+                "Longitude must be between -180 and 180."
+            )
+
+        return value
+
+    def validate_accuracy(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError(
+                "GPS accuracy cannot be negative."
+            )
+
+        return value
+
+    def validate_selfie(self, value):
+        if value.size <= 0:
+            raise serializers.ValidationError(
+                "Selfie file cannot be empty."
+            )
+
+        return value

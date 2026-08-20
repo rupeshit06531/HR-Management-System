@@ -30,6 +30,59 @@ class Attendance(models.Model):
         blank=True,
     )
 
+    # Punch-in location
+    check_in_latitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+    )
+
+    check_in_longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+    )
+
+    check_in_accuracy = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="GPS accuracy in meters.",
+    )
+
+    # Punch-out location
+    check_out_latitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+    )
+
+    check_out_longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True,
+    )
+
+    check_out_accuracy = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="GPS accuracy in meters.",
+    )
+
+    # Mandatory selfie for verified punch-in.
+    check_in_selfie = models.ImageField(
+        upload_to="attendance/selfies/%Y/%m/%d/",
+        null=True,
+        blank=True,
+    )
+
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -61,15 +114,6 @@ class Attendance(models.Model):
                     "date",
                 ],
                 name="attendance_employee_date_unique",
-            ),
-            models.CheckConstraint(
-                condition=Q(
-                    check_in__isnull=True,
-                )
-                | Q(
-                    check_out__isnull=False,
-                ),
-                name="attendance_checkin_requires_checkout",
             ),
             models.CheckConstraint(
                 condition=Q(
