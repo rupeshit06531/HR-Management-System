@@ -34,17 +34,15 @@ export interface CreateAnnouncementRequest {
   is_active: boolean
 }
 
-export const getAnnouncements = async (): Promise<
-  AnnouncementListResponse | AnnouncementRecord[]
-> => {
-  const response =
-    await apiClient.get<
-      AnnouncementListResponse |
-      AnnouncementRecord[]
-    >("/announcements/")
+export const getAnnouncements =
+  async (): Promise<AnnouncementListResponse> => {
+    const response =
+      await apiClient.get<AnnouncementListResponse>(
+        "/announcements/",
+      )
 
-  return response.data
-}
+    return response.data
+  }
 
 export const createAnnouncement = async (
   data: CreateAnnouncementRequest,
