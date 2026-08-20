@@ -3,19 +3,28 @@ import apiClient from "./client"
 export interface Employee {
   id: number
   user: number
-  full_name?: string
+  full_name: string
+  user_name: string
+  user_username: string
+  user_email: string
   employee_id: string
   department: number | null
+  department_name: string | null
   designation: number | null
+  designation_name: string | null
   joining_date: string
   employment_type: string
+  employment_type_label: string
   employment_status: string
+  employment_status_label: string
   manager: number | null
+  manager_name: string | null
+  manager_employee_id: string | null
   date_of_birth: string | null
   address: string
   emergency_contact: string
-  created_at?: string
-  updated_at?: string
+  created_at: string
+  updated_at: string
 }
 
 export interface EmployeeListResponse {
@@ -39,40 +48,31 @@ export interface EmployeePayload {
   emergency_contact?: string
 }
 
-export const getEmployees = async (): Promise<
-  EmployeeListResponse | Employee[]
-> => {
-  const response = await apiClient.get<
-    EmployeeListResponse | Employee[]
-  >("/employees/")
+export const getEmployees =
+  async (): Promise<EmployeeListResponse> => {
+    const response =
+      await apiClient.get<EmployeeListResponse>(
+        "/employees/",
+      )
 
-  return response.data
-}
+    return response.data
+  }
 
 export const getEmployeeByUserId = async (
   userId: number,
 ): Promise<Employee | null> => {
-  const response = await apiClient.get<
-    EmployeeListResponse | Employee[]
-  >("/employees/", {
-    params: {
-      user: userId,
-    },
-  })
-
-  const data = response.data
-
-  if (Array.isArray(data)) {
-    return (
-      data.find(
-        (employee) =>
-          employee.user === userId,
-      ) ?? null
+  const response =
+    await apiClient.get<EmployeeListResponse>(
+      "/employees/",
+      {
+        params: {
+          user: userId,
+        },
+      },
     )
-  }
 
   return (
-    data.results.find(
+    response.data.results.find(
       (employee) =>
         employee.user === userId,
     ) ?? null
