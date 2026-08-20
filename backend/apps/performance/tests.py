@@ -62,12 +62,21 @@ class PerformanceReviewAPITestCase(APITestCase):
             role=User.Role.EMPLOYEE,
         )
 
+        cls.manager_employee = Employee.objects.create(
+            user=cls.manager_user,
+            employee_id="PERF-MGR-001",
+            department=cls.department,
+            designation=cls.designation,
+            joining_date=date(2026, 1, 1),
+        )
+
         cls.employee = Employee.objects.create(
             user=cls.employee_user,
             employee_id="PERF-EMP-001",
             department=cls.department,
             designation=cls.designation,
             joining_date=date(2026, 1, 1),
+            manager=cls.manager_employee,
         )
 
     def setUp(self):
