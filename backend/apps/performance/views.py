@@ -1,6 +1,9 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, viewsets
+from rest_framework import filters, status, viewsets
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
 
+from apps.accounts.models import User
 from apps.accounts.permissions import (
     IsManagerOrHROrSuperAdmin,
 )
@@ -53,7 +56,7 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
     ]
 
     def get_queryset(self):
-        return (
+        queryset = (
             PerformanceReview.objects
             .select_related(
                 "employee",
@@ -63,3 +66,74 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
             )
             .all()
         )
+
+        user = self.request.user
+
+        if user.role in {
+            User.Role.HR,
+            User.Role.SUPER_ADMIN,
+        }:
+            return queryset
+
+        if user.role == User.Role.MANAGER:
+            manager_employee = getattr(
+                user,
+                "employee_profile",
+                None,
+            )
+
+            if manager_employee is None:
+                return queryset.none()
+
+            return queryset.filter(
+                employee__manager=manager_employee,
+            )
+
+        return queryset.none()
+
+    def _validate_manager_employee_access(
+        self,
+        employee,
+    ):
+        user = self.request.user
+
+        if user.role != User.Role.MANAGER:
+            return
+
+        manager_employee = getattr(
+            user,
+            "employee_profile",
+            None,
+        )
+
+        if manager_employee is None:
+            raise PermissionDenied(
+                "Manager employee profile is required.",
+            )
+
+        if employee.manager_id != manager_employee.id:
+            raise PermissionDenied(
+                "Managers can only manage performance "
+                "reviews for their team members.",
+            )
+
+    def perform_create(self, serializer):
+        employee = serializer.validated_data["employee"]
+
+        self._validate_manager_employee_access(
+            employee,
+        )
+
+        serializer.save()
+
+    def perform_update(self, serializer):
+        employee = serializer.validated_data.get(
+            "employee",
+            serializer.instance.employee,
+        )
+
+        self._validate_manager_employee_access(
+            employee,
+        )
+
+        serializer.save()
