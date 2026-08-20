@@ -31,14 +31,11 @@ export interface CreatePerformanceRequest {
 }
 
 export const getPerformanceReviews =
-  async (): Promise<
-    PerformanceListResponse | PerformanceReview[]
-  > => {
+  async (): Promise<PerformanceListResponse> => {
     const response =
-      await apiClient.get<
-        PerformanceListResponse |
-        PerformanceReview[]
-      >("/performance/")
+      await apiClient.get<PerformanceListResponse>(
+        "/performance/",
+      )
 
     return response.data
   }
