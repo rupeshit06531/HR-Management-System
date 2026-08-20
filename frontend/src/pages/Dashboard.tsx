@@ -1,5 +1,11 @@
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react"
 import { useNavigate } from "react-router-dom"
 
+import { getDashboard } from "../api/dashboard"
 import { useAuth } from "../context/AuthContext"
 
 interface ModuleItem {
@@ -42,7 +48,11 @@ const moduleItems: ModuleItem[] = [
   {
     label: "Payroll",
     path: "/payroll",
-    roles: ["SUPER_ADMIN", "HR", "EMPLOYEE"],
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+      "EMPLOYEE",
+    ],
   },
   {
     label: "Performance",
@@ -103,10 +113,72 @@ function Dashboard() {
 
   const {
     user,
-    isLoading,
+    isLoading: authLoading,
   } = useAuth()
 
-  if (isLoading) {
+  const [dashboard, setDashboard] =
+    useState<Awaited<
+      ReturnType<typeof getDashboard>
+    > | null>(null)
+
+  const [isLoading, setIsLoading] =
+    useState(true)
+
+  const [error, setError] =
+    useState<string | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadDashboard = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        const data = await getDashboard()
+
+        if (isMounted) {
+          setDashboard(data)
+        }
+      } catch (requestError) {
+        console.error(
+          "Failed to load dashboard:",
+          requestError,
+        )
+
+        if (isMounted) {
+          setError(
+            "Unable to load dashboard data. Please refresh the page.",
+          )
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    if (!authLoading && user) {
+      void loadDashboard()
+    }
+
+    return () => {
+      isMounted = false
+    }
+  }, [authLoading, user])
+
+  const visibleModules = useMemo(() => {
+    if (!user) {
+      return []
+    }
+
+    return moduleItems.filter(
+      (item) =>
+        item.roles.includes(user.role),
+    )
+  }, [user])
+
+  if (authLoading || isLoading) {
     return (
       <div
         style={{
@@ -137,11 +209,11 @@ function Dashboard() {
     roleLabels[user.role] ||
     user.role
 
-  const visibleModules =
-    moduleItems.filter(
-      (item) =>
-        item.roles.includes(user.role),
-    )
+  const employeeMetrics =
+    dashboard?.employees
+
+  const userMetrics =
+    dashboard?.users
 
   return (
     <div
@@ -225,6 +297,23 @@ function Dashboard() {
         </div>
       </header>
 
+      {error && (
+        <section
+          style={{
+            marginBottom: "20px",
+            padding: "13px 15px",
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            borderRadius: "10px",
+            color: "#b91c1c",
+            fontSize: "13px",
+            fontWeight: 600,
+          }}
+        >
+          {error}
+        </section>
+      )}
+
       <section
         style={{
           display: "grid",
@@ -236,26 +325,28 @@ function Dashboard() {
       >
         {[
           {
-            label: "Current Role",
-            value: currentRole,
+            label: "Total Employees",
+            value:
+              employeeMetrics?.total ?? 0,
             accent: "#2563eb",
           },
           {
-            label: "Username",
-            value: user.username,
-            accent: "#4f46e5",
-          },
-          {
-            label: "Email",
+            label: "Active Employees",
             value:
-              user.email ||
-              "Not available",
-            accent: "#0891b2",
+              employeeMetrics?.active ?? 0,
+            accent: "#16a34a",
           },
           {
-            label: "User ID",
-            value: String(user.id),
-            accent: "#0f766e",
+            label: "Inactive Employees",
+            value:
+              employeeMetrics?.inactive ?? 0,
+            accent: "#f59e0b",
+          },
+          {
+            label: "Total Users",
+            value:
+              userMetrics?.total ?? 0,
+            accent: "#7c3aed",
           },
         ].map((card) => (
           <article
@@ -299,13 +390,9 @@ function Dashboard() {
               style={{
                 margin: "8px 0 0",
                 color: "#0f172a",
-                fontSize:
-                  card.label === "Email"
-                    ? "14px"
-                    : "18px",
+                fontSize: "22px",
                 lineHeight: 1.3,
-                fontWeight: 750,
-                wordBreak: "break-word",
+                fontWeight: 800,
               }}
             >
               {card.value}
@@ -379,9 +466,8 @@ function Dashboard() {
               maxWidth: "620px",
             }}
           >
-            Access employees, attendance, leave,
-            payroll, performance and recruitment
-            modules based on your access level.
+            Monitor workforce metrics and access
+            HRMS modules based on your access level.
           </p>
         </div>
       </section>

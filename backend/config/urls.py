@@ -18,6 +18,7 @@ urlpatterns = [
     path("api/", include("apps.announcements.urls")),
     path("api/", include("apps.holidays.urls")),
     path("api/", include("apps.departments.urls")),
+    path("api/", include("apps.dashboard.urls")),
 ]
 
 if settings.DEBUG:
