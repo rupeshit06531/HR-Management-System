@@ -1,4 +1,4 @@
-from django.db.models import Count
+from django.db.models import Count, Q
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,49 +13,88 @@ class DashboardView(APIView):
     ]
 
     def get(self, request):
+        user = request.user
+
         employee_queryset = Employee.objects.all()
 
-        total_employees = employee_queryset.count()
+        if user.role == User.Role.MANAGER:
+            try:
+                manager_employee = user.employee_profile
+            except Employee.DoesNotExist:
+                employee_queryset = employee_queryset.none()
+            else:
+                employee_queryset = employee_queryset.filter(
+                    manager=manager_employee,
+                )
 
-        active_employees = employee_queryset.filter(
-            employment_status=Employee.EmploymentStatus.ACTIVE,
-        ).count()
+        elif user.role == User.Role.EMPLOYEE:
+            try:
+                employee_profile = user.employee_profile
+            except Employee.DoesNotExist:
+                employee_queryset = employee_queryset.none()
+            else:
+                employee_queryset = employee_queryset.filter(
+                    id=employee_profile.id,
+                )
 
-        inactive_employees = employee_queryset.filter(
-            employment_status=Employee.EmploymentStatus.INACTIVE,
-        ).count()
-
-        resigned_employees = employee_queryset.filter(
-            employment_status=Employee.EmploymentStatus.RESIGNED,
-        ).count()
-
-        terminated_employees = employee_queryset.filter(
-            employment_status=Employee.EmploymentStatus.TERMINATED,
-        ).count()
-
-        role_distribution = dict(
-            User.objects.values("role")
-            .annotate(total=Count("id"))
-            .values_list("role", "total")
+        employee_metrics = employee_queryset.aggregate(
+            total=Count("id"),
+            active=Count(
+                "id",
+                filter=Q(
+                    employment_status=(
+                        Employee.EmploymentStatus.ACTIVE
+                    ),
+                ),
+            ),
+            inactive=Count(
+                "id",
+                filter=Q(
+                    employment_status=(
+                        Employee.EmploymentStatus.INACTIVE
+                    ),
+                ),
+            ),
+            resigned=Count(
+                "id",
+                filter=Q(
+                    employment_status=(
+                        Employee.EmploymentStatus.RESIGNED
+                    ),
+                ),
+            ),
+            terminated=Count(
+                "id",
+                filter=Q(
+                    employment_status=(
+                        Employee.EmploymentStatus.TERMINATED
+                    ),
+                ),
+            ),
         )
 
-        return Response(
-            {
-                "user": {
-                    "id": request.user.id,
-                    "username": request.user.username,
-                    "role": request.user.role,
-                },
-                "employees": {
-                    "total": total_employees,
-                    "active": active_employees,
-                    "inactive": inactive_employees,
-                    "resigned": resigned_employees,
-                    "terminated": terminated_employees,
-                },
-                "users": {
-                    "total": User.objects.count(),
-                    "roles": role_distribution,
-                },
+        dashboard_data = {
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "role": user.role,
+            },
+            "employees": employee_metrics,
+        }
+
+        if user.role in {
+            User.Role.SUPER_ADMIN,
+            User.Role.HR,
+        }:
+            role_distribution = dict(
+                User.objects.values("role")
+                .annotate(total=Count("id"))
+                .values_list("role", "total")
+            )
+
+            dashboard_data["users"] = {
+                "total": User.objects.count(),
+                "roles": role_distribution,
             }
-        )
+
+        return Response(dashboard_data)
