@@ -411,6 +411,23 @@ else:
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
 
+# Production environment validation
+if ENVIRONMENT == "production":
+    if not SECRET_KEY:
+        raise RuntimeError(
+            "DJANGO_SECRET_KEY must be configured in production."
+        )
+
+    if not ALLOWED_HOSTS:
+        raise RuntimeError(
+            "DJANGO_ALLOWED_HOSTS must be configured in production."
+        )
+
+    if DATABASE_ENGINE != "django.db.backends.postgresql":
+        raise RuntimeError(
+            "Production environment requires PostgreSQL."
+        )
+
 # ============================================================
 # DEFAULT PRIMARY KEY
 # ============================================================
