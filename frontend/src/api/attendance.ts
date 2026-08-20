@@ -110,8 +110,10 @@ export const punchInAttendance = async (
     String(data.longitude),
   )
 
-  if (data.accuracy !== undefined &&
-      data.accuracy !== null) {
+  if (
+    data.accuracy !== undefined &&
+    data.accuracy !== null
+  ) {
     formData.append(
       "accuracy",
       String(data.accuracy),
@@ -136,7 +138,7 @@ export const punchInAttendance = async (
       formData,
       {
         headers: {
-          "Content-Type": undefined,
+          "Content-Type": "multipart/form-data",
         },
       },
     )
