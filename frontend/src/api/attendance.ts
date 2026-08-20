@@ -30,15 +30,15 @@ export interface AttendancePayload {
   remarks?: string
 }
 
-export const getAttendance = async (): Promise<
-  AttendanceListResponse | Attendance[]
-> => {
-  const response = await apiClient.get<
-    AttendanceListResponse | Attendance[]
-  >("/attendance/")
+export const getAttendance =
+  async (): Promise<AttendanceListResponse> => {
+    const response =
+      await apiClient.get<AttendanceListResponse>(
+        "/attendance/",
+      )
 
-  return response.data
-}
+    return response.data
+  }
 
 export const createAttendance = async (
   data: AttendancePayload,
