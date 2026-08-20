@@ -19,6 +19,7 @@ import Recruitment from "./pages/Recruitment"
 
 import AppLayout from "./components/AppLayout"
 import ProtectedRoute from "./components/ProtectedRoute"
+import RoleProtectedRoute from "./components/RoleProtectedRoute"
 
 function App() {
   return (
@@ -36,14 +37,42 @@ function App() {
           />
 
           <Route
-            path="/employees"
-            element={<Employees />}
-          />
+            element={
+              <RoleProtectedRoute
+                roles={[
+                  "SUPER_ADMIN",
+                  "HR",
+                  "MANAGER",
+                ]}
+              />
+            }
+          >
+            <Route
+              path="/employees"
+              element={<Employees />}
+            />
+          </Route>
 
           <Route
-            path="/departments"
-            element={<Departments />}
-          />
+            element={
+              <RoleProtectedRoute
+                roles={[
+                  "SUPER_ADMIN",
+                  "HR",
+                ]}
+              />
+            }
+          >
+            <Route
+              path="/departments"
+              element={<Departments />}
+            />
+
+            <Route
+              path="/recruitment"
+              element={<Recruitment />}
+            />
+          </Route>
 
           <Route
             path="/documents"
@@ -66,18 +95,25 @@ function App() {
           />
 
           <Route
-            path="/payroll"
-            element={<Payroll />}
-          />
+            element={
+              <RoleProtectedRoute
+                roles={[
+                  "SUPER_ADMIN",
+                  "HR",
+                  "EMPLOYEE",
+                ]}
+              />
+            }
+          >
+            <Route
+              path="/payroll"
+              element={<Payroll />}
+            />
+          </Route>
 
           <Route
             path="/performance"
             element={<Performance />}
-          />
-
-          <Route
-            path="/recruitment"
-            element={<Recruitment />}
           />
 
           <Route
