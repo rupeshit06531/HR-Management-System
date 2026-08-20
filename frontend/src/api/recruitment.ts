@@ -255,10 +255,10 @@ export const updateCandidate = async (
   }
 
   const response =
-    await apiClient.put<Candidate>(
-      `/recruitment/${id}/`,
-      formData,
-    )
+    await apiClient.patch<Candidate>(
+    `/recruitment/${id}/`,
+    formData,
+  )
 
   return response.data
 }
