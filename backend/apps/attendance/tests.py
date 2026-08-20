@@ -1,7 +1,9 @@
-
 from datetime import date
+from io import BytesIO
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -10,6 +12,7 @@ from apps.departments.models import Department, Designation
 from apps.employees.models import Employee
 
 from .models import Attendance
+from .serializers import AttendancePunchInSerializer
 
 
 class AttendanceAPITestCase(APITestCase):
@@ -465,7 +468,7 @@ class AttendanceAPITestCase(APITestCase):
             response.data,
         )
 
-    def test_check_in_requires_check_out(self):
+    def test_check_in_without_check_out_is_allowed(self):
         self.authenticate(self.manager_user)
 
         payload = {
@@ -473,7 +476,7 @@ class AttendanceAPITestCase(APITestCase):
             "date": "2026-08-22",
             "check_in": "09:00:00",
             "status": "present",
-            "remarks": "Missing check-out",
+            "remarks": "Punch in without check-out",
         }
 
         response = self.client.post(
@@ -484,14 +487,22 @@ class AttendanceAPITestCase(APITestCase):
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_201_CREATED,
         )
 
-        self.assertIn(
-            "check_out",
-            response.data,
+        self.assertEqual(
+            response.data["check_in"],
+            "09:00:00",
         )
 
+        self.assertIsNone(
+            response.data["check_out"],
+        )
+
+        self.assertEqual(
+            response.data["status"],
+            "present",
+        )
     def test_check_out_requires_check_in(self):
         self.authenticate(self.manager_user)
 
@@ -843,4 +854,114 @@ class AttendanceAPITestCase(APITestCase):
         self.assertEqual(
             results[1]["id"],
             second.id,
+        )
+
+class AttendancePunchInSerializerTestCase(APITestCase):
+
+    def get_valid_payload(self):
+        from io import BytesIO
+
+        image = Image.new(
+            "RGB",
+            (100, 100),
+            "white",
+        )
+
+        image_buffer = BytesIO()
+
+        image.save(
+            image_buffer,
+            format="JPEG",
+        )
+
+        image_buffer.seek(0)
+
+        return {
+            "latitude": "23.3441",
+            "longitude": "85.3096",
+            "accuracy": "12.50",
+            "selfie": SimpleUploadedFile(
+                "selfie.jpg",
+                image_buffer.read(),
+                content_type="image/jpeg",
+            ),
+            "remarks": "Punch in from office",
+        }
+
+    def test_valid_punch_in_payload(self):
+        serializer = AttendancePunchInSerializer(
+            data=self.get_valid_payload(),
+        )
+
+        self.assertTrue(
+            serializer.is_valid(),
+            serializer.errors,
+        )
+
+    def test_latitude_must_be_valid(self):
+        payload = self.get_valid_payload()
+        payload["latitude"] = "91"
+
+        serializer = AttendancePunchInSerializer(
+            data=payload,
+        )
+
+        self.assertFalse(
+            serializer.is_valid(),
+        )
+
+        self.assertIn(
+            "latitude",
+            serializer.errors,
+        )
+
+    def test_longitude_must_be_valid(self):
+        payload = self.get_valid_payload()
+        payload["longitude"] = "181"
+
+        serializer = AttendancePunchInSerializer(
+            data=payload,
+        )
+
+        self.assertFalse(
+            serializer.is_valid(),
+        )
+
+        self.assertIn(
+            "longitude",
+            serializer.errors,
+        )
+
+    def test_accuracy_cannot_be_negative(self):
+        payload = self.get_valid_payload()
+        payload["accuracy"] = "-1"
+
+        serializer = AttendancePunchInSerializer(
+            data=payload,
+        )
+
+        self.assertFalse(
+            serializer.is_valid(),
+        )
+
+        self.assertIn(
+            "accuracy",
+            serializer.errors,
+        )
+
+    def test_selfie_is_required(self):
+        payload = self.get_valid_payload()
+        payload.pop("selfie")
+
+        serializer = AttendancePunchInSerializer(
+            data=payload,
+        )
+
+        self.assertFalse(
+            serializer.is_valid(),
+        )
+
+        self.assertIn(
+            "selfie",
+            serializer.errors,
         )
