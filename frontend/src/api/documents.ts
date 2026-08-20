@@ -3,6 +3,7 @@ import apiClient from "./client"
 export interface DocumentRecord {
   id: number
   employee: number
+  employee_name: string
   title: string
   document_type: string
   file: string
@@ -25,16 +26,15 @@ export interface CreateDocumentRequest {
   description: string
 }
 
-export const getDocuments = async (): Promise<
-  DocumentListResponse | DocumentRecord[]
-> => {
-  const response =
-    await apiClient.get<
-      DocumentListResponse | DocumentRecord[]
-    >("/documents/")
+export const getDocuments =
+  async (): Promise<DocumentListResponse> => {
+    const response =
+      await apiClient.get<DocumentListResponse>(
+        "/documents/",
+      )
 
-  return response.data
-}
+    return response.data
+  }
 
 export const createDocument = async (
   data: CreateDocumentRequest,
