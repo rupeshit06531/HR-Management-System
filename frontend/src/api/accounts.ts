@@ -90,13 +90,12 @@ export const getCurrentUser =
     return response.data
   }
 
-export const getUsers = async (): Promise<
-  UserListResponse | AuthUser[]
-> => {
-  const response =
-    await apiClient.get<
-      UserListResponse | AuthUser[]
-    >("/users/")
+export const getUsers =
+  async (): Promise<UserListResponse> => {
+    const response =
+      await apiClient.get<UserListResponse>(
+        "/users/",
+      )
 
-  return response.data
-}
+    return response.data
+  }
