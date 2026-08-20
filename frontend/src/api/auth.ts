@@ -8,6 +8,7 @@ export interface AuthUser {
   last_name: string
   role: string
   phone: string
+  employee_id: string
   profile_image: string | null
   is_active: boolean
   date_joined: string
