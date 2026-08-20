@@ -134,6 +134,11 @@ export const punchInAttendance = async (
     await apiClient.post<AttendancePunchInResponse>(
       "/attendance/punch-in/",
       formData,
+      {
+        headers: {
+          "Content-Type": undefined,
+        },
+      },
     )
 
   return response.data
