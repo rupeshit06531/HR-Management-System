@@ -128,18 +128,20 @@ function AppLayout() {
   } = useAuth()
 
   const handleLogout = async () => {
-    await logout()
-
-    navigate("/login", {
-      replace: true,
-    })
+    try {
+      await logout()
+    } finally {
+      navigate("/login", {
+        replace: true,
+      })
+    }
   }
 
   const visibleNavigationItems =
-    navigationItems.filter(
-      (item) =>
-        !user ||
-        item.roles.includes(user.role),
+    navigationItems.filter((item) =>
+      item.roles.includes(
+        user?.role ?? "",
+      ),
     )
 
   return (
@@ -164,6 +166,7 @@ function AppLayout() {
           position: "sticky",
           top: 0,
           alignSelf: "flex-start",
+          overflowY: "auto",
         }}
       >
         <div
@@ -208,9 +211,7 @@ function AppLayout() {
               <NavLink
                 key={item.path}
                 to={item.path}
-                style={({
-                  isActive,
-                }) => ({
+                style={({ isActive }) => ({
                   display: "block",
                   padding: "11px 12px",
                   borderRadius: "8px",
@@ -220,8 +221,7 @@ function AppLayout() {
                   background: isActive
                     ? "#2563eb"
                     : "transparent",
-                  textDecoration:
-                    "none",
+                  textDecoration: "none",
                   fontSize: "14px",
                   fontWeight: isActive
                     ? 700
@@ -247,16 +247,16 @@ function AppLayout() {
       >
         <header
           style={{
-            height: "72px",
+            minHeight: "72px",
             background: "#ffffff",
             borderBottom:
               "1px solid #e5e7eb",
             display: "flex",
             alignItems: "center",
-            justifyContent:
-              "space-between",
-            padding: "0 28px",
+            justifyContent: "space-between",
+            padding: "12px 28px",
             boxSizing: "border-box",
+            gap: "20px",
           }}
         >
           <div>
