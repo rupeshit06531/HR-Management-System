@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
   type FormEvent,
 } from "react"
@@ -14,22 +15,24 @@ import {
   updateDepartment,
   updateDesignation,
   type Department,
+  type DepartmentListResponse,
   type DepartmentPayload,
   type Designation,
+  type DesignationListResponse,
   type DesignationPayload,
 } from "../api/departments"
 
-const emptyDepartment: DepartmentPayload = {
+const createEmptyDepartment = (): DepartmentPayload => ({
   name: "",
   description: "",
   is_active: true,
-}
+})
 
-const emptyDesignation: DesignationPayload = {
+const createEmptyDesignation = (): DesignationPayload => ({
   name: "",
   department: 0,
   is_active: true,
-}
+})
 
 function Departments() {
   const [departments, setDepartments] =
@@ -40,6 +43,18 @@ function Departments() {
 
   const [isLoading, setIsLoading] =
     useState(true)
+
+  const [isDepartmentSubmitting, setIsDepartmentSubmitting] =
+    useState(false)
+
+  const [isDesignationSubmitting, setIsDesignationSubmitting] =
+    useState(false)
+
+  const [deletingDepartmentId, setDeletingDepartmentId] =
+    useState<number | null>(null)
+
+  const [deletingDesignationId, setDeletingDesignationId] =
+    useState<number | null>(null)
 
   const [error, setError] =
     useState<string | null>(null)
@@ -61,22 +76,18 @@ function Departments() {
 
   const [departmentForm, setDepartmentForm] =
     useState<DepartmentPayload>(
-      emptyDepartment,
+      createEmptyDepartment(),
     )
 
   const [designationForm, setDesignationForm] =
     useState<DesignationPayload>(
-      emptyDesignation,
+      createEmptyDesignation(),
     )
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false)
-
-  const [deletingDepartmentId, setDeletingDepartmentId] =
-    useState<number | null>(null)
-
-  const [deletingDesignationId, setDeletingDesignationId] =
-    useState<number | null>(null)
+  const clearMessages = () => {
+    setError(null)
+    setSuccess(null)
+  }
 
   const loadData = async () => {
     try {
@@ -91,17 +102,25 @@ function Departments() {
         getDesignations(),
       ])
 
-      setDepartments(
-        departmentResponse.results ?? [],
-      )
+      const departmentData =
+        Array.isArray(departmentResponse)
+          ? departmentResponse
+          : (
+              departmentResponse as DepartmentListResponse
+            ).results ?? []
 
-      setDesignations(
-        designationResponse.results ?? [],
-      )
+      const designationData =
+        Array.isArray(designationResponse)
+          ? designationResponse
+          : (
+              designationResponse as DesignationListResponse
+            ).results ?? []
 
+      setDepartments(departmentData)
+      setDesignations(designationData)
     } catch {
       setError(
-        "Unable to load departments and designations.",
+        "Unable to load departments and designations. Please try again.",
       )
     } finally {
       setIsLoading(false)
@@ -112,9 +131,18 @@ function Departments() {
     void loadData()
   }, [])
 
+  const activeDepartments = useMemo(
+    () =>
+      departments.filter(
+        (department) =>
+          department.is_active,
+      ),
+    [departments],
+  )
+
   const resetDepartmentForm = () => {
     setDepartmentForm(
-      emptyDepartment,
+      createEmptyDepartment(),
     )
     setEditingDepartmentId(null)
     setShowDepartmentForm(false)
@@ -122,10 +150,64 @@ function Departments() {
 
   const resetDesignationForm = () => {
     setDesignationForm(
-      emptyDesignation,
+      createEmptyDesignation(),
     )
     setEditingDesignationId(null)
     setShowDesignationForm(false)
+  }
+
+  const openDepartmentForm = (
+    department?: Department,
+  ) => {
+    clearMessages()
+
+    if (department) {
+      setDepartmentForm({
+        name: department.name,
+        description:
+          department.description ?? "",
+        is_active:
+          department.is_active,
+      })
+      setEditingDepartmentId(
+        department.id,
+      )
+    } else {
+      setDepartmentForm(
+        createEmptyDepartment(),
+      )
+      setEditingDepartmentId(null)
+    }
+
+    setShowDepartmentForm(true)
+    setShowDesignationForm(false)
+  }
+
+  const openDesignationForm = (
+    designation?: Designation,
+  ) => {
+    clearMessages()
+
+    if (designation) {
+      setDesignationForm({
+        name: designation.name,
+        department:
+          designation.department,
+        is_active:
+          designation.is_active,
+      })
+      setEditingDesignationId(
+        designation.id,
+      )
+    } else {
+      setDesignationForm(
+        createEmptyDesignation(),
+      )
+      setEditingDesignationId(null)
+    }
+
+    setShowDesignationForm(true)
+    setShowDepartmentForm(false)
   }
 
   const handleDepartmentSubmit = async (
@@ -133,24 +215,46 @@ function Departments() {
   ) => {
     event.preventDefault()
 
-    setError(null)
-    setSuccess(null)
+    clearMessages()
 
-    if (!departmentForm.name.trim()) {
+    const trimmedName =
+      departmentForm.name.trim()
+
+    const trimmedDescription =
+      departmentForm.description.trim()
+
+    if (!trimmedName) {
       setError(
         "Department name is required.",
       )
       return
     }
 
+    const duplicateExists =
+      departments.some(
+        (department) =>
+          department.id !==
+            editingDepartmentId &&
+          department.name.trim().toLowerCase() ===
+            trimmedName.toLowerCase(),
+      )
+
+    if (duplicateExists) {
+      setError(
+        "A department with this name already exists.",
+      )
+      return
+    }
+
     try {
-      setIsSubmitting(true)
+      setIsDepartmentSubmitting(true)
 
       const payload: DepartmentPayload = {
-        ...departmentForm,
-        name: departmentForm.name.trim(),
+        name: trimmedName,
         description:
-          departmentForm.description.trim(),
+          trimmedDescription,
+        is_active:
+          departmentForm.is_active,
       }
 
       if (
@@ -198,11 +302,11 @@ function Departments() {
     } catch {
       setError(
         editingDepartmentId !== null
-          ? "Unable to update department."
-          : "Unable to create department.",
+          ? "Unable to update department. Please try again."
+          : "Unable to create department. Please try again.",
       )
     } finally {
-      setIsSubmitting(false)
+      setIsDepartmentSubmitting(false)
     }
   }
 
@@ -211,10 +315,12 @@ function Departments() {
   ) => {
     event.preventDefault()
 
-    setError(null)
-    setSuccess(null)
+    clearMessages()
 
-    if (!designationForm.name.trim()) {
+    const trimmedName =
+      designationForm.name.trim()
+
+    if (!trimmedName) {
       setError(
         "Designation name is required.",
       )
@@ -228,12 +334,57 @@ function Departments() {
       return
     }
 
+    const selectedDepartment =
+      departments.find(
+        (department) =>
+          department.id ===
+          designationForm.department,
+      )
+
+    if (!selectedDepartment) {
+      setError(
+        "Selected department could not be found.",
+      )
+      return
+    }
+
+    if (
+      !selectedDepartment.is_active &&
+      editingDesignationId === null
+    ) {
+      setError(
+        "New designations can only be created under active departments.",
+      )
+      return
+    }
+
+    const duplicateExists =
+      designations.some(
+        (designation) =>
+          designation.id !==
+            editingDesignationId &&
+          designation.department ===
+            designationForm.department &&
+          designation.name.trim().toLowerCase() ===
+            trimmedName.toLowerCase(),
+      )
+
+    if (duplicateExists) {
+      setError(
+        "A designation with this name already exists in the selected department.",
+      )
+      return
+    }
+
     try {
-      setIsSubmitting(true)
+      setIsDesignationSubmitting(true)
 
       const payload: DesignationPayload = {
-        ...designationForm,
-        name: designationForm.name.trim(),
+        name: trimmedName,
+        department:
+          designationForm.department,
+        is_active:
+          designationForm.is_active,
       }
 
       if (
@@ -281,38 +432,51 @@ function Departments() {
     } catch {
       setError(
         editingDesignationId !== null
-          ? "Unable to update designation."
-          : "Unable to create designation.",
+          ? "Unable to update designation. Please try again."
+          : "Unable to create designation. Please try again.",
       )
     } finally {
-      setIsSubmitting(false)
+      setIsDesignationSubmitting(false)
     }
   }
 
   const handleDeleteDepartment = async (
     id: number,
   ) => {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this department? Related designations may also be deleted.",
+    const department =
+      departments.find(
+        (item) => item.id === id,
       )
 
-    if (!confirmed) {
+    if (!department) {
+      return
+    }
+
+    const relatedDesignationCount =
+      designations.filter(
+        (designation) =>
+          designation.department === id,
+      ).length
+
+    const warning =
+      relatedDesignationCount > 0
+        ? `This department has ${relatedDesignationCount} related designation${relatedDesignationCount === 1 ? "" : "s"}. Deleting it may fail if the server prevents deletion of related records. Continue?`
+        : "Are you sure you want to delete this department?"
+
+    if (!window.confirm(warning)) {
       return
     }
 
     try {
       setDeletingDepartmentId(id)
-      setError(null)
-      setSuccess(null)
+      clearMessages()
 
       await deleteDepartment(id)
 
       setDepartments(
         (current) =>
           current.filter(
-            (department) =>
-              department.id !== id,
+            (item) => item.id !== id,
           ),
       )
 
@@ -324,12 +488,24 @@ function Departments() {
           ),
       )
 
+      if (
+        designationForm.department === id
+      ) {
+        resetDesignationForm()
+      }
+
+      if (
+        editingDepartmentId === id
+      ) {
+        resetDepartmentForm()
+      }
+
       setSuccess(
         "Department deleted successfully.",
       )
     } catch {
       setError(
-        "Unable to delete department.",
+        "Unable to delete department. It may have related employees or designations.",
       )
     } finally {
       setDeletingDepartmentId(null)
@@ -339,36 +515,48 @@ function Departments() {
   const handleDeleteDesignation = async (
     id: number,
   ) => {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this designation?",
+    const designation =
+      designations.find(
+        (item) => item.id === id,
       )
 
-    if (!confirmed) {
+    if (!designation) {
+      return
+    }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${designation.name}"?`,
+      )
+    ) {
       return
     }
 
     try {
       setDeletingDesignationId(id)
-      setError(null)
-      setSuccess(null)
+      clearMessages()
 
       await deleteDesignation(id)
 
       setDesignations(
         (current) =>
           current.filter(
-            (designation) =>
-              designation.id !== id,
+            (item) => item.id !== id,
           ),
       )
+
+      if (
+        editingDesignationId === id
+      ) {
+        resetDesignationForm()
+      }
 
       setSuccess(
         "Designation deleted successfully.",
       )
     } catch {
       setError(
-        "Unable to delete designation.",
+        "Unable to delete designation. Please try again.",
       )
     } finally {
       setDeletingDesignationId(null)
@@ -378,9 +566,7 @@ function Departments() {
   const formatStatus = (
     value: boolean,
   ) =>
-    value
-      ? "Active"
-      : "Inactive"
+    value ? "Active" : "Inactive"
 
   const getDepartmentName = (
     id: number,
@@ -415,6 +601,7 @@ function Departments() {
               "space-between",
             gap: "16px",
             marginBottom: "24px",
+            flexWrap: "wrap",
           }}
         >
           <div>
@@ -430,9 +617,11 @@ function Departments() {
             <p
               style={{
                 color: "#6b7280",
+                marginBottom: 0,
               }}
             >
-              Manage departments and designations
+              Manage organizational departments
+              and designations
             </p>
           </div>
 
@@ -440,26 +629,16 @@ function Departments() {
             style={{
               display: "flex",
               gap: "10px",
+              flexWrap: "wrap",
             }}
           >
             <button
               type="button"
-              onClick={() => {
-                setError(null)
-                setSuccess(null)
-                setDepartmentForm(
-                  emptyDepartment,
-                )
-                setEditingDepartmentId(
-                  null,
-                )
-                setShowDepartmentForm(
-                  true,
-                )
-              }}
+              onClick={() =>
+                openDepartmentForm()
+              }
               style={{
-                padding:
-                  "10px 16px",
+                padding: "10px 16px",
                 border: "none",
                 borderRadius: "6px",
                 backgroundColor:
@@ -473,28 +652,28 @@ function Departments() {
 
             <button
               type="button"
-              onClick={() => {
-                setError(null)
-                setSuccess(null)
-                setDesignationForm(
-                  emptyDesignation,
-                )
-                setEditingDesignationId(
-                  null,
-                )
-                setShowDesignationForm(
-                  true,
-                )
-              }}
+              onClick={() =>
+                openDesignationForm()
+              }
+              disabled={
+                activeDepartments.length ===
+                0
+              }
               style={{
-                padding:
-                  "10px 16px",
+                padding: "10px 16px",
                 border: "none",
                 borderRadius: "6px",
                 backgroundColor:
-                  "#16a34a",
+                  activeDepartments.length ===
+                  0
+                    ? "#9ca3af"
+                    : "#16a34a",
                 color: "#ffffff",
-                cursor: "pointer",
+                cursor:
+                  activeDepartments.length ===
+                  0
+                    ? "not-allowed"
+                    : "pointer",
               }}
             >
               Add Designation
@@ -504,6 +683,7 @@ function Departments() {
 
         {error && (
           <section
+            role="alert"
             style={{
               padding: "16px",
               marginBottom: "20px",
@@ -519,6 +699,7 @@ function Departments() {
 
         {success && (
           <section
+            role="status"
             style={{
               padding: "16px",
               marginBottom: "20px",
@@ -535,8 +716,7 @@ function Departments() {
         {showDepartmentForm && (
           <section
             style={{
-              backgroundColor:
-                "#ffffff",
+              backgroundColor: "#ffffff",
               padding: "24px",
               borderRadius: "10px",
               marginBottom: "24px",
@@ -544,12 +724,46 @@ function Departments() {
                 "0 1px 3px rgba(0, 0, 0, 0.08)",
             }}
           >
-            <h2>
-              {editingDepartmentId !==
-              null
-                ? "Edit Department"
-                : "Add Department"}
-            </h2>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent:
+                  "space-between",
+                gap: "16px",
+                marginBottom: "20px",
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  color: "#111827",
+                }}
+              >
+                {editingDepartmentId !==
+                null
+                  ? "Edit Department"
+                  : "Add Department"}
+              </h2>
+
+              <button
+                type="button"
+                onClick={
+                  resetDepartmentForm
+                }
+                style={{
+                  padding: "8px 14px",
+                  border:
+                    "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  backgroundColor:
+                    "#ffffff",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
 
             <form
               onSubmit={
@@ -576,16 +790,14 @@ function Departments() {
                       (current) => ({
                         ...current,
                         name:
-                          event
-                            .target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
+                  maxLength={150}
                   required
                   style={{
-                    display:
-                      "block",
+                    display: "block",
                     width: "100%",
                     marginTop: "6px",
                     padding: "10px",
@@ -609,26 +821,31 @@ function Departments() {
                       (current) => ({
                         ...current,
                         description:
-                          event
-                            .target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
                   rows={4}
+                  maxLength={500}
                   style={{
-                    display:
-                      "block",
+                    display: "block",
                     width: "100%",
                     marginTop: "6px",
                     padding: "10px",
                     boxSizing:
                       "border-box",
+                    resize: "vertical",
                   }}
                 />
               </label>
 
-              <label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={
@@ -641,48 +858,47 @@ function Departments() {
                       (current) => ({
                         ...current,
                         is_active:
-                          event
-                            .target
-                            .checked,
+                          event.target.checked,
                       }),
                     )
                   }
-                />{" "}
+                />
                 Active
               </label>
 
               <div
                 style={{
-                  display:
-                    "flex",
+                  display: "flex",
                   gap: "10px",
                 }}
               >
                 <button
                   type="submit"
                   disabled={
-                    isSubmitting
+                    isDepartmentSubmitting
                   }
                   style={{
                     padding:
                       "10px 18px",
                     border: "none",
-                    borderRadius:
-                      "6px",
+                    borderRadius: "6px",
                     backgroundColor:
-                      "#2563eb",
-                    color:
-                      "#ffffff",
+                      isDepartmentSubmitting
+                        ? "#9ca3af"
+                        : "#2563eb",
+                    color: "#ffffff",
                     cursor:
-                      "pointer",
+                      isDepartmentSubmitting
+                        ? "not-allowed"
+                        : "pointer",
                   }}
                 >
-                  {isSubmitting
+                  {isDepartmentSubmitting
                     ? "Saving..."
                     : editingDepartmentId !==
                         null
-                      ? "Update"
-                      : "Save"}
+                      ? "Update Department"
+                      : "Save Department"}
                 </button>
 
                 <button
@@ -690,17 +906,21 @@ function Departments() {
                   onClick={
                     resetDepartmentForm
                   }
+                  disabled={
+                    isDepartmentSubmitting
+                  }
                   style={{
                     padding:
                       "10px 18px",
                     border:
                       "1px solid #d1d5db",
-                    borderRadius:
-                      "6px",
+                    borderRadius: "6px",
                     backgroundColor:
                       "#ffffff",
                     cursor:
-                      "pointer",
+                      isDepartmentSubmitting
+                        ? "not-allowed"
+                        : "pointer",
                   }}
                 >
                   Cancel
@@ -713,8 +933,7 @@ function Departments() {
         {showDesignationForm && (
           <section
             style={{
-              backgroundColor:
-                "#ffffff",
+              backgroundColor: "#ffffff",
               padding: "24px",
               borderRadius: "10px",
               marginBottom: "24px",
@@ -722,12 +941,46 @@ function Departments() {
                 "0 1px 3px rgba(0, 0, 0, 0.08)",
             }}
           >
-            <h2>
-              {editingDesignationId !==
-              null
-                ? "Edit Designation"
-                : "Add Designation"}
-            </h2>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent:
+                  "space-between",
+                gap: "16px",
+                marginBottom: "20px",
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  color: "#111827",
+                }}
+              >
+                {editingDesignationId !==
+                null
+                  ? "Edit Designation"
+                  : "Add Designation"}
+              </h2>
+
+              <button
+                type="button"
+                onClick={
+                  resetDesignationForm
+                }
+                style={{
+                  padding: "8px 14px",
+                  border:
+                    "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  backgroundColor:
+                    "#ffffff",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
 
             <form
               onSubmit={
@@ -754,16 +1007,14 @@ function Departments() {
                       (current) => ({
                         ...current,
                         name:
-                          event
-                            .target
-                            .value,
+                          event.target.value,
                       }),
                     )
                   }
+                  maxLength={150}
                   required
                   style={{
-                    display:
-                      "block",
+                    display: "block",
                     width: "100%",
                     marginTop: "6px",
                     padding: "10px",
@@ -788,28 +1039,29 @@ function Departments() {
                       (current) => ({
                         ...current,
                         department:
-                          Number(
-                            event
-                              .target
-                              .value,
-                          ),
+                          event.target.value
+                            ? Number(
+                                event.target.value,
+                              )
+                            : 0,
                       }),
                     )
                   }
                   required
                   style={{
-                    display:
-                      "block",
+                    display: "block",
                     width: "100%",
                     marginTop: "6px",
                     padding: "10px",
+                    boxSizing:
+                      "border-box",
                   }}
                 >
                   <option value="">
-                    Select department
+                    Select active department
                   </option>
 
-                  {departments.map(
+                  {activeDepartments.map(
                     (
                       department,
                     ) => (
@@ -821,16 +1073,20 @@ function Departments() {
                           department.id
                         }
                       >
-                        {
-                          department.name
-                        }
+                        {department.name}
                       </option>
                     ),
                   )}
                 </select>
               </label>
 
-              <label>
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={
@@ -843,48 +1099,47 @@ function Departments() {
                       (current) => ({
                         ...current,
                         is_active:
-                          event
-                            .target
-                            .checked,
+                          event.target.checked,
                       }),
                     )
                   }
-                />{" "}
+                />
                 Active
               </label>
 
               <div
                 style={{
-                  display:
-                    "flex",
+                  display: "flex",
                   gap: "10px",
                 }}
               >
                 <button
                   type="submit"
                   disabled={
-                    isSubmitting
+                    isDesignationSubmitting
                   }
                   style={{
                     padding:
                       "10px 18px",
                     border: "none",
-                    borderRadius:
-                      "6px",
+                    borderRadius: "6px",
                     backgroundColor:
-                      "#16a34a",
-                    color:
-                      "#ffffff",
+                      isDesignationSubmitting
+                        ? "#9ca3af"
+                        : "#16a34a",
+                    color: "#ffffff",
                     cursor:
-                      "pointer",
+                      isDesignationSubmitting
+                        ? "not-allowed"
+                        : "pointer",
                   }}
                 >
-                  {isSubmitting
+                  {isDesignationSubmitting
                     ? "Saving..."
                     : editingDesignationId !==
                         null
-                      ? "Update"
-                      : "Save"}
+                      ? "Update Designation"
+                      : "Save Designation"}
                 </button>
 
                 <button
@@ -892,17 +1147,21 @@ function Departments() {
                   onClick={
                     resetDesignationForm
                   }
+                  disabled={
+                    isDesignationSubmitting
+                  }
                   style={{
                     padding:
                       "10px 18px",
                     border:
                       "1px solid #d1d5db",
-                    borderRadius:
-                      "6px",
+                    borderRadius: "6px",
                     backgroundColor:
                       "#ffffff",
                     cursor:
-                      "pointer",
+                      isDesignationSubmitting
+                        ? "not-allowed"
+                        : "pointer",
                   }}
                 >
                   Cancel
@@ -913,27 +1172,29 @@ function Departments() {
         )}
 
         {isLoading ? (
-          <p>
-            Loading departments...
-          </p>
+          <section
+            style={{
+              backgroundColor: "#ffffff",
+              padding: "24px",
+              borderRadius: "10px",
+            }}
+          >
+            Loading departments and
+            designations...
+          </section>
         ) : (
           <>
             <section
               style={{
-                backgroundColor:
-                  "#ffffff",
-                borderRadius:
-                  "10px",
-                overflow:
-                  "auto",
-                marginBottom:
-                  "24px",
+                backgroundColor: "#ffffff",
+                borderRadius: "10px",
+                overflow: "auto",
+                marginBottom: "24px",
               }}
             >
               <div
                 style={{
-                  padding:
-                    "20px 24px",
+                  padding: "20px 24px",
                   borderBottom:
                     "1px solid #e5e7eb",
                 }}
@@ -941,87 +1202,70 @@ function Departments() {
                 <h2
                   style={{
                     margin: 0,
+                    color: "#111827",
                   }}
                 >
                   Departments
                 </h2>
+
+                <p
+                  style={{
+                    margin:
+                      "6px 0 0",
+                    color: "#6b7280",
+                  }}
+                >
+                  {departments.length} department
+                  {departments.length ===
+                  1
+                    ? ""
+                    : "s"}
+                </p>
               </div>
 
               {departments.length ===
               0 ? (
                 <p
                   style={{
-                    padding:
-                      "24px",
+                    padding: "24px",
+                    color: "#6b7280",
                   }}
                 >
-                  No departments
-                  found.
+                  No departments found.
                 </p>
               ) : (
                 <table
                   style={{
-                    width:
-                      "100%",
+                    width: "100%",
                     borderCollapse:
                       "collapse",
-                    minWidth:
-                      "800px",
+                    minWidth: "850px",
                   }}
                 >
                   <thead>
                     <tr>
-                      <th
-                        style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "left",
-                          borderBottom:
-                            "1px solid #e5e7eb",
-                        }}
-                      >
-                        Name
-                      </th>
-
-                      <th
-                        style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "left",
-                          borderBottom:
-                            "1px solid #e5e7eb",
-                        }}
-                      >
-                        Description
-                      </th>
-
-                      <th
-                        style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "left",
-                          borderBottom:
-                            "1px solid #e5e7eb",
-                        }}
-                      >
-                        Status
-                      </th>
-
-                      <th
-                        style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "left",
-                          borderBottom:
-                            "1px solid #e5e7eb",
-                        }}
-                      >
-                        Actions
-                      </th>
+                      {[
+                        "Name",
+                        "Description",
+                        "Status",
+                        "Actions",
+                      ].map(
+                        (heading) => (
+                          <th
+                            key={heading}
+                            style={{
+                              padding:
+                                "14px",
+                              textAlign:
+                                "left",
+                              borderBottom:
+                                "1px solid #e5e7eb",
+                            }}
+                          >
+                            {heading}
+                          </th>
+                        ),
+                      )}
                     </tr>
                   </thead>
 
@@ -1041,6 +1285,7 @@ function Departments() {
                                 "14px",
                               borderBottom:
                                 "1px solid #f3f4f6",
+                              fontWeight: 600,
                             }}
                           >
                             {
@@ -1054,6 +1299,7 @@ function Departments() {
                                 "14px",
                               borderBottom:
                                 "1px solid #f3f4f6",
+                              color: "#6b7280",
                             }}
                           >
                             {department.description ||
@@ -1085,36 +1331,16 @@ function Departments() {
                               style={{
                                 display:
                                   "flex",
-                                gap:
-                                  "8px",
+                                gap: "8px",
                               }}
                             >
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setDepartmentForm(
-                                    {
-                                      name:
-                                        department.name,
-                                      description:
-                                        department.description,
-                                      is_active:
-                                        department.is_active,
-                                    },
+                                onClick={() =>
+                                  openDepartmentForm(
+                                    department,
                                   )
-                                  setEditingDepartmentId(
-                                    department.id,
-                                  )
-                                  setShowDepartmentForm(
-                                    true,
-                                  )
-                                  setError(
-                                    null,
-                                  )
-                                  setSuccess(
-                                    null,
-                                  )
-                                }}
+                                }
                                 style={{
                                   padding:
                                     "7px 12px",
@@ -1152,11 +1378,17 @@ function Departments() {
                                   borderRadius:
                                     "6px",
                                   backgroundColor:
-                                    "#dc2626",
+                                    deletingDepartmentId ===
+                                    department.id
+                                      ? "#9ca3af"
+                                      : "#dc2626",
                                   color:
                                     "#ffffff",
                                   cursor:
-                                    "pointer",
+                                    deletingDepartmentId ===
+                                    department.id
+                                      ? "not-allowed"
+                                      : "pointer",
                                 }}
                               >
                                 {deletingDepartmentId ===
@@ -1176,18 +1408,14 @@ function Departments() {
 
             <section
               style={{
-                backgroundColor:
-                  "#ffffff",
-                borderRadius:
-                  "10px",
-                overflow:
-                  "auto",
+                backgroundColor: "#ffffff",
+                borderRadius: "10px",
+                overflow: "auto",
               }}
             >
               <div
                 style={{
-                  padding:
-                    "20px 24px",
+                  padding: "20px 24px",
                   borderBottom:
                     "1px solid #e5e7eb",
                 }}
@@ -1195,87 +1423,70 @@ function Departments() {
                 <h2
                   style={{
                     margin: 0,
+                    color: "#111827",
                   }}
                 >
                   Designations
                 </h2>
+
+                <p
+                  style={{
+                    margin:
+                      "6px 0 0",
+                    color: "#6b7280",
+                  }}
+                >
+                  {designations.length} designation
+                  {designations.length ===
+                  1
+                    ? ""
+                    : "s"}
+                </p>
               </div>
 
               {designations.length ===
               0 ? (
                 <p
                   style={{
-                    padding:
-                      "24px",
+                    padding: "24px",
+                    color: "#6b7280",
                   }}
                 >
-                  No designations
-                  found.
+                  No designations found.
                 </p>
               ) : (
                 <table
                   style={{
-                    width:
-                      "100%",
+                    width: "100%",
                     borderCollapse:
                       "collapse",
-                    minWidth:
-                      "800px",
+                    minWidth: "850px",
                   }}
                 >
                   <thead>
                     <tr>
-                      <th
-                        style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "left",
-                          borderBottom:
-                            "1px solid #e5e7eb",
-                        }}
-                      >
-                        Name
-                      </th>
-
-                      <th
-                        style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "left",
-                          borderBottom:
-                            "1px solid #e5e7eb",
-                        }}
-                      >
-                        Department
-                      </th>
-
-                      <th
-                        style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "left",
-                          borderBottom:
-                            "1px solid #e5e7eb",
-                        }}
-                      >
-                        Status
-                      </th>
-
-                      <th
-                        style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "left",
-                          borderBottom:
-                            "1px solid #e5e7eb",
-                        }}
-                      >
-                        Actions
-                      </th>
+                      {[
+                        "Name",
+                        "Department",
+                        "Status",
+                        "Actions",
+                      ].map(
+                        (heading) => (
+                          <th
+                            key={heading}
+                            style={{
+                              padding:
+                                "14px",
+                              textAlign:
+                                "left",
+                              borderBottom:
+                                "1px solid #e5e7eb",
+                            }}
+                          >
+                            {heading}
+                          </th>
+                        ),
+                      )}
                     </tr>
                   </thead>
 
@@ -1295,6 +1506,7 @@ function Departments() {
                                 "14px",
                               borderBottom:
                                 "1px solid #f3f4f6",
+                              fontWeight: 600,
                             }}
                           >
                             {
@@ -1340,36 +1552,16 @@ function Departments() {
                               style={{
                                 display:
                                   "flex",
-                                gap:
-                                  "8px",
+                                gap: "8px",
                               }}
                             >
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setDesignationForm(
-                                    {
-                                      name:
-                                        designation.name,
-                                      department:
-                                        designation.department,
-                                      is_active:
-                                        designation.is_active,
-                                    },
+                                onClick={() =>
+                                  openDesignationForm(
+                                    designation,
                                   )
-                                  setEditingDesignationId(
-                                    designation.id,
-                                  )
-                                  setShowDesignationForm(
-                                    true,
-                                  )
-                                  setError(
-                                    null,
-                                  )
-                                  setSuccess(
-                                    null,
-                                  )
-                                }}
+                                }
                                 style={{
                                   padding:
                                     "7px 12px",
@@ -1407,11 +1599,17 @@ function Departments() {
                                   borderRadius:
                                     "6px",
                                   backgroundColor:
-                                    "#dc2626",
+                                    deletingDesignationId ===
+                                    designation.id
+                                      ? "#9ca3af"
+                                      : "#dc2626",
                                   color:
                                     "#ffffff",
                                   cursor:
-                                    "pointer",
+                                    deletingDesignationId ===
+                                    designation.id
+                                      ? "not-allowed"
+                                      : "pointer",
                                 }}
                               >
                                 {deletingDesignationId ===
