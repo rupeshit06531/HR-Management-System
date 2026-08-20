@@ -164,15 +164,50 @@ TEMPLATES = [
 # DATABASE
 # ============================================================
 
-# SQLite is intentionally retained for the current development
-# phase. PostgreSQL migration will be handled separately.
+DATABASE_ENGINE = os.getenv(
+    "DJANGO_DATABASE_ENGINE",
+    "django.db.backends.sqlite3",
+).strip()
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if DATABASE_ENGINE == "django.db.backends.postgresql":
+    DATABASES = {
+        "default": {
+            "ENGINE": DATABASE_ENGINE,
+            "NAME": os.getenv(
+                "DJANGO_DATABASE_NAME",
+                "",
+            ).strip(),
+            "USER": os.getenv(
+                "DJANGO_DATABASE_USER",
+                "",
+            ).strip(),
+            "PASSWORD": os.getenv(
+                "DJANGO_DATABASE_PASSWORD",
+                "",
+            ),
+            "HOST": os.getenv(
+                "DJANGO_DATABASE_HOST",
+                "localhost",
+            ).strip(),
+            "PORT": os.getenv(
+                "DJANGO_DATABASE_PORT",
+                "5432",
+            ).strip(),
+            "CONN_MAX_AGE": int(
+                os.getenv(
+                    "DJANGO_DATABASE_CONN_MAX_AGE",
+                    "60",
+                )
+            ),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # ============================================================
