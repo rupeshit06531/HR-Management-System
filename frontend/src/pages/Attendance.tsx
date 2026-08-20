@@ -10,6 +10,7 @@ import {
   createAttendance,
   deleteAttendance,
   getAttendance,
+  punchInAttendance,
   updateAttendance,
   type Attendance as AttendanceRecord,
   type AttendancePayload,
@@ -79,6 +80,12 @@ function Attendance() {
 
   const [isDeleting, setIsDeleting] =
     useState<number | null>(null)
+
+  const [isPunchingIn, setIsPunchingIn] =
+    useState(false)
+
+  const [selfieFile, setSelfieFile] =
+   useState<File | null>(null)
 
   const [error, setError] =
     useState<string | null>(null)
@@ -174,7 +181,16 @@ function Attendance() {
           : value,
     }))
   }
+  const handleSelfieChange = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file =
+      event.target.files?.[0] ?? null
 
+    setSelfieFile(file)
+    setError(null)
+    setSuccess(null)
+  }
   const resetForm = () => {
     setForm({
       ...emptyForm,
@@ -353,6 +369,107 @@ function Attendance() {
     }
   }
 
+  const handlePunchIn = async () => {
+    setError(null)
+    setSuccess(null)
+
+    if (!selfieFile) {
+      setError(
+        "Please capture or select a selfie before punching in.",
+      )
+      return
+    }
+
+    if (!navigator.geolocation) {
+      setError(
+        "Geolocation is not supported by this browser.",
+      )
+      return
+    }
+
+    try {
+      setIsPunchingIn(true)
+
+      const position =
+        await new Promise<GeolocationPosition>(
+          (resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              resolve,
+              reject,
+              {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0,
+              },
+            )
+          },
+        )
+
+      const response =
+        await punchInAttendance({
+          latitude:
+            position.coords.latitude,
+          longitude:
+            position.coords.longitude,
+          accuracy:
+            position.coords.accuracy,
+          selfie: selfieFile,
+        })
+
+      setRecords((current) => [
+        response.attendance,
+        ...current.filter(
+          (record) =>
+            record.id !==
+            response.attendance.id,
+        ),
+      ])
+
+      setSelfieFile(null)
+
+      setSuccess(
+        response.message ||
+          "Punch-in successful.",
+      )
+    } catch (punchError) {
+      console.error(
+        "Attendance punch-in error:",
+        punchError,
+      )
+
+      if (
+        punchError instanceof
+        GeolocationPositionError
+      ) {
+        if (
+          punchError.code ===
+          GeolocationPositionError.PERMISSION_DENIED
+        ) {
+          setError(
+            "Location permission was denied. Please allow location access and try again.",
+          )
+        } else if (
+          punchError.code ===
+          GeolocationPositionError.POSITION_UNAVAILABLE
+        ) {
+          setError(
+            "Unable to determine your current location.",
+          )
+        } else {
+          setError(
+            "Location request timed out. Please try again.",
+          )
+        }
+      } else {
+        setError(
+          "Unable to punch in attendance.",
+        )
+      }
+    } finally {
+      setIsPunchingIn(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <main
@@ -435,6 +552,71 @@ function Attendance() {
               flexWrap: "wrap",
             }}
           >
+            {user?.role === "EMPLOYEE" && (
+              <>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "10px 14px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    backgroundColor: "#ffffff",
+                    color: "#374151",
+                    cursor: "pointer",
+                  }}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    onChange={
+                      handleSelfieChange
+                    }
+                    disabled={isPunchingIn}
+                    style={{
+                      display: "none",
+                    }}
+                  />
+
+                  {selfieFile
+                    ? "Selfie Selected"
+                    : "Take Selfie"}
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    void handlePunchIn()
+                  }
+                  disabled={
+                    isPunchingIn ||
+                    !selfieFile
+                  }
+                  style={{
+                    padding: "10px 16px",
+                    border: "none",
+                    borderRadius: "6px",
+                    backgroundColor:
+                      isPunchingIn ||
+                      !selfieFile
+                        ? "#9ca3af"
+                        : "#16a34a",
+                    color: "#ffffff",
+                    cursor:
+                      isPunchingIn ||
+                      !selfieFile
+                        ? "not-allowed"
+                        : "pointer",
+                  }}
+                >
+                  {isPunchingIn
+                    ? "Punching In..."
+                    : "Punch In"}
+                </button>
+              </>
+            )}
+
             {canManageAttendance && (
               <button
                 type="button"
@@ -442,16 +624,12 @@ function Attendance() {
                   handleAddClick
                 }
                 style={{
-                  padding:
-                    "10px 16px",
+                  padding: "10px 16px",
                   border: "none",
-                  borderRadius:
-                    "6px",
-                  backgroundColor:
-                    "#2563eb",
+                  borderRadius: "6px",
+                  backgroundColor: "#2563eb",
                   color: "#ffffff",
-                  cursor:
-                    "pointer",
+                  cursor: "pointer",
                 }}
               >
                 Add Attendance
@@ -461,21 +639,15 @@ function Attendance() {
             <button
               type="button"
               onClick={() =>
-                navigate(
-                  "/dashboard",
-                )
+                navigate("/dashboard")
               }
               style={{
-                padding:
-                  "10px 16px",
+                padding: "10px 16px",
                 border: "none",
-                borderRadius:
-                  "6px",
-                backgroundColor:
-                  "#1f2937",
+                borderRadius: "6px",
+                backgroundColor: "#1f2937",
                 color: "#ffffff",
-                cursor:
-                  "pointer",
+                cursor: "pointer",
               }}
             >
               Back to Dashboard
