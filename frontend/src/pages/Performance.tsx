@@ -14,6 +14,11 @@ import {
   type PerformanceReview,
 } from "../api/performance"
 
+import {
+  getEmployees,
+  type Employee,
+} from "../api/employees"
+
 const createEmptyForm = (): CreatePerformanceRequest => ({
   employee: 0,
   review_period: "Annual Review",
@@ -33,6 +38,12 @@ function Performance() {
 
   const [isSubmitting, setIsSubmitting] =
     useState(false)
+
+  const [employees, setEmployees] =
+    useState<Employee[]>([])
+
+  const [isLoadingEmployees, setIsLoadingEmployees] =
+    useState(true)
 
   const [deletingId, setDeletingId] =
     useState<number | null>(null)
@@ -81,8 +92,31 @@ function Performance() {
     }
   }
 
+  const loadEmployees = async () => {
+    try {
+      setIsLoadingEmployees(true)
+
+      const response = await getEmployees()
+
+      if (Array.isArray(response)) {
+        setEmployees(response)
+      } else {
+        setEmployees(
+          response.results ?? [],
+        )
+      }
+    } catch {
+      setError(
+        "Unable to load employees.",
+      )
+    } finally {
+      setIsLoadingEmployees(false)
+    }
+  }
+
   useEffect(() => {
     void loadReviews()
+    void loadEmployees()
   }, [])
 
   const resetForm = () => {
@@ -452,11 +486,9 @@ function Performance() {
               }}
             >
               <label>
-                Employee ID
+                Employee
 
-                <input
-                  type="number"
-                  min="1"
+                <select
                   value={
                     form.employee || ""
                   }
@@ -466,24 +498,45 @@ function Performance() {
                         ...current,
                         employee:
                           Number(
-                            event.target
-                              .value,
+                            event.target.value,
                           ),
                       }),
                     )
                   }
                   required
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting ||
+                    isLoadingEmployees
+                  }
                   style={{
-                    display:
-                      "block",
+                    display: "block",
                     width: "100%",
                     marginTop: "6px",
                     padding: "10px",
                     boxSizing:
                       "border-box",
+                    backgroundColor:
+                      "#ffffff",
                   }}
-                />
+                >
+                  <option value="">
+                    {isLoadingEmployees
+                      ? "Loading employees..."
+                      : "Select employee"}
+                  </option>
+
+                  {employees.map(
+                    (employee) => (
+                      <option
+                        key={employee.id}
+                        value={employee.id}
+                      >
+                        {employee.full_name} —{" "}
+                        {employee.employee_id}
+                      </option>
+                    ),
+                  )}
+                </select>
               </label>
 
               <label>
