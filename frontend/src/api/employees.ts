@@ -34,6 +34,16 @@ export interface EmployeeListResponse {
   results: Employee[]
 }
 
+export interface EmployeeQueryParams {
+  page?: number
+  search?: string
+  department?: number
+  designation?: number
+  employment_type?: string
+  employment_status?: string
+  ordering?: string
+}
+
 export interface EmployeePayload {
   user: number
   employee_id: string
@@ -48,15 +58,19 @@ export interface EmployeePayload {
   emergency_contact?: string
 }
 
-export const getEmployees =
-  async (): Promise<EmployeeListResponse> => {
-    const response =
-      await apiClient.get<EmployeeListResponse>(
-        "/employees/",
-      )
+export const getEmployees = async (
+  params?: EmployeeQueryParams,
+): Promise<EmployeeListResponse> => {
+  const response =
+    await apiClient.get<EmployeeListResponse>(
+      "/employees/",
+      {
+        params,
+      },
+    )
 
-    return response.data
-  }
+  return response.data
+}
 
 export const getEmployeeByUserId = async (
   userId: number,
