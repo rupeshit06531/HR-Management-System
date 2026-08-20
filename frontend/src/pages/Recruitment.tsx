@@ -37,25 +37,121 @@ const emptyForm: CandidatePayload = {
   status: "APPLIED",
   interview_notes: "",
   hr_notes: "",
+  experience_years: undefined,
+  expected_salary: null,
+  offer_date: null,
+  joining_date: null,
+}
+
+const labelStyle = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: "7px",
+  color: "#374151",
+  fontSize: "13px",
+  fontWeight: 600,
+}
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  border: "1px solid #d1d5db",
+  borderRadius: "7px",
+  boxSizing: "border-box" as const,
+  fontSize: "14px",
+  color: "#111827",
+  backgroundColor: "#ffffff",
+  outline: "none",
+}
+
+function formatStatus(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (character) =>
+      character.toUpperCase(),
+    )
+}
+
+function getStatusStyle(status: string) {
+  switch (status) {
+    case "APPLIED":
+      return {
+        backgroundColor: "#dbeafe",
+        color: "#1d4ed8",
+      }
+
+    case "SCREENING":
+      return {
+        backgroundColor: "#fef3c7",
+        color: "#92400e",
+      }
+
+    case "SHORTLISTED":
+      return {
+        backgroundColor: "#ede9fe",
+        color: "#6d28d9",
+      }
+
+    case "INTERVIEW":
+      return {
+        backgroundColor: "#e0f2fe",
+        color: "#0369a1",
+      }
+
+    case "SELECTED":
+      return {
+        backgroundColor: "#dcfce7",
+        color: "#166534",
+      }
+
+    case "REJECTED":
+      return {
+        backgroundColor: "#fee2e2",
+        color: "#991b1b",
+      }
+
+    case "WITHDRAWN":
+      return {
+        backgroundColor: "#f3f4f6",
+        color: "#4b5563",
+      }
+
+    default:
+      return {
+        backgroundColor: "#f3f4f6",
+        color: "#374151",
+      }
+  }
 }
 
 function Recruitment() {
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [deletingId, setDeletingId] =
+    useState<number | null>(null)
 
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [error, setError] =
+    useState<string | null>(null)
 
-  const [showForm, setShowForm] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [success, setSuccess] =
+    useState<string | null>(null)
+
+  const [showForm, setShowForm] =
+    useState(false)
+
+  const [editingId, setEditingId] =
+    useState<number | null>(null)
 
   const [form, setForm] =
     useState<CandidatePayload>(emptyForm)
 
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("ALL")
+  const [searchTerm, setSearchTerm] =
+    useState("")
+
+  const [statusFilter, setStatusFilter] =
+    useState("ALL")
 
   const loadCandidates = async () => {
     try {
@@ -75,7 +171,9 @@ function Recruitment() {
         )
       }
     } catch {
-      setError("Unable to load candidates.")
+      setError(
+        "Unable to load candidates.",
+      )
     } finally {
       setIsLoading(false)
     }
@@ -86,13 +184,22 @@ function Recruitment() {
   }, [])
 
   const resetForm = () => {
-    setForm(emptyForm)
+    setForm({
+      ...emptyForm,
+      experience_years: undefined,
+      expected_salary: null,
+      interview_date: null,
+      offer_date: null,
+      joining_date: null,
+    })
+
     setEditingId(null)
     setShowForm(false)
   }
 
   const filteredCandidates = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase()
+    const search =
+      searchTerm.trim().toLowerCase()
 
     return candidates.filter((candidate) => {
       const matchesStatus =
@@ -130,22 +237,26 @@ function Recruitment() {
     statusFilter,
   ])
 
-  const totalCandidates = candidates.length
+  const totalCandidates =
+    candidates.length
 
-  const selectedCandidates = candidates.filter(
-    (candidate) =>
-      candidate.status === "SELECTED",
-  ).length
+  const selectedCandidates =
+    candidates.filter(
+      (candidate) =>
+        candidate.status === "SELECTED",
+    ).length
 
-  const interviewCandidates = candidates.filter(
-    (candidate) =>
-      candidate.status === "INTERVIEW",
-  ).length
+  const interviewCandidates =
+    candidates.filter(
+      (candidate) =>
+        candidate.status === "INTERVIEW",
+    ).length
 
-  const rejectedCandidates = candidates.filter(
-    (candidate) =>
-      candidate.status === "REJECTED",
-  ).length
+  const rejectedCandidates =
+    candidates.filter(
+      (candidate) =>
+        candidate.status === "REJECTED",
+    ).length
 
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>,
@@ -156,7 +267,9 @@ function Recruitment() {
     setSuccess(null)
 
     if (!form.first_name.trim()) {
-      setError("First name is required.")
+      setError(
+        "First name is required.",
+      )
       return
     }
 
@@ -166,12 +279,16 @@ function Recruitment() {
     }
 
     if (!form.phone.trim()) {
-      setError("Phone number is required.")
+      setError(
+        "Phone number is required.",
+      )
       return
     }
 
     if (!form.job_title.trim()) {
-      setError("Job title is required.")
+      setError(
+        "Job title is required.",
+      )
       return
     }
 
@@ -179,8 +296,81 @@ function Recruitment() {
       !form.department ||
       form.department <= 0
     ) {
-      setError("Department ID is required.")
+      setError(
+        "Department ID is required.",
+      )
       return
+    }
+
+    if (
+      form.experience_years !==
+        undefined &&
+      form.experience_years < 0
+    ) {
+      setError(
+        "Experience years cannot be negative.",
+      )
+      return
+    }
+
+    if (
+      form.expected_salary !== null &&
+      form.expected_salary !==
+        undefined &&
+      Number(form.expected_salary) < 0
+    ) {
+      setError(
+        "Expected salary cannot be negative.",
+      )
+      return
+    }
+
+    if (
+      form.status === "INTERVIEW" &&
+      !form.interview_date
+    ) {
+      setError(
+        "Interview date is required for interview candidates.",
+      )
+      return
+    }
+
+    if (
+      form.status !== "INTERVIEW" &&
+      form.interview_date
+    ) {
+      setError(
+        "Interview date is only allowed for interview candidates.",
+      )
+      return
+    }
+
+    if (form.status === "SELECTED") {
+      if (!form.offer_date) {
+        setError(
+          "Offer date is required for selected candidates.",
+        )
+        return
+      }
+
+      if (!form.joining_date) {
+        setError(
+          "Joining date is required for selected candidates.",
+        )
+        return
+      }
+
+      if (
+        form.offer_date &&
+        form.joining_date &&
+        form.joining_date <
+          form.offer_date
+      ) {
+        setError(
+          "Joining date cannot be before offer date.",
+        )
+        return
+      }
     }
 
     try {
@@ -188,14 +378,48 @@ function Recruitment() {
 
       const payload: CandidatePayload = {
         ...form,
-        first_name: form.first_name.trim(),
-        last_name: form.last_name.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        job_title: form.job_title.trim(),
+
+        first_name:
+          form.first_name.trim(),
+
+        last_name:
+          form.last_name.trim(),
+
+        email:
+          form.email.trim(),
+
+        phone:
+          form.phone.trim(),
+
+        job_title:
+          form.job_title.trim(),
+
         interview_notes:
           form.interview_notes.trim(),
-        hr_notes: form.hr_notes.trim(),
+
+        hr_notes:
+          form.hr_notes.trim(),
+
+        experience_years:
+          form.experience_years,
+
+        expected_salary:
+          form.expected_salary,
+
+        interview_date:
+          form.status === "INTERVIEW"
+            ? form.interview_date
+            : null,
+
+        offer_date:
+          form.status === "SELECTED"
+            ? form.offer_date
+            : null,
+
+        joining_date:
+          form.status === "SELECTED"
+            ? form.joining_date
+            : null,
       }
 
       if (editingId !== null) {
@@ -231,12 +455,42 @@ function Recruitment() {
       }
 
       resetForm()
-    } catch {
-      setError(
-        editingId !== null
-          ? "Unable to update candidate."
-          : "Unable to create candidate.",
-      )
+    } catch (requestError: any) {
+      const responseData =
+        requestError?.response?.data
+
+      if (
+        responseData &&
+        typeof responseData ===
+          "object"
+      ) {
+        const messages =
+          Object.entries(
+            responseData,
+          )
+            .map(
+              ([field, value]) =>
+                `${field}: ${
+                  Array.isArray(value)
+                    ? value.join(", ")
+                    : String(value)
+                }`,
+            )
+            .join(" ")
+
+        setError(
+          messages ||
+            (editingId !== null
+              ? "Unable to update candidate."
+              : "Unable to create candidate."),
+        )
+      } else {
+        setError(
+          editingId !== null
+            ? "Unable to update candidate."
+            : "Unable to create candidate.",
+        )
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -271,7 +525,9 @@ function Recruitment() {
         "Candidate deleted successfully.",
       )
     } catch {
-      setError("Unable to delete candidate.")
+      setError(
+        "Unable to delete candidate.",
+      )
     } finally {
       setDeletingId(null)
     }
@@ -281,19 +537,49 @@ function Recruitment() {
     candidate: Candidate,
   ) => {
     setForm({
-      first_name: candidate.first_name,
-      last_name: candidate.last_name,
-      email: candidate.email,
-      phone: candidate.phone,
-      job_title: candidate.job_title,
-      department: candidate.department,
+      first_name:
+        candidate.first_name,
+
+      last_name:
+        candidate.last_name,
+
+      email:
+        candidate.email,
+
+      phone:
+        candidate.phone,
+
+      job_title:
+        candidate.job_title,
+
+      department:
+        candidate.department,
+
       resume: null,
+
       interview_date:
         candidate.interview_date,
-      status: candidate.status,
+
+      status:
+        candidate.status,
+
       interview_notes:
         candidate.interview_notes,
-      hr_notes: candidate.hr_notes,
+
+      hr_notes:
+        candidate.hr_notes,
+
+      experience_years:
+        candidate.experience_years,
+
+      expected_salary:
+        candidate.expected_salary,
+
+      offer_date:
+        candidate.offer_date,
+
+      joining_date:
+        candidate.joining_date,
     })
 
     setEditingId(candidate.id)
@@ -302,80 +588,12 @@ function Recruitment() {
     setSuccess(null)
   }
 
-  const formatStatus = (
-    value: string,
-  ) => {
-    return value
-      .replaceAll("_", " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (character) =>
-        character.toUpperCase(),
-      )
-  }
-
-  const getStatusStyle = (
-    status: string,
-  ) => {
-    if (status === "SELECTED") {
-      return {
-        backgroundColor: "#dcfce7",
-        color: "#166534",
-      }
-    }
-
-    if (status === "REJECTED") {
-      return {
-        backgroundColor: "#fee2e2",
-        color: "#991b1b",
-      }
-    }
-
-    if (status === "INTERVIEW") {
-      return {
-        backgroundColor: "#dbeafe",
-        color: "#1d4ed8",
-      }
-    }
-
-    if (status === "SHORTLISTED") {
-      return {
-        backgroundColor: "#fef3c7",
-        color: "#92400e",
-      }
-    }
-
-    return {
-      backgroundColor: "#f3f4f6",
-      color: "#374151",
-    }
-  }
-
-  const inputStyle = {
-    width: "100%",
-    marginTop: "7px",
-    padding: "11px 12px",
-    border: "1px solid #d1d5db",
-    borderRadius: "7px",
-    boxSizing: "border-box" as const,
-    fontSize: "14px",
-    outline: "none",
-  }
-
-  const labelStyle = {
-    display: "block",
-    color: "#374151",
-    fontSize: "14px",
-    fontWeight: 600,
-  }
-
   return (
     <main
       style={{
         minHeight: "100vh",
-        padding: "28px",
         backgroundColor: "#f8fafc",
-        fontFamily:
-          "Arial, sans-serif",
+        padding: "32px 24px",
         boxSizing: "border-box",
       }}
     >
@@ -388,7 +606,8 @@ function Recruitment() {
         <header
           style={{
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent:
+              "space-between",
             alignItems: "center",
             gap: "20px",
             marginBottom: "28px",
@@ -401,8 +620,10 @@ function Recruitment() {
                 color: "#2563eb",
                 fontSize: "13px",
                 fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
+                textTransform:
+                  "uppercase",
+                letterSpacing:
+                  "0.08em",
                 marginBottom: "7px",
               }}
             >
@@ -436,17 +657,21 @@ function Recruitment() {
           <button
             type="button"
             onClick={() => {
-              setForm(emptyForm)
+              setForm({
+                ...emptyForm,
+              })
               setEditingId(null)
               setShowForm(true)
               setError(null)
               setSuccess(null)
             }}
             style={{
-              padding: "11px 18px",
+              padding:
+                "11px 18px",
               border: "none",
               borderRadius: "8px",
-              backgroundColor: "#2563eb",
+              backgroundColor:
+                "#2563eb",
               color: "#ffffff",
               cursor: "pointer",
               fontWeight: 700,
@@ -460,13 +685,17 @@ function Recruitment() {
         {error && (
           <section
             style={{
-              padding: "14px 16px",
+              padding:
+                "14px 16px",
               marginBottom: "20px",
-              backgroundColor: "#fee2e2",
-              border: "1px solid #fecaca",
+              backgroundColor:
+                "#fee2e2",
+              border:
+                "1px solid #fecaca",
               borderRadius: "8px",
               color: "#991b1b",
               fontSize: "14px",
+              whiteSpace: "pre-wrap",
             }}
           >
             {error}
@@ -476,10 +705,13 @@ function Recruitment() {
         {success && (
           <section
             style={{
-              padding: "14px 16px",
+              padding:
+                "14px 16px",
               marginBottom: "20px",
-              backgroundColor: "#dcfce7",
-              border: "1px solid #bbf7d0",
+              backgroundColor:
+                "#dcfce7",
+              border:
+                "1px solid #bbf7d0",
               borderRadius: "8px",
               color: "#166534",
               fontSize: "14px",
@@ -501,26 +733,32 @@ function Recruitment() {
           {[
             {
               label: "Total Candidates",
-              value: totalCandidates,
+              value:
+                totalCandidates,
             },
             {
               label: "Interviews",
-              value: interviewCandidates,
+              value:
+                interviewCandidates,
             },
             {
               label: "Selected",
-              value: selectedCandidates,
+              value:
+                selectedCandidates,
             },
             {
               label: "Rejected",
-              value: rejectedCandidates,
+              value:
+                rejectedCandidates,
             },
           ].map((stat) => (
             <article
               key={stat.label}
               style={{
-                backgroundColor: "#ffffff",
-                border: "1px solid #e5e7eb",
+                backgroundColor:
+                  "#ffffff",
+                border:
+                  "1px solid #e5e7eb",
                 borderRadius: "10px",
                 padding: "18px",
                 boxShadow:
@@ -532,7 +770,8 @@ function Recruitment() {
                   color: "#6b7280",
                   fontSize: "13px",
                   fontWeight: 600,
-                  marginBottom: "8px",
+                  marginBottom:
+                    "8px",
                 }}
               >
                 {stat.label}
@@ -554,8 +793,10 @@ function Recruitment() {
         {showForm && (
           <section
             style={{
-              backgroundColor: "#ffffff",
-              border: "1px solid #e5e7eb",
+              backgroundColor:
+                "#ffffff",
+              border:
+                "1px solid #e5e7eb",
               borderRadius: "10px",
               padding: "24px",
               marginBottom: "24px",
@@ -566,10 +807,12 @@ function Recruitment() {
             <div
               style={{
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent:
+                  "space-between",
                 alignItems: "center",
                 gap: "16px",
-                marginBottom: "22px",
+                marginBottom:
+                  "22px",
               }}
             >
               <div>
@@ -580,7 +823,8 @@ function Recruitment() {
                     fontSize: "20px",
                   }}
                 >
-                  {editingId !== null
+                  {editingId !==
+                  null
                     ? "Edit Candidate"
                     : "Add Candidate"}
                 </h2>
@@ -601,13 +845,15 @@ function Recruitment() {
               <button
                 type="button"
                 onClick={resetForm}
+                aria-label="Close form"
                 style={{
                   border: "none",
                   backgroundColor:
                     "transparent",
                   color: "#6b7280",
                   cursor: "pointer",
-                  fontSize: "20px",
+                  fontSize: "24px",
+                  lineHeight: 1,
                 }}
               >
                 ×
@@ -623,179 +869,422 @@ function Recruitment() {
                 gap: "18px",
               }}
             >
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
                 First Name
                 <input
                   type="text"
-                  value={form.first_name}
+                  value={
+                    form.first_name
+                  }
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      first_name:
-                        event.target.value,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        first_name:
+                          event.target
+                            .value,
+                      }),
+                    )
                   }
                   required
                   style={inputStyle}
                 />
               </label>
 
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
                 Last Name
                 <input
                   type="text"
-                  value={form.last_name}
+                  value={
+                    form.last_name
+                  }
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      last_name:
-                        event.target.value,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        last_name:
+                          event.target
+                            .value,
+                      }),
+                    )
                   }
                   style={inputStyle}
                 />
               </label>
 
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
                 Email
                 <input
                   type="email"
                   value={form.email}
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      email:
-                        event.target.value,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        email:
+                          event.target
+                            .value,
+                      }),
+                    )
                   }
                   required
                   style={inputStyle}
                 />
               </label>
 
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
                 Phone
                 <input
                   type="tel"
                   value={form.phone}
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      phone:
-                        event.target.value,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        phone:
+                          event.target
+                            .value,
+                      }),
+                    )
                   }
                   required
                   style={inputStyle}
                 />
               </label>
 
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
                 Job Title
                 <input
                   type="text"
-                  value={form.job_title}
+                  value={
+                    form.job_title
+                  }
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      job_title:
-                        event.target.value,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        job_title:
+                          event.target
+                            .value,
+                      }),
+                    )
                   }
                   required
                   style={inputStyle}
                 />
               </label>
 
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
                 Department ID
                 <input
                   type="number"
                   min="1"
                   value={
-                    form.department || ""
+                    form.department ||
+                    ""
                   }
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      department:
-                        Number(
-                          event.target.value,
-                        ),
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        department:
+                          Number(
+                            event.target
+                              .value,
+                          ),
+                      }),
+                    )
                   }
                   required
                   style={inputStyle}
                 />
               </label>
 
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
+                Experience (Years)
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={
+                    form.experience_years ??
+                    ""
+                  }
+                  onChange={(event) =>
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        experience_years:
+                          event.target
+                            .value ===
+                          ""
+                            ? undefined
+                            : Number(
+                                event.target
+                                  .value,
+                              ),
+                      }),
+                    )
+                  }
+                  style={inputStyle}
+                />
+              </label>
+
+              <label
+                style={labelStyle}
+              >
+                Expected Salary
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={
+                    form.expected_salary ??
+                    ""
+                  }
+                  onChange={(event) =>
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        expected_salary:
+                          event.target
+                            .value ===
+                          ""
+                            ? null
+                            : event.target
+                                .value,
+                      }),
+                    )
+                  }
+                  style={inputStyle}
+                />
+              </label>
+
+              <label
+                style={labelStyle}
+              >
                 Resume
                 <input
                   type="file"
+                  accept=".pdf,.doc,.docx"
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      resume:
-                        event.target.files?.[0] ??
-                        null,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        resume:
+                          event.target
+                            .files?.[0] ??
+                          null,
+                      }),
+                    )
                   }
                   style={{
                     ...inputStyle,
                     padding: "8px",
                   }}
                 />
+
+                {editingId !==
+                  null &&
+                  form.resume ===
+                    null && (
+                    <span
+                      style={{
+                        color:
+                          "#6b7280",
+                        fontSize:
+                          "12px",
+                        fontWeight:
+                          400,
+                      }}
+                    >
+                      Leave empty to
+                      keep the existing
+                      resume.
+                    </span>
+                  )}
               </label>
 
-              <label style={labelStyle}>
-                Interview Date
-                <input
-                  type="datetime-local"
-                  value={
-                    form.interview_date
-                      ? form.interview_date.slice(
-                          0,
-                          16,
-                        )
-                      : ""
-                  }
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      interview_date:
-                        event.target.value
-                          ? event.target.value
-                          : null,
-                    }))
-                  }
-                  style={inputStyle}
-                />
-              </label>
-
-              <label style={labelStyle}>
+              <label
+                style={labelStyle}
+              >
                 Status
                 <select
                   value={form.status}
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      status:
-                        event.target.value,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        status:
+                          event.target
+                            .value,
+                        interview_date:
+                          event.target
+                              .value ===
+                            "INTERVIEW"
+                            ? current.interview_date
+                            : null,
+                        offer_date:
+                          event.target
+                              .value ===
+                            "SELECTED"
+                            ? current.offer_date
+                            : null,
+                        joining_date:
+                          event.target
+                              .value ===
+                            "SELECTED"
+                            ? current.joining_date
+                            : null,
+                      }),
+                    )
                   }
                   style={inputStyle}
                 >
-                  {statuses.map((status) => (
-                    <option
-                      key={status.value}
-                      value={status.value}
-                    >
-                      {status.label}
-                    </option>
-                  ))}
+                  {statuses.map(
+                    (status) => (
+                      <option
+                        key={
+                          status.value
+                        }
+                        value={
+                          status.value
+                        }
+                      >
+                        {status.label}
+                      </option>
+                    ),
+                  )}
                 </select>
               </label>
+
+              {form.status ===
+                "INTERVIEW" && (
+                <label
+                  style={labelStyle}
+                >
+                  Interview Date
+                  <input
+                    type="datetime-local"
+                    value={
+                      form.interview_date
+                        ? form.interview_date.slice(
+                            0,
+                            16,
+                          )
+                        : ""
+                    }
+                    onChange={(event) =>
+                      setForm(
+                        (current) => ({
+                          ...current,
+                          interview_date:
+                            event
+                              .target
+                              .value
+                              ? event
+                                  .target
+                                  .value
+                              : null,
+                        }),
+                      )
+                    }
+                    required
+                    style={
+                      inputStyle
+                    }
+                  />
+                </label>
+              )}
+
+              {form.status ===
+                "SELECTED" && (
+                <>
+                  <label
+                    style={
+                      labelStyle
+                    }
+                  >
+                    Offer Date
+                    <input
+                      type="date"
+                      value={
+                        form.offer_date ??
+                        ""
+                      }
+                      onChange={(
+                        event,
+                      ) =>
+                        setForm(
+                          (
+                            current,
+                          ) => ({
+                            ...current,
+                            offer_date:
+                              event
+                                .target
+                                .value ||
+                              null,
+                          }),
+                        )
+                      }
+                      required
+                      style={
+                        inputStyle
+                      }
+                    />
+                  </label>
+
+                  <label
+                    style={
+                      labelStyle
+                    }
+                  >
+                    Joining Date
+                    <input
+                      type="date"
+                      value={
+                        form.joining_date ??
+                        ""
+                      }
+                      onChange={(
+                        event,
+                      ) =>
+                        setForm(
+                          (
+                            current,
+                          ) => ({
+                            ...current,
+                            joining_date:
+                              event
+                                .target
+                                .value ||
+                              null,
+                          }),
+                        )
+                      }
+                      required
+                      style={
+                        inputStyle
+                      }
+                    />
+                  </label>
+                </>
+              )}
 
               <label
                 style={{
@@ -810,16 +1299,20 @@ function Recruitment() {
                     form.interview_notes
                   }
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      interview_notes:
-                        event.target.value,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        interview_notes:
+                          event.target
+                            .value,
+                      }),
+                    )
                   }
                   rows={4}
                   style={{
                     ...inputStyle,
-                    resize: "vertical",
+                    resize:
+                      "vertical",
                   }}
                 />
               </label>
@@ -833,18 +1326,24 @@ function Recruitment() {
               >
                 HR Notes
                 <textarea
-                  value={form.hr_notes}
+                  value={
+                    form.hr_notes
+                  }
                   onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      hr_notes:
-                        event.target.value,
-                    }))
+                    setForm(
+                      (current) => ({
+                        ...current,
+                        hr_notes:
+                          event.target
+                            .value,
+                      }),
+                    )
                   }
                   rows={4}
                   style={{
                     ...inputStyle,
-                    resize: "vertical",
+                    resize:
+                      "vertical",
                   }}
                 />
               </label>
@@ -860,17 +1359,21 @@ function Recruitment() {
               >
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting
+                  }
                   style={{
                     padding:
                       "11px 20px",
                     border: "none",
-                    borderRadius: "7px",
+                    borderRadius:
+                      "7px",
                     backgroundColor:
                       isSubmitting
                         ? "#93c5fd"
                         : "#2563eb",
-                    color: "#ffffff",
+                    color:
+                      "#ffffff",
                     cursor:
                       isSubmitting
                         ? "not-allowed"
@@ -880,24 +1383,30 @@ function Recruitment() {
                 >
                   {isSubmitting
                     ? "Saving..."
-                    : editingId !== null
+                    : editingId !==
+                        null
                       ? "Update Candidate"
                       : "Save Candidate"}
                 </button>
 
                 <button
                   type="button"
-                  onClick={resetForm}
+                  onClick={
+                    resetForm
+                  }
                   style={{
                     padding:
                       "11px 20px",
                     border:
                       "1px solid #d1d5db",
-                    borderRadius: "7px",
+                    borderRadius:
+                      "7px",
                     backgroundColor:
                       "#ffffff",
-                    color: "#374151",
-                    cursor: "pointer",
+                    color:
+                      "#374151",
+                    cursor:
+                      "pointer",
                     fontWeight: 600,
                   }}
                 >
@@ -910,8 +1419,10 @@ function Recruitment() {
 
         <section
           style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #e5e7eb",
+            backgroundColor:
+              "#ffffff",
+            border:
+              "1px solid #e5e7eb",
             borderRadius: "10px",
             overflow: "hidden",
             boxShadow:
@@ -920,7 +1431,8 @@ function Recruitment() {
         >
           <div
             style={{
-              padding: "20px 22px",
+              padding:
+                "20px 22px",
               borderBottom:
                 "1px solid #e5e7eb",
             }}
@@ -933,7 +1445,8 @@ function Recruitment() {
                 alignItems: "center",
                 gap: "16px",
                 flexWrap: "wrap",
-                marginBottom: "16px",
+                marginBottom:
+                  "16px",
               }}
             >
               <div>
@@ -941,7 +1454,8 @@ function Recruitment() {
                   style={{
                     margin: 0,
                     color: "#111827",
-                    fontSize: "19px",
+                    fontSize:
+                      "19px",
                   }}
                 >
                   Candidate Pipeline
@@ -951,11 +1465,15 @@ function Recruitment() {
                   style={{
                     margin:
                       "5px 0 0",
-                    color: "#6b7280",
-                    fontSize: "13px",
+                    color:
+                      "#6b7280",
+                    fontSize:
+                      "13px",
                   }}
                 >
-                  {filteredCandidates.length}{" "}
+                  {
+                    filteredCandidates.length
+                  }{" "}
                   candidate
                   {filteredCandidates.length ===
                   1
@@ -969,36 +1487,46 @@ function Recruitment() {
                 style={{
                   display: "flex",
                   gap: "10px",
-                  flexWrap: "wrap",
+                  flexWrap:
+                    "wrap",
                 }}
               >
                 <input
                   type="search"
                   placeholder="Search candidates..."
-                  value={searchTerm}
+                  value={
+                    searchTerm
+                  }
                   onChange={(event) =>
                     setSearchTerm(
-                      event.target.value,
+                      event.target
+                        .value,
                     )
                   }
                   style={{
-                    width: "240px",
+                    width:
+                      "240px",
                     padding:
                       "9px 12px",
                     border:
                       "1px solid #d1d5db",
-                    borderRadius: "7px",
+                    borderRadius:
+                      "7px",
                     boxSizing:
                       "border-box",
-                    fontSize: "14px",
+                    fontSize:
+                      "14px",
                   }}
                 />
 
                 <select
-                  value={statusFilter}
+                  value={
+                    statusFilter
+                  }
                   onChange={(event) =>
                     setStatusFilter(
-                      event.target.value,
+                      event.target
+                        .value,
                     )
                   }
                   style={{
@@ -1006,24 +1534,32 @@ function Recruitment() {
                       "9px 12px",
                     border:
                       "1px solid #d1d5db",
-                    borderRadius: "7px",
+                    borderRadius:
+                      "7px",
                     backgroundColor:
                       "#ffffff",
-                    fontSize: "14px",
+                    fontSize:
+                      "14px",
                   }}
                 >
                   <option value="ALL">
                     All Statuses
                   </option>
 
-                  {statuses.map((status) => (
-                    <option
-                      key={status.value}
-                      value={status.value}
-                    >
-                      {status.label}
-                    </option>
-                  ))}
+                  {statuses.map(
+                    (status) => (
+                      <option
+                        key={
+                          status.value
+                        }
+                        value={
+                          status.value
+                        }
+                      >
+                        {status.label}
+                      </option>
+                    ),
+                  )}
                 </select>
               </div>
             </div>
@@ -1032,9 +1568,12 @@ function Recruitment() {
           {isLoading ? (
             <div
               style={{
-                padding: "45px",
-                textAlign: "center",
-                color: "#6b7280",
+                padding:
+                  "45px",
+                textAlign:
+                  "center",
+                color:
+                  "#6b7280",
               }}
             >
               Loading candidates...
@@ -1043,14 +1582,18 @@ function Recruitment() {
             0 ? (
             <div
               style={{
-                padding: "55px",
-                textAlign: "center",
+                padding:
+                  "55px",
+                textAlign:
+                  "center",
               }}
             >
               <div
                 style={{
-                  fontSize: "32px",
-                  marginBottom: "10px",
+                  fontSize:
+                    "32px",
+                  marginBottom:
+                    "10px",
                 }}
               >
                 👤
@@ -1058,26 +1601,32 @@ function Recruitment() {
 
               <strong
                 style={{
-                  color: "#374151",
+                  color:
+                    "#374151",
                 }}
               >
-                No candidates found
+                No candidates
+                found
               </strong>
 
               <p
                 style={{
-                  color: "#6b7280",
-                  fontSize: "14px",
+                  color:
+                    "#6b7280",
+                  fontSize:
+                    "14px",
                 }}
               >
-                Try changing your
-                search or filter.
+                Try changing
+                your search or
+                filter.
               </p>
             </div>
           ) : (
             <div
               style={{
-                overflowX: "auto",
+                overflowX:
+                  "auto",
               }}
             >
               <table
@@ -1085,7 +1634,8 @@ function Recruitment() {
                   width: "100%",
                   borderCollapse:
                     "collapse",
-                  minWidth: "1150px",
+                  minWidth:
+                    "1250px",
                 }}
               >
                 <thead>
@@ -1100,34 +1650,41 @@ function Recruitment() {
                       "Contact",
                       "Job",
                       "Department",
+                      "Experience",
+                      "Expected Salary",
                       "Applied",
                       "Interview",
                       "Status",
                       "Actions",
-                    ].map((heading) => (
-                      <th
-                        key={heading}
-                        style={{
-                          padding:
-                            "13px 14px",
-                          textAlign:
-                            "left",
-                          color:
-                            "#6b7280",
-                          fontSize:
-                            "12px",
-                          fontWeight: 700,
-                          textTransform:
-                            "uppercase",
-                          letterSpacing:
-                            "0.04em",
-                          borderBottom:
-                            "1px solid #e5e7eb",
-                        }}
-                      >
-                        {heading}
-                      </th>
-                    ))}
+                    ].map(
+                      (heading) => (
+                        <th
+                          key={
+                            heading
+                          }
+                          style={{
+                            padding:
+                              "13px 14px",
+                            textAlign:
+                              "left",
+                            color:
+                              "#6b7280",
+                            fontSize:
+                              "12px",
+                            fontWeight:
+                              700,
+                            textTransform:
+                              "uppercase",
+                            letterSpacing:
+                              "0.04em",
+                            borderBottom:
+                              "1px solid #e5e7eb",
+                          }}
+                        >
+                          {heading}
+                        </th>
+                      ),
+                    )}
                   </tr>
                 </thead>
 
@@ -1240,6 +1797,40 @@ function Recruitment() {
                               "13px",
                           }}
                         >
+                          {candidate.experience_years ??
+                            0}{" "}
+                          yrs
+                        </td>
+
+                        <td
+                          style={{
+                            padding:
+                              "15px 14px",
+                            borderBottom:
+                              "1px solid #f3f4f6",
+                            color:
+                              "#6b7280",
+                            fontSize:
+                              "13px",
+                          }}
+                        >
+                          {candidate.expected_salary
+                            ? candidate.expected_salary
+                            : "-"}
+                        </td>
+
+                        <td
+                          style={{
+                            padding:
+                              "15px 14px",
+                            borderBottom:
+                              "1px solid #f3f4f6",
+                            color:
+                              "#6b7280",
+                            fontSize:
+                              "13px",
+                          }}
+                        >
                           {
                             candidate.application_date
                           }
@@ -1284,6 +1875,8 @@ function Recruitment() {
                                 "12px",
                               fontWeight:
                                 700,
+                              whiteSpace:
+                                "nowrap",
                               ...getStatusStyle(
                                 candidate.status,
                               ),
