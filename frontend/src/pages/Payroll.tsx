@@ -14,6 +14,11 @@ import {
   type PayrollPayload,
 } from "../api/payroll"
 
+import {
+  getEmployees,
+  type Employee,
+} from "../api/employees"
+
 interface PayrollForm {
   employee: number
   month: string
@@ -38,6 +43,10 @@ function PayrollPage() {
   const [records, setRecords] = useState<Payroll[]>([])
   const [totalRecords, setTotalRecords] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
+
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [isLoadingEmployees, setIsLoadingEmployees] =
+    useState(true)
 
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -80,6 +89,25 @@ function PayrollPage() {
       ),
     )
 
+  const loadEmployees = async () => {
+    try {
+      setIsLoadingEmployees(true)
+
+      const response = await getEmployees({
+        employment_status: "ACTIVE",
+        ordering: "full_name",
+      })
+
+      setEmployees(response.results ?? [])
+    } catch {
+      setError(
+        "Unable to load active employees.",
+      )
+    } finally {
+      setIsLoadingEmployees(false)
+    }
+  }
+
   const loadPayroll = async (
     page = currentPage,
   ) => {
@@ -111,6 +139,10 @@ function PayrollPage() {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    void loadEmployees()
+  }, [])
 
   useEffect(() => {
     const timeoutId =
@@ -196,7 +228,7 @@ function PayrollPage() {
       form.employee <= 0
     ) {
       setError(
-        "Employee ID is required.",
+        "Please select an employee.",
       )
       return
     }
@@ -915,11 +947,9 @@ function PayrollPage() {
                       600,
                   }}
                 >
-                  Employee ID
+                  Employee
 
-                  <input
-                    type="number"
-                    min="1"
+                  <select
                     value={
                       form.employee ||
                       ""
@@ -942,6 +972,10 @@ function PayrollPage() {
                       )
                     }
                     required
+                    disabled={
+                      isLoadingEmployees ||
+                      isSubmitting
+                    }
                     style={{
                       display:
                         "block",
@@ -955,10 +989,61 @@ function PayrollPage() {
                         "1px solid #d1d5db",
                       borderRadius:
                         "7px",
+                      backgroundColor:
+                        isLoadingEmployees
+                          ? "#f3f4f6"
+                          : "#ffffff",
+                      color:
+                        "#111827",
                       boxSizing:
                         "border-box",
                     }}
-                  />
+                  >
+                    <option value="">
+                      {isLoadingEmployees
+                        ? "Loading employees..."
+                        : "Select employee"}
+                    </option>
+
+                    {employees.map(
+                      (employee) => (
+                        <option
+                          key={
+                            employee.id
+                          }
+                          value={
+                            employee.id
+                          }
+                        >
+                          {employee.full_name}{" "}
+                          —{" "}
+                          {employee.employee_id}
+                        </option>
+                      ),
+                    )}
+                  </select>
+
+                  {!isLoadingEmployees &&
+                    employees.length ===
+                      0 && (
+                      <span
+                        style={{
+                          display:
+                            "block",
+                          marginTop:
+                            "6px",
+                          color:
+                            "#92400e",
+                          fontSize:
+                            "12px",
+                          fontWeight:
+                            500,
+                        }}
+                      >
+                        No active employees
+                        available.
+                      </span>
+                    )}
                 </label>
 
                 <label
@@ -1310,7 +1395,9 @@ function PayrollPage() {
                 <button
                   type="submit"
                   disabled={
-                    isSubmitting
+                    isSubmitting ||
+                    isLoadingEmployees ||
+                    employees.length === 0
                   }
                   style={{
                     padding:
@@ -1319,13 +1406,17 @@ function PayrollPage() {
                     borderRadius:
                       "7px",
                     backgroundColor:
-                      isSubmitting
+                      isSubmitting ||
+                      isLoadingEmployees ||
+                      employees.length === 0
                         ? "#93c5fd"
                         : "#2563eb",
                     color:
                       "#ffffff",
                     cursor:
-                      isSubmitting
+                      isSubmitting ||
+                      isLoadingEmployees ||
+                      employees.length === 0
                         ? "not-allowed"
                         : "pointer",
                     fontWeight:
@@ -2032,8 +2123,7 @@ function PayrollPage() {
                         (current) =>
                           Math.max(
                             1,
-                            current -
-                              1,
+                            current - 1,
                           ),
                       )
                     }
