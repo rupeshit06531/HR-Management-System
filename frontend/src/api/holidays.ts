@@ -26,16 +26,15 @@ export interface HolidayPayload {
   is_active: boolean
 }
 
-export const getHolidays = async (): Promise<
-  HolidayListResponse | Holiday[]
-> => {
-  const response =
-    await apiClient.get<
-      HolidayListResponse | Holiday[]
-    >("/holidays/")
+export const getHolidays =
+  async (): Promise<HolidayListResponse> => {
+    const response =
+      await apiClient.get<HolidayListResponse>(
+        "/holidays/",
+      )
 
-  return response.data
-}
+    return response.data
+  }
 
 export const createHoliday = async (
   data: HolidayPayload,
