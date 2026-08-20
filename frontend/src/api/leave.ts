@@ -3,8 +3,6 @@ import apiClient from "./client"
 export interface LeaveRecord {
   id: number
   employee: number
-  employee_id?: string
-  employee_name?: string
   leave_type: string
   start_date: string
   end_date: string
@@ -28,15 +26,15 @@ export interface CreateLeaveRequest {
   reason: string
 }
 
-export const getLeaves = async (): Promise<
-  LeaveListResponse | LeaveRecord[]
-> => {
-  const response = await apiClient.get<
-    LeaveListResponse | LeaveRecord[]
-  >("/leaves/")
+export const getLeaves =
+  async (): Promise<LeaveListResponse> => {
+    const response =
+      await apiClient.get<LeaveListResponse>(
+        "/leaves/",
+      )
 
-  return response.data
-}
+    return response.data
+  }
 
 export const createLeave = async (
   data: CreateLeaveRequest,
