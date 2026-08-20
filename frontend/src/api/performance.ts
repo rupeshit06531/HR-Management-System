@@ -30,7 +30,7 @@ export interface PerformanceListResponse {
   results: PerformanceReview[]
 }
 
-const PERFORMANCE_URL = "/performance/reviews/"
+const PERFORMANCE_URL = "/performance/"
 
 export const getPerformanceReviews = async () => {
   const response = await apiClient.get<
