@@ -236,6 +236,7 @@ class AttendanceLocationStopSerializer(
     serializers.ModelSerializer,
 ):
     employee_name = serializers.SerializerMethodField()
+
     employee_id = serializers.CharField(
         source="employee.employee_id",
         read_only=True,
