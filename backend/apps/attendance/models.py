@@ -76,8 +76,15 @@ class Attendance(models.Model):
         help_text="GPS accuracy in meters.",
     )
 
-    # Mandatory selfie for verified punch-in.
+    # Punch-in selfie
     check_in_selfie = models.ImageField(
+        upload_to="attendance/selfies/%Y/%m/%d/",
+        null=True,
+        blank=True,
+    )
+
+    # Punch-out selfie
+    check_out_selfie = models.ImageField(
         upload_to="attendance/selfies/%Y/%m/%d/",
         null=True,
         blank=True,
@@ -155,4 +162,82 @@ class Attendance(models.Model):
             f"{self.employee} - "
             f"{self.date} - "
             f"{self.status}"
+        )
+
+
+class AttendanceLocationStop(models.Model):
+    """
+    Stores an employee's location stops during the attendance day.
+
+    This model is separate from Attendance because one employee can
+    have multiple location records during a single working day.
+    """
+
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name="attendance_location_stops",
+    )
+
+    attendance = models.ForeignKey(
+        Attendance,
+        on_delete=models.CASCADE,
+        related_name="location_stops",
+    )
+
+    latitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+    )
+
+    longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+    )
+
+    accuracy = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="GPS accuracy in meters.",
+    )
+
+    recorded_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-recorded_at",
+            "-id",
+        ]
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "employee",
+                    "-recorded_at",
+                ],
+                name="location_employee_time_idx",
+            ),
+            models.Index(
+                fields=[
+                    "attendance",
+                    "-recorded_at",
+                ],
+                name="location_attendance_time_idx",
+            ),
+            models.Index(
+                fields=[
+                    "recorded_at",
+                ],
+                name="location_recorded_at_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.employee} - "
+            f"{self.recorded_at}"
         )
