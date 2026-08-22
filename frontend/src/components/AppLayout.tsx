@@ -10,6 +10,7 @@ interface NavigationItem {
   label: string
   path: string
   roles: string[]
+  short: string
 }
 
 const navigationItems: NavigationItem[] = [
@@ -22,6 +23,7 @@ const navigationItems: NavigationItem[] = [
       "MANAGER",
       "EMPLOYEE",
     ],
+    short: "DB",
   },
   {
     label: "Employees",
@@ -31,6 +33,7 @@ const navigationItems: NavigationItem[] = [
       "HR",
       "MANAGER",
     ],
+    short: "EM",
   },
   {
     label: "Departments",
@@ -39,6 +42,7 @@ const navigationItems: NavigationItem[] = [
       "SUPER_ADMIN",
       "HR",
     ],
+    short: "DP",
   },
   {
     label: "Attendance",
@@ -49,6 +53,7 @@ const navigationItems: NavigationItem[] = [
       "MANAGER",
       "EMPLOYEE",
     ],
+    short: "AT",
   },
   {
     label: "Leave",
@@ -59,6 +64,7 @@ const navigationItems: NavigationItem[] = [
       "MANAGER",
       "EMPLOYEE",
     ],
+    short: "LV",
   },
   {
     label: "Payroll",
@@ -68,6 +74,7 @@ const navigationItems: NavigationItem[] = [
       "HR",
       "EMPLOYEE",
     ],
+    short: "PR",
   },
   {
     label: "Performance",
@@ -78,6 +85,7 @@ const navigationItems: NavigationItem[] = [
       "MANAGER",
       "EMPLOYEE",
     ],
+    short: "PF",
   },
   {
     label: "Recruitment",
@@ -86,6 +94,7 @@ const navigationItems: NavigationItem[] = [
       "SUPER_ADMIN",
       "HR",
     ],
+    short: "RC",
   },
   {
     label: "Documents",
@@ -96,6 +105,7 @@ const navigationItems: NavigationItem[] = [
       "MANAGER",
       "EMPLOYEE",
     ],
+    short: "DC",
   },
   {
     label: "Holidays",
@@ -106,6 +116,7 @@ const navigationItems: NavigationItem[] = [
       "MANAGER",
       "EMPLOYEE",
     ],
+    short: "HD",
   },
   {
     label: "Announcements",
@@ -116,8 +127,16 @@ const navigationItems: NavigationItem[] = [
       "MANAGER",
       "EMPLOYEE",
     ],
+    short: "AN",
   },
 ]
+
+const roleLabels: Record<string, string> = {
+  SUPER_ADMIN: "Super Admin",
+  HR: "Human Resources",
+  MANAGER: "Manager",
+  EMPLOYEE: "Employee",
+}
 
 function AppLayout() {
   const navigate = useNavigate()
@@ -144,6 +163,26 @@ function AppLayout() {
       ),
     )
 
+  const displayName =
+    user?.first_name?.trim() ||
+    user?.username ||
+    "User"
+
+  const currentRole =
+    roleLabels[user?.role ?? ""] ||
+    user?.role ||
+    "Employee"
+
+  const initials =
+    displayName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) =>
+        part.charAt(0).toUpperCase(),
+      )
+      .join("") || "U"
+
   return (
     <div
       style={{
@@ -152,89 +191,248 @@ function AppLayout() {
         background: "#f5f7fb",
         color: "#172033",
         fontFamily:
-          "Inter, Arial, Helvetica, sans-serif",
+          '"Inter", "Segoe UI", Arial, sans-serif',
       }}
     >
       <aside
         style={{
-          width: "250px",
+          width: "245px",
+          minWidth: "245px",
           minHeight: "100vh",
-          background: "#111827",
-          color: "#ffffff",
-          padding: "24px 16px",
+          background: "#ffffff",
+          borderRight: "1px solid #e7ebf2",
+          display: "flex",
+          flexDirection: "column",
           boxSizing: "border-box",
           position: "sticky",
           top: 0,
           alignSelf: "flex-start",
+          height: "100vh",
           overflowY: "auto",
         }}
       >
         <div
           style={{
-            padding: "4px 12px 24px",
+            padding: "21px 20px 20px",
             borderBottom:
-              "1px solid rgba(255,255,255,0.1)",
-            marginBottom: "18px",
+              "1px solid #edf0f5",
           }}
         >
-          <div
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/dashboard")
+            }
             style={{
-              fontSize: "20px",
-              fontWeight: 800,
-              letterSpacing: "-0.3px",
+              border: "none",
+              background: "transparent",
+              padding: 0,
+              margin: 0,
+              cursor: "pointer",
+              textAlign: "left",
             }}
           >
-            HR Management
-          </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+              }}
+            >
+              <div
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "9px",
+                  background:
+                    "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#ffffff",
+                  fontSize: "11px",
+                  fontWeight: 800,
+                  letterSpacing: "0.02em",
+                }}
+              >
+                HR
+              </div>
 
-          <div
-            style={{
-              marginTop: "5px",
-              fontSize: "12px",
-              color: "#9ca3af",
-            }}
-          >
-            Enterprise HRMS
-          </div>
+              <div>
+                <div
+                  style={{
+                    color: "#172033",
+                    fontSize: "16px",
+                    lineHeight: 1.2,
+                    fontWeight: 800,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  HR Management
+                </div>
+
+                <div
+                  style={{
+                    marginTop: "3px",
+                    color: "#8a94a6",
+                    fontSize: "10px",
+                    fontWeight: 500,
+                  }}
+                >
+                  Enterprise HRMS
+                </div>
+              </div>
+            </div>
+          </button>
         </div>
 
-        <nav
-          aria-label="Main navigation"
+        <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "6px",
+            padding: "19px 12px",
+            flex: 1,
           }}
         >
-          {visibleNavigationItems.map(
-            (item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                style={({ isActive }) => ({
-                  display: "block",
-                  padding: "11px 12px",
-                  borderRadius: "8px",
-                  color: isActive
-                    ? "#ffffff"
-                    : "#cbd5e1",
-                  background: isActive
-                    ? "#2563eb"
-                    : "transparent",
-                  textDecoration: "none",
-                  fontSize: "14px",
-                  fontWeight: isActive
-                    ? 700
-                    : 500,
-                  transition:
-                    "background 0.15s ease, color 0.15s ease",
-                })}
-              >
-                {item.label}
-              </NavLink>
-            ),
-          )}
-        </nav>
+          <div
+            style={{
+              padding:
+                "0 10px 9px",
+              color: "#a0a8b5",
+              fontSize: "10px",
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}
+          >
+            Main Menu
+          </div>
+
+          <nav
+            aria-label="Main navigation"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "3px",
+            }}
+          >
+            {visibleNavigationItems.map(
+              (item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  style={({ isActive }) => ({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "11px",
+                    minHeight: "42px",
+                    padding: "7px 10px",
+                    borderRadius: "8px",
+                    color: isActive
+                      ? "#2563eb"
+                      : "#5e697a",
+                    background:
+                      isActive
+                        ? "#eff6ff"
+                        : "transparent",
+                    textDecoration: "none",
+                    fontSize: "12px",
+                    fontWeight: isActive
+                      ? 700
+                      : 550,
+                    boxSizing: "border-box",
+                    transition:
+                      "background 0.15s ease, color 0.15s ease",
+                  })}
+                >
+                  {({ isActive }) => (
+                    <>
+                      <span
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "7px",
+                          background:
+                            isActive
+                              ? "#dbeafe"
+                              : "#f3f5f8",
+                          color:
+                            isActive
+                              ? "#2563eb"
+                              : "#7c8798",
+                          display: "flex",
+                          alignItems:
+                            "center",
+                          justifyContent:
+                            "center",
+                          fontSize: "8px",
+                          fontWeight: 800,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {item.short}
+                      </span>
+
+                      <span>
+                        {item.label}
+                      </span>
+                    </>
+                  )}
+                </NavLink>
+              ),
+            )}
+          </nav>
+        </div>
+
+        <div
+          style={{
+            padding: "13px 12px",
+            borderTop:
+              "1px solid #edf0f5",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              void handleLogout()
+            }}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              padding: "10px",
+              border:
+                "1px solid #e7ebf2",
+              borderRadius: "8px",
+              background: "#ffffff",
+              color: "#64748b",
+              cursor: "pointer",
+              textAlign: "left",
+              fontSize: "12px",
+              fontWeight: 650,
+            }}
+          >
+            <span
+              style={{
+                width: "28px",
+                height: "28px",
+                borderRadius: "7px",
+                background: "#f8fafc",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "9px",
+                fontWeight: 800,
+                color: "#64748b",
+              }}
+            >
+              OUT
+            </span>
+
+            <span>
+              Sign Out
+            </span>
+          </button>
+        </div>
       </aside>
 
       <div
@@ -247,23 +445,27 @@ function AppLayout() {
       >
         <header
           style={{
-            minHeight: "72px",
+            minHeight: "68px",
             background: "#ffffff",
             borderBottom:
-              "1px solid #e5e7eb",
+              "1px solid #e7ebf2",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "12px 28px",
+            padding: "10px 25px",
             boxSizing: "border-box",
             gap: "20px",
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
           }}
         >
           <div>
             <div
               style={{
-                fontSize: "18px",
-                fontWeight: 700,
+                fontSize: "16px",
+                fontWeight: 750,
+                color: "#172033",
               }}
             >
               Human Resources
@@ -271,9 +473,9 @@ function AppLayout() {
 
             <div
               style={{
-                marginTop: "3px",
-                fontSize: "12px",
-                color: "#6b7280",
+                marginTop: "2px",
+                fontSize: "11px",
+                color: "#8a94a6",
               }}
             >
               Workforce management
@@ -285,9 +487,28 @@ function AppLayout() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "14px",
+              gap: "12px",
             }}
           >
+            <div
+              style={{
+                width: "34px",
+                height: "34px",
+                borderRadius: "50%",
+                background: "#eff6ff",
+                border:
+                  "1px solid #dbeafe",
+                color: "#2563eb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "11px",
+                fontWeight: 800,
+              }}
+            >
+              {initials}
+            </div>
+
             <div
               style={{
                 textAlign: "right",
@@ -295,53 +516,32 @@ function AppLayout() {
             >
               <div
                 style={{
-                  fontSize: "14px",
+                  fontSize: "12px",
                   fontWeight: 700,
+                  color: "#334155",
                 }}
               >
-                {user?.first_name ||
-                  user?.username ||
-                  "User"}
+                {displayName}
               </div>
 
               <div
                 style={{
                   marginTop: "2px",
-                  fontSize: "12px",
-                  color: "#6b7280",
+                  fontSize: "10px",
+                  color: "#8a94a6",
                 }}
               >
-                {user?.role ||
-                  "EMPLOYEE"}
+                {currentRole}
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                void handleLogout()
-              }}
-              style={{
-                border:
-                  "1px solid #d1d5db",
-                background: "#ffffff",
-                color: "#374151",
-                borderRadius: "7px",
-                padding: "8px 13px",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Logout
-            </button>
           </div>
         </header>
 
         <main
           style={{
             flex: 1,
-            padding: "28px",
+            minWidth: 0,
+            padding: "24px",
             boxSizing: "border-box",
             overflowX: "auto",
           }}
