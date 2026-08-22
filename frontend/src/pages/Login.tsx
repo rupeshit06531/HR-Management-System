@@ -18,10 +18,13 @@ function Login() {
 
   const [username, setUsername] =
     useState("")
+
   const [password, setPassword] =
     useState("")
+
   const [error, setError] =
     useState("")
+
   const [isSubmitting, setIsSubmitting] =
     useState(false)
 
@@ -429,7 +432,7 @@ function Login() {
               style={{
                 display: "grid",
                 gap: "8px",
-                marginBottom: "22px",
+                marginBottom: "10px",
               }}
             >
               <span
@@ -471,6 +474,32 @@ function Login() {
                 }}
               />
             </label>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginBottom: "22px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/forgot-password")
+                }
+                style={{
+                  padding: 0,
+                  border: "none",
+                  background: "transparent",
+                  color: "#2563eb",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                }}
+              >
+                Forgot Password?
+              </button>
+            </div>
 
             <button
               type="submit"

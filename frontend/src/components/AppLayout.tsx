@@ -34,6 +34,7 @@ const navigationItems: NavigationItem[] = [
       "MANAGER",
       "EMPLOYEE",
     ],
+    short: "CP",
   },
   {
     label: "Employees",

@@ -38,13 +38,21 @@ export interface LogoutRequest {
   refresh: string
 }
 
-export interface ChangePasswordRequest {
-  current_password: string
-  new_password: string
-  confirm_password: string
+export interface ForgotPasswordRequest {
+  username?: string
+  email?: string
 }
 
-export interface ChangePasswordResponse {
+export interface ForgotPasswordResponse {
+  detail: string
+}
+
+export interface ResetPasswordRequest {
+  uid: string
+  token: string
+}
+
+export interface ResetPasswordResponse {
   detail: string
 }
 
@@ -90,12 +98,46 @@ export async function getCurrentUser(): Promise<AuthUser> {
   return response.data
 }
 
+export interface ChangePasswordRequest {
+  current_password: string
+  new_password: string
+  confirm_password: string
+}
+
+export interface ChangePasswordResponse {
+  detail: string
+}
+
 export async function changePassword(
   data: ChangePasswordRequest,
 ): Promise<ChangePasswordResponse> {
   const response =
     await apiClient.post<ChangePasswordResponse>(
       "/password/change/",
+      data,
+    )
+
+  return response.data
+}
+
+export async function forgotPassword(
+  data: ForgotPasswordRequest,
+): Promise<ForgotPasswordResponse> {
+  const response =
+    await apiClient.post<ForgotPasswordResponse>(
+      "/password/forgot/",
+      data,
+    )
+
+  return response.data
+}
+
+export async function resetPassword(
+  data: ResetPasswordRequest,
+): Promise<ResetPasswordResponse> {
+  const response =
+    await apiClient.post<ResetPasswordResponse>(
+      "/password/reset/",
       data,
     )
 
