@@ -4,6 +4,8 @@ import {
   Routes,
 } from "react-router-dom"
 
+import ChangePassword from "./pages/ChangePassword"
+
 import Announcements from "./pages/Announcements"
 import Attendance from "./pages/Attendance"
 import Dashboard from "./pages/Dashboard"
@@ -119,6 +121,11 @@ function App() {
           <Route
             path="/announcements"
             element={<Announcements />}
+          />
+
+          <Route
+            path="/change-password"
+            element={<ChangePassword />}
           />
         </Route>
 

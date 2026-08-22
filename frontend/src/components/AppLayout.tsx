@@ -26,6 +26,16 @@ const navigationItems: NavigationItem[] = [
     short: "DB",
   },
   {
+    label: "Change Password",
+    path: "/change-password",
+    roles: [
+      "SUPER_ADMIN",
+      "HR",
+      "MANAGER",
+      "EMPLOYEE",
+    ],
+  },
+  {
     label: "Employees",
     path: "/employees",
     roles: [

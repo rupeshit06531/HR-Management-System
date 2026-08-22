@@ -38,6 +38,16 @@ export interface LogoutRequest {
   refresh: string
 }
 
+export interface ChangePasswordRequest {
+  current_password: string
+  new_password: string
+  confirm_password: string
+}
+
+export interface ChangePasswordResponse {
+  detail: string
+}
+
 export async function login(
   credentials: LoginRequest,
 ): Promise<LoginResponse> {
@@ -75,6 +85,18 @@ export async function getCurrentUser(): Promise<AuthUser> {
   const response =
     await apiClient.get<AuthUser>(
       "/me/",
+    )
+
+  return response.data
+}
+
+export async function changePassword(
+  data: ChangePasswordRequest,
+): Promise<ChangePasswordResponse> {
+  const response =
+    await apiClient.post<ChangePasswordResponse>(
+      "/password/change/",
+      data,
     )
 
   return response.data
