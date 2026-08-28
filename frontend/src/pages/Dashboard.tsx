@@ -1029,51 +1029,75 @@ function Dashboard() {
       <section
         style={{
           background: "#ffffff",
-          border: "1px solid #e7ebf2",
-          borderRadius: "11px",
+          border: "1px solid #e6eaf0",
+          borderRadius: "10px",
           padding: "20px",
         }}
       >
         <div
           style={{
             display: "flex",
+            alignItems: "flex-start",
             justifyContent: "space-between",
-            alignItems: "center",
-            gap: "12px",
+            gap: "15px",
             marginBottom: "18px",
             flexWrap: "wrap",
           }}
         >
           <div>
-            <h2
+            <div
               style={{
-                margin: 0,
-                fontSize: "16px",
-                fontWeight: 750,
-                color: "#172033",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "5px",
               }}
             >
-              HRMS Modules
-            </h2>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: "16px",
+                  fontWeight: 750,
+                  color: "#172033",
+                }}
+              >
+                HRMS Modules
+              </h2>
+
+              <span
+                style={{
+                  padding: "3px 7px",
+                  borderRadius: "5px",
+                  background: "#f1f5f9",
+                  color: "#64748b",
+                  fontSize: "9px",
+                  fontWeight: 700,
+                }}
+              >
+                MODULES
+              </span>
+            </div>
 
             <p
               style={{
-                margin: "5px 0 0",
-                fontSize: "12px",
+                margin: 0,
+                fontSize: "11px",
                 color: "#8a94a6",
               }}
             >
-              Access modules available for your role
+              Access the HR management modules available for your role
             </p>
           </div>
 
           <span
             style={{
-              padding: "5px 9px",
-              borderRadius: "20px",
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "6px 10px",
+              borderRadius: "6px",
               background: "#eff6ff",
               color: "#2563eb",
-              fontSize: "11px",
+              fontSize: "10px",
               fontWeight: 700,
             }}
           >
@@ -1081,95 +1105,142 @@ function Dashboard() {
           </span>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fill, minmax(180px, 1fr))",
-            gap: "10px",
-          }}
-        >
-          {visibleModules.map((item) => (
-            <button
-              key={item.path}
-              type="button"
-              onClick={() =>
-                navigate(item.path)
-              }
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                minHeight: "58px",
-                padding: "10px 13px",
-                border:
-                  "1px solid #e7ebf2",
-                borderRadius: "9px",
-                background: "#ffffff",
-                cursor: "pointer",
-                textAlign: "left",
-                transition:
-                  "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease",
-              }}
-              onMouseEnter={(event) => {
-                event.currentTarget.style.transform =
-                  "translateY(-2px)"
-                event.currentTarget.style.borderColor =
-                  "#bfdbfe"
-                event.currentTarget.style.boxShadow =
-                  "0 5px 15px rgba(37,99,235,0.08)"
-              }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.transform =
-                  "translateY(0)"
-                event.currentTarget.style.borderColor =
-                  "#e7ebf2"
-                event.currentTarget.style.boxShadow =
-                  "none"
-              }}
-            >
-              <div
+        {visibleModules.length > 0 ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fill, minmax(190px, 1fr))",
+              gap: "10px",
+            }}
+          >
+            {visibleModules.map((item) => (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => navigate(item.path)}
                 style={{
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "8px",
-                  background: "#f1f5f9",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "9px",
-                  fontWeight: 800,
-                  color: "#475569",
-                  flexShrink: 0,
+                  gap: "11px",
+                  width: "100%",
+                  minHeight: "64px",
+                  padding: "10px 12px",
+                  border: "1px solid #e7ebf2",
+                  borderRadius: "8px",
+                  background: "#ffffff",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  boxSizing: "border-box",
+                  transition:
+                    "transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease",
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.transform =
+                    "translateY(-2px)"
+                  event.currentTarget.style.borderColor =
+                    "#bfdbfe"
+                  event.currentTarget.style.background =
+                    "#f8fbff"
+                  event.currentTarget.style.boxShadow =
+                    "0 5px 14px rgba(15, 23, 42, 0.06)"
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.transform =
+                    "translateY(0)"
+                  event.currentTarget.style.borderColor =
+                    "#e7ebf2"
+                  event.currentTarget.style.background =
+                    "#ffffff"
+                  event.currentTarget.style.boxShadow =
+                    "none"
                 }}
               >
-                {item.icon}
-              </div>
-
-              <div>
                 <div
                   style={{
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    color: "#334155",
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "8px",
+                    background: "#f1f5f9",
+                    color: "#475569",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "9px",
+                    fontWeight: 800,
+                    flexShrink: 0,
                   }}
                 >
-                  {item.label}
+                  {item.icon}
                 </div>
 
                 <div
                   style={{
-                    fontSize: "10px",
-                    color: "#94a3b8",
-                    marginTop: "3px",
+                    minWidth: 0,
+                    flex: 1,
                   }}
                 >
-                  Open module
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "7px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        color: "#334155",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {item.label}
+                    </span>
+
+                    <span
+                      style={{
+                        color: "#94a3b8",
+                        fontSize: "13px",
+                        lineHeight: 1,
+                        flexShrink: 0,
+                      }}
+                    >
+                      →
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: "4px",
+                      fontSize: "9px",
+                      color: "#94a3b8",
+                    }}
+                  >
+                    Open module
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div
+            style={{
+              padding: "28px 15px",
+              textAlign: "center",
+              border: "1px dashed #dbe3ef",
+              borderRadius: "8px",
+              background: "#fafbfc",
+              color: "#8a94a6",
+              fontSize: "12px",
+            }}
+          >
+            No modules are available for your current role.
+          </div>
+        )}
       </section>
 
       <section
