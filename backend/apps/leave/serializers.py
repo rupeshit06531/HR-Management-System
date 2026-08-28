@@ -30,6 +30,27 @@ class LeaveSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def _get_employee_from_input(self, value):
+        if value in (None, ""):
+            return None
+
+        try:
+            employee = Employee.objects.filter(pk=value).first()
+
+            if employee:
+                return employee
+        except (TypeError, ValueError):
+            pass
+
+        employee = Employee.objects.filter(
+            employee_id=str(value)
+        ).first()
+
+        if employee:
+            return employee
+
+        return None
+
     def validate(self, attrs):
         request = self.context.get("request")
 
@@ -55,16 +76,13 @@ class LeaveSerializer(serializers.ModelSerializer):
             except Employee.DoesNotExist:
                 raise serializers.ValidationError(
                     {
-                        "employee": (
-                            "Employee profile does not exist."
-                        )
+                        "employee": "Employee profile does not exist."
                     }
                 )
 
             attrs["employee"] = employee
 
-        # HR / Super Admin must provide a valid employee
-        # when creating a leave record.
+        # HR and Super Admin can create leave for another employee.
         elif (
             user
             and user.role in {
@@ -73,24 +91,20 @@ class LeaveSerializer(serializers.ModelSerializer):
             }
             and self.instance is None
         ):
-            employee_id = self.initial_data.get("employee")
+            employee_value = self.initial_data.get("employee")
 
-            if not employee_id:
+            if not employee_value:
                 raise serializers.ValidationError(
                     {
                         "employee": "Employee is required."
                     }
                 )
 
-            try:
-                employee = Employee.objects.get(
-                    pk=employee_id,
-                )
-            except (
-                Employee.DoesNotExist,
-                ValueError,
-                TypeError,
-            ):
+            employee = self._get_employee_from_input(
+                employee_value
+            )
+
+            if employee is None:
                 raise serializers.ValidationError(
                     {
                         "employee": "Invalid employee."
@@ -98,6 +112,14 @@ class LeaveSerializer(serializers.ModelSerializer):
                 )
 
             attrs["employee"] = employee
+
+        # Make sure every newly-created leave has an employee.
+        if self.instance is None and employee is None:
+            raise serializers.ValidationError(
+                {
+                    "employee": "Employee is required."
+                }
+            )
 
         start_date = attrs.get(
             "start_date",
@@ -161,8 +183,6 @@ class LeaveSerializer(serializers.ModelSerializer):
                 }
             )
 
-        # Store a normalized reason without leading/trailing
-        # whitespace.
         attrs["reason"] = reason.strip()
 
         return attrs
