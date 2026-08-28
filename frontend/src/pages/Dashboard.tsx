@@ -452,7 +452,7 @@ function Dashboard() {
           display: "grid",
           gridTemplateColumns:
             "repeat(auto-fit, minmax(210px, 1fr))",
-          gap: "16px",
+          gap: "14px",
           marginBottom: "20px",
         }}
       >
@@ -461,56 +461,78 @@ function Dashboard() {
             label: "Total Employees",
             value: totalEmployees,
             short: "TE",
-            color: "#3b82f6",
+            description: "All employee records",
+            color: "#2563eb",
             background: "#eff6ff",
+            border: "#dbeafe",
           },
           {
             label: "Active Employees",
             value: activeEmployees,
             short: "AE",
+            description: "Currently active",
             color: "#16a34a",
             background: "#f0fdf4",
+            border: "#dcfce7",
           },
           {
             label: "Inactive Employees",
             value: inactiveEmployees,
             short: "IE",
-            color: "#f59e0b",
+            description: "Not currently active",
+            color: "#d97706",
             background: "#fffbeb",
+            border: "#fef3c7",
           },
           {
             label: "Total Users",
             value: totalUsers,
             short: "TU",
-            color: "#8b5cf6",
+            description: "Registered system users",
+            color: "#7c3aed",
             background: "#f5f3ff",
+            border: "#ede9fe",
           },
         ].map((card) => (
           <article
             key={card.label}
             style={{
+              position: "relative",
+              overflow: "hidden",
               background: "#ffffff",
-              border: "1px solid #e7ebf2",
-              borderRadius: "11px",
-              padding: "18px",
-              minHeight: "105px",
+              border: "1px solid #e6eaf0",
+              borderRadius: "10px",
+              padding: "17px 18px",
+              minHeight: "116px",
               boxSizing: "border-box",
             }}
           >
             <div
               style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "4px",
+                height: "100%",
+                background: card.color,
+              }}
+            />
+
+            <div
+              style={{
                 display: "flex",
-                justifyContent: "space-between",
                 alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: "12px",
               }}
             >
               <div>
                 <div
                   style={{
-                    fontSize: "12px",
+                    fontSize: "11px",
                     color: "#7c8798",
                     fontWeight: 600,
-                    marginBottom: "9px",
+                    marginBottom: "8px",
                   }}
                 >
                   {card.label}
@@ -518,28 +540,41 @@ function Dashboard() {
 
                 <div
                   style={{
-                    fontSize: "26px",
+                    fontSize: "27px",
                     lineHeight: 1,
                     color: "#172033",
                     fontWeight: 750,
+                    letterSpacing: "-0.02em",
                   }}
                 >
                   {card.value}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: "8px",
+                    fontSize: "10px",
+                    color: "#9aa4b2",
+                  }}
+                >
+                  {card.description}
                 </div>
               </div>
 
               <div
                 style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "10px",
+                  width: "39px",
+                  height: "39px",
+                  borderRadius: "9px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   background: card.background,
+                  border: `1px solid ${card.border}`,
                   color: card.color,
-                  fontSize: "11px",
+                  fontSize: "10px",
                   fontWeight: 800,
+                  flexShrink: 0,
                 }}
               >
                 {card.short}
