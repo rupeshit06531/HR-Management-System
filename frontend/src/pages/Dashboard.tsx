@@ -276,16 +276,6 @@ function Dashboard() {
         )
       : 0
 
-  const today = new Date()
-
-  const formattedDate =
-    today.toLocaleDateString("en-IN", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    })
-
   return (
     <div
       style={{
@@ -303,29 +293,50 @@ function Dashboard() {
           justifyContent: "space-between",
           alignItems: "center",
           gap: "20px",
-          marginBottom: "24px",
+          marginBottom: "22px",
+          padding: "2px 0",
           flexWrap: "wrap",
         }}
       >
         <div>
           <div
             style={{
-              fontSize: "12px",
-              color: "#7c8798",
-              marginBottom: "6px",
-              fontWeight: 500,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              minHeight: "26px",
+              padding: "0 10px",
+              borderRadius: "6px",
+              background: "#eef3ff",
+              color: "#315efb",
+              fontSize: "10px",
+              fontWeight: 700,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              marginBottom: "8px",
             }}
           >
-            {formattedDate}
+            <span>Dashboard</span>
+
+            <span
+              style={{
+                color: "#9db5f5",
+              }}
+            >
+              /
+            </span>
+
+            <span>Overview</span>
           </div>
 
           <h1
             style={{
               margin: 0,
-              fontSize: "26px",
+              fontSize: "28px",
               lineHeight: 1.2,
               fontWeight: 750,
               color: "#172033",
+              letterSpacing: "-0.02em",
             }}
           >
             Welcome back, {displayName}
@@ -336,10 +347,10 @@ function Dashboard() {
               margin: "7px 0 0",
               color: "#7c8798",
               fontSize: "13px",
+              lineHeight: 1.5,
             }}
           >
-            Here is what's happening with
-            your organization today.
+            Here's what's happening with your organization today.
           </p>
         </div>
 
@@ -347,43 +358,75 @@ function Dashboard() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "11px",
             background: "#ffffff",
             border: "1px solid #e7ebf2",
             borderRadius: "10px",
             padding: "10px 14px",
+            minWidth: "205px",
+            boxSizing: "border-box",
           }}
         >
           <div
             style={{
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              background: "#22c55e",
+              width: "34px",
+              height: "34px",
+              borderRadius: "8px",
+              background: "#eff6ff",
+              color: "#2563eb",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "11px",
+              fontWeight: 800,
+              flexShrink: 0,
             }}
-          />
+          >
+            {displayName
+              .slice(0, 1)
+              .toUpperCase()}
+          </div>
 
-          <div>
+          <div
+            style={{
+              minWidth: 0,
+            }}
+          >
+            <div
+              style={{
+                fontSize: "11px",
+                color: "#94a3b8",
+                marginBottom: "3px",
+              }}
+            >
+              Current role
+            </div>
+
             <div
               style={{
                 fontSize: "12px",
                 fontWeight: 700,
                 color: "#334155",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
-              System Operational
-            </div>
-
-            <div
-              style={{
-                fontSize: "10px",
-                color: "#94a3b8",
-                marginTop: "2px",
-              }}
-            >
-              All services running normally
+              {currentRole}
             </div>
           </div>
+
+          <div
+            style={{
+              width: "7px",
+              height: "7px",
+              borderRadius: "50%",
+              background: "#22c55e",
+              marginLeft: "auto",
+              flexShrink: 0,
+            }}
+            title="System operational"
+          />
         </div>
       </header>
 
