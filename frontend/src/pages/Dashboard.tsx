@@ -588,146 +588,205 @@ function Dashboard() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "minmax(0, 1.5fr) minmax(280px, 1fr)",
-          gap: "18px",
+            "minmax(0, 1.45fr) minmax(300px, 1fr)",
+          gap: "16px",
           marginBottom: "20px",
         }}
       >
         <article
           style={{
             background: "#ffffff",
-            border: "1px solid #e7ebf2",
-            borderRadius: "11px",
+            border: "1px solid #e6eaf0",
+            borderRadius: "10px",
             padding: "20px",
+            minWidth: 0,
           }}
         >
           <div
             style={{
               display: "flex",
+              alignItems: "flex-start",
               justifyContent: "space-between",
-              alignItems: "center",
+              gap: "16px",
               marginBottom: "20px",
+              flexWrap: "wrap",
             }}
           >
             <div>
-              <h2
+              <div
                 style={{
-                  margin: 0,
-                  fontSize: "16px",
-                  fontWeight: 750,
-                  color: "#172033",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "5px",
                 }}
               >
-                Workforce Overview
-              </h2>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: "16px",
+                    fontWeight: 750,
+                    color: "#172033",
+                  }}
+                >
+                  Workforce Overview
+                </h2>
+
+                <span
+                  style={{
+                    padding: "3px 7px",
+                    borderRadius: "5px",
+                    background: "#f1f5f9",
+                    color: "#64748b",
+                    fontSize: "9px",
+                    fontWeight: 700,
+                  }}
+                >
+                  LIVE
+                </span>
+              </div>
 
               <p
                 style={{
-                  margin: "5px 0 0",
-                  fontSize: "12px",
+                  margin: 0,
+                  fontSize: "11px",
                   color: "#8a94a6",
                 }}
               >
-                Current employee status
+                Employee activity and workforce status
               </p>
             </div>
 
             <button
               type="button"
-              onClick={() =>
-                navigate("/employees")
-              }
+              onClick={() => navigate("/employees")}
               style={{
-                border: "none",
-                background: "transparent",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                border: "1px solid #dbe3ef",
+                background: "#ffffff",
                 color: "#2563eb",
-                cursor: "pointer",
-                fontSize: "12px",
+                borderRadius: "7px",
+                padding: "7px 10px",
+                fontSize: "11px",
                 fontWeight: 700,
+                cursor: "pointer",
               }}
             >
               View Employees
+              <span
+                style={{
+                  fontSize: "14px",
+                  lineHeight: 1,
+                }}
+              >
+                →
+              </span>
             </button>
           </div>
 
           <div
             style={{
-              display: "flex",
+              display: "grid",
+              gridTemplateColumns:
+                "minmax(135px, 0.7fr) minmax(220px, 1fr)",
+              gap: "28px",
               alignItems: "center",
-              gap: "26px",
-              flexWrap: "wrap",
             }}
           >
             <div
               style={{
-                width: "125px",
-                height: "125px",
-                borderRadius: "50%",
-                background: `conic-gradient(
-                  #2563eb 0% ${activePercentage}%,
-                  #e8edf5 ${activePercentage}% 100%
-                )`,
                 display: "flex",
-                alignItems: "center",
                 justifyContent: "center",
-                flexShrink: 0,
               }}
             >
               <div
                 style={{
-                  width: "91px",
-                  height: "91px",
+                  width: "132px",
+                  height: "132px",
                   borderRadius: "50%",
-                  background: "#ffffff",
+                  background: `conic-gradient(
+                    #2563eb 0% ${activePercentage}%,
+                    #e9eef5 ${activePercentage}% 100%
+                  )`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  flexDirection: "column",
                 }}
               >
-                <strong
+                <div
                   style={{
-                    fontSize: "24px",
-                    color: "#172033",
+                    width: "96px",
+                    height: "96px",
+                    borderRadius: "50%",
+                    background: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexDirection: "column",
                   }}
                 >
-                  {activePercentage}%
-                </strong>
+                  <strong
+                    style={{
+                      fontSize: "25px",
+                      lineHeight: 1,
+                      color: "#172033",
+                      fontWeight: 750,
+                    }}
+                  >
+                    {activePercentage}%
+                  </strong>
 
-                <span
-                  style={{
-                    fontSize: "10px",
-                    color: "#8a94a6",
-                  }}
-                >
-                  Active
-                </span>
+                  <span
+                    style={{
+                      marginTop: "6px",
+                      fontSize: "10px",
+                      color: "#8a94a6",
+                    }}
+                  >
+                    Active
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div
-              style={{
-                flex: 1,
-                minWidth: "220px",
-              }}
-            >
+            <div>
               <div
                 style={{
                   display: "flex",
+                  alignItems: "center",
                   justifyContent: "space-between",
-                  paddingBottom: "13px",
-                  borderBottom:
-                    "1px solid #edf0f5",
+                  gap: "15px",
+                  padding: "11px 0",
+                  borderBottom: "1px solid #edf0f5",
                 }}
               >
-                <span
+                <div
                   style={{
-                    fontSize: "12px",
-                    color: "#64748b",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
                   }}
                 >
-                  Total Employees
-                </span>
+                  <span
+                    style={{
+                      width: "7px",
+                      height: "7px",
+                      borderRadius: "50%",
+                      background: "#2563eb",
+                    }}
+                  />
+
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                    }}
+                  >
+                    Total Employees
+                  </span>
+                </div>
 
                 <strong
                   style={{
@@ -742,20 +801,38 @@ function Dashboard() {
               <div
                 style={{
                   display: "flex",
+                  alignItems: "center",
                   justifyContent: "space-between",
-                  padding: "13px 0",
-                  borderBottom:
-                    "1px solid #edf0f5",
+                  gap: "15px",
+                  padding: "11px 0",
+                  borderBottom: "1px solid #edf0f5",
                 }}
               >
-                <span
+                <div
                   style={{
-                    fontSize: "12px",
-                    color: "#64748b",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
                   }}
                 >
-                  Active Employees
-                </span>
+                  <span
+                    style={{
+                      width: "7px",
+                      height: "7px",
+                      borderRadius: "50%",
+                      background: "#16a34a",
+                    }}
+                  />
+
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                    }}
+                  >
+                    Active Employees
+                  </span>
+                </div>
 
                 <strong
                   style={{
@@ -770,23 +847,42 @@ function Dashboard() {
               <div
                 style={{
                   display: "flex",
+                  alignItems: "center",
                   justifyContent: "space-between",
-                  paddingTop: "13px",
+                  gap: "15px",
+                  padding: "11px 0",
                 }}
               >
-                <span
+                <div
                   style={{
-                    fontSize: "12px",
-                    color: "#64748b",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
                   }}
                 >
-                  Inactive Employees
-                </span>
+                  <span
+                    style={{
+                      width: "7px",
+                      height: "7px",
+                      borderRadius: "50%",
+                      background: "#f59e0b",
+                    }}
+                  />
+
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                    }}
+                  >
+                    Inactive Employees
+                  </span>
+                </div>
 
                 <strong
                   style={{
                     fontSize: "13px",
-                    color: "#f59e0b",
+                    color: "#d97706",
                   }}
                 >
                   {inactiveEmployees}
@@ -799,31 +895,38 @@ function Dashboard() {
         <article
           style={{
             background: "#ffffff",
-            border: "1px solid #e7ebf2",
-            borderRadius: "11px",
+            border: "1px solid #e6eaf0",
+            borderRadius: "10px",
             padding: "20px",
+            minWidth: 0,
           }}
         >
-          <h2
+          <div
             style={{
-              margin: 0,
-              fontSize: "16px",
-              fontWeight: 750,
-              color: "#172033",
+              marginBottom: "18px",
             }}
           >
-            Quick Actions
-          </h2>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "16px",
+                fontWeight: 750,
+                color: "#172033",
+              }}
+            >
+              Quick Actions
+            </h2>
 
-          <p
-            style={{
-              margin: "5px 0 17px",
-              fontSize: "12px",
-              color: "#8a94a6",
-            }}
-          >
-            Frequently used HR functions
-          </p>
+            <p
+              style={{
+                margin: "5px 0 0",
+                fontSize: "11px",
+                color: "#8a94a6",
+              }}
+            >
+              Frequently used HR functions
+            </p>
+          </div>
 
           <div
             style={{
@@ -846,33 +949,47 @@ function Dashboard() {
                 <button
                   key={item.path}
                   type="button"
-                  onClick={() =>
-                    navigate(item.path)
-                  }
+                  onClick={() => navigate(item.path)}
                   style={{
-                    border:
-                      "1px solid #e7ebf2",
-                    background: "#f8fafc",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    minHeight: "66px",
+                    padding: "10px",
+                    border: "1px solid #e7ebf2",
                     borderRadius: "8px",
-                    padding: "12px 10px",
+                    background: "#fafbfc",
                     cursor: "pointer",
                     textAlign: "left",
-                    color: "#334155",
+                    transition:
+                      "border-color 0.15s ease, background 0.15s ease",
+                  }}
+                  onMouseEnter={(event) => {
+                    event.currentTarget.style.borderColor =
+                      "#bfdbfe"
+                    event.currentTarget.style.background =
+                      "#f8fbff"
+                  }}
+                  onMouseLeave={(event) => {
+                    event.currentTarget.style.borderColor =
+                      "#e7ebf2"
+                    event.currentTarget.style.background =
+                      "#fafbfc"
                   }}
                 >
                   <div
                     style={{
-                      width: "30px",
-                      height: "30px",
+                      width: "34px",
+                      height: "34px",
+                      borderRadius: "8px",
+                      background: "#eff6ff",
+                      color: "#2563eb",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      borderRadius: "7px",
-                      background: "#eff6ff",
-                      color: "#2563eb",
                       fontSize: "9px",
                       fontWeight: 800,
-                      marginBottom: "7px",
+                      flexShrink: 0,
                     }}
                   >
                     {item.icon}
@@ -880,11 +997,28 @@ function Dashboard() {
 
                   <div
                     style={{
-                      fontSize: "11px",
-                      fontWeight: 700,
+                      minWidth: 0,
                     }}
                   >
-                    {item.label}
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        color: "#334155",
+                      }}
+                    >
+                      {item.label}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: "3px",
+                        fontSize: "9px",
+                        color: "#94a3b8",
+                      }}
+                    >
+                      Open module
+                    </div>
                   </div>
                 </button>
               ))}
