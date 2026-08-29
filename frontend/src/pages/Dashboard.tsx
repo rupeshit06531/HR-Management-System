@@ -243,51 +243,202 @@ function Dashboard() {
     roleLabels[user.role] ||
     user.role
 
-  if (user.role === "EMPLOYEE") {
-    const employeeModules = visibleModules.filter(
-      (item) =>
+  const employeeMetrics =
+    dashboard?.employees
+
+  const userMetrics =
+    dashboard?.users
+
+  const employeeProfile =
+    dashboard?.employee
+
+  const totalEmployees =
+    employeeMetrics?.total ?? 0
+
+  const activeEmployees =
+    employeeMetrics?.active ?? 0
+
+  const inactiveEmployees =
+    employeeMetrics?.inactive ?? 0
+
+  const resignedEmployees =
+    employeeMetrics?.resigned ?? 0
+
+  const terminatedEmployees =
+    employeeMetrics?.terminated ?? 0
+
+  const totalUsers =
+    userMetrics?.total ?? 0
+
+  const activePercentage =
+    totalEmployees > 0
+      ? Math.round(
+          (activeEmployees /
+            totalEmployees) *
+            100,
+        )
+      : 0
+
+  const inactivePercentage =
+    totalEmployees > 0
+      ? Math.round(
+          (inactiveEmployees /
+            totalEmployees) *
+            100,
+        )
+      : 0
+
+  const resignedPercentage =
+    totalEmployees > 0
+      ? Math.round(
+          (resignedEmployees /
+            totalEmployees) *
+            100,
+        )
+      : 0
+
+  const terminatedPercentage =
+    totalEmployees > 0
+      ? Math.round(
+          (terminatedEmployees /
+            totalEmployees) *
+            100,
+        )
+      : 0
+
+  const roleDistribution = Object.entries(
+    userMetrics?.roles ?? {},
+  )
+
+  const getRoleLabel = (role: string) =>
+    roleLabels[role] || role
+
+  const getRolePercentage = (count: number) =>
+    totalUsers > 0
+      ? Math.round(
+          (count / totalUsers) * 100,
+        )
+      : 0
+
+  const quickActionLabels = [
+    "Employees",
+    "Departments",
+    "Attendance",
+    "Leave",
+    "Payroll",
+    "Recruitment",
+  ]
+
+  const quickActions = visibleModules.filter(
+    (item) =>
+      quickActionLabels.includes(item.label),
+  )
+
+  const workforceStatuses = [
+    {
+      label: "Active",
+      value: activeEmployees,
+      percentage: activePercentage,
+      short: "ACT",
+      background: "#eff6ff",
+      color: "#2563eb",
+    },
+    {
+      label: "Inactive",
+      value: inactiveEmployees,
+      percentage: inactivePercentage,
+      short: "INA",
+      background: "#fffbeb",
+      color: "#d97706",
+    },
+    {
+      label: "Resigned",
+      value: resignedEmployees,
+      percentage: resignedPercentage,
+      short: "RES",
+      background: "#f5f3ff",
+      color: "#7c3aed",
+    },
+    {
+      label: "Terminated",
+      value: terminatedEmployees,
+      percentage: terminatedPercentage,
+      short: "TER",
+      background: "#fff1f2",
+      color: "#e11d48",
+    },
+  ]
+
+  if (
+    user.role === "EMPLOYEE" ||
+    user.role === "MANAGER"
+  ) {
+    const isEmployee = user.role === "EMPLOYEE"
+
+    const personalName =
+      employeeProfile?.full_name?.trim() ||
+      displayName
+
+    const initials =
+      personalName
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) =>
+          part.charAt(0).toUpperCase(),
+        )
+        .join("") ||
+      "U"
+
+    const personalModules =
+      visibleModules.filter((item) =>
         [
           "Attendance",
           "Leave",
           "Payroll",
           "Performance",
           "Documents",
-          "Holidays",
           "Announcements",
+          "Holidays",
         ].includes(item.label),
-    )
+      )
 
-    const employeeQuickActions =
-      employeeModules.slice(0, 4)
-
-    const employeeCards = [
+    const personalCards = [
       {
-        label: "My Attendance",
-        description:
-          "View your attendance records",
-        icon: "ATT",
-        path: "/attendance",
+        label: "Employee ID",
+        value:
+          employeeProfile?.employee_id ||
+          "Not available",
+        short: "ID",
+        background: "#eff6ff",
+        color: "#2563eb",
       },
       {
-        label: "My Leave",
-        description:
-          "Apply and track your leave",
-        icon: "LEV",
-        path: "/leave",
+        label: "Department",
+        value:
+          employeeProfile?.department ||
+          "Not assigned",
+        short: "DEP",
+        background: "#f0fdf4",
+        color: "#16a34a",
       },
       {
-        label: "My Payroll",
-        description:
-          "View your payroll information",
-        icon: "PAY",
-        path: "/payroll",
+        label: "Designation",
+        value:
+          employeeProfile?.designation ||
+          "Not assigned",
+        short: "DES",
+        background: "#f5f3ff",
+        color: "#7c3aed",
       },
       {
-        label: "My Performance",
-        description:
-          "View your performance records",
-        icon: "PER",
-        path: "/performance",
+        label: "Employment Status",
+        value:
+          employeeProfile?.employment_status ||
+          "Not available",
+        short: "STS",
+        background: "#fff7ed",
+        color: "#ea580c",
       },
     ]
 
@@ -332,7 +483,9 @@ function Dashboard() {
                   color: "#2563eb",
                 }}
               >
-                Employee
+                {isEmployee
+                  ? "Employee"
+                  : "Manager"}
               </span>
 
               <span
@@ -358,7 +511,7 @@ function Dashboard() {
                 color: "#172033",
               }}
             >
-              Welcome back, {displayName}
+              Welcome back, {personalName}
             </h1>
 
             <p
@@ -369,8 +522,9 @@ function Dashboard() {
                 color: "#7c8798",
               }}
             >
-              Manage your attendance, leave, payroll and
-              employee services.
+              {isEmployee
+                ? "Here's your personal HR workspace."
+                : "Here's an overview of your team and HR workspace."}
             </p>
           </div>
 
@@ -426,9 +580,7 @@ function Dashboard() {
                   fontWeight: 800,
                 }}
               >
-                {displayName
-                  .slice(0, 1)
-                  .toUpperCase()}
+                {initials}
               </div>
 
               <div
@@ -451,9 +603,12 @@ function Dashboard() {
                     fontSize: "11px",
                     fontWeight: 700,
                     color: "#334155",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                 >
-                  Employee
+                  {currentRole}
                 </div>
               </div>
 
@@ -498,38 +653,18 @@ function Dashboard() {
             marginBottom: "18px",
           }}
         >
-          {employeeCards.map((card) => (
-            <button
-              key={card.path}
-              type="button"
-              onClick={() => navigate(card.path)}
+          {personalCards.map((card) => (
+            <article
+              key={card.label}
               style={{
                 position: "relative",
-                minHeight: "125px",
+                minHeight: "124px",
                 padding: "17px 18px 16px 20px",
                 background: "#ffffff",
                 border: "1px solid #e5eaf1",
                 borderRadius: "10px",
                 boxSizing: "border-box",
                 overflow: "hidden",
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-              onMouseEnter={(event) => {
-                event.currentTarget.style.borderColor =
-                  "#bfdbfe"
-                event.currentTarget.style.background =
-                  "#f8fbff"
-                event.currentTarget.style.boxShadow =
-                  "0 5px 14px rgba(15, 23, 42, 0.06)"
-              }}
-              onMouseLeave={(event) => {
-                event.currentTarget.style.borderColor =
-                  "#e5eaf1"
-                event.currentTarget.style.background =
-                  "#ffffff"
-                event.currentTarget.style.boxShadow =
-                  "none"
               }}
             >
               <div
@@ -539,7 +674,7 @@ function Dashboard() {
                   top: 0,
                   bottom: 0,
                   width: "3px",
-                  background: "#2563eb",
+                  background: card.color,
                 }}
               />
 
@@ -551,10 +686,14 @@ function Dashboard() {
                   gap: "12px",
                 }}
               >
-                <div>
+                <div
+                  style={{
+                    minWidth: 0,
+                  }}
+                >
                   <div
                     style={{
-                      marginBottom: "10px",
+                      marginBottom: "9px",
                       fontSize: "10px",
                       fontWeight: 700,
                       color: "#7c8798",
@@ -565,14 +704,14 @@ function Dashboard() {
 
                   <div
                     style={{
-                      fontSize: "12px",
-                      lineHeight: 1.35,
-                      fontWeight: 700,
-                      color: "#334155",
-                      maxWidth: "150px",
+                      fontSize: "16px",
+                      lineHeight: 1.25,
+                      fontWeight: 750,
+                      color: "#172033",
+                      wordBreak: "break-word",
                     }}
                   >
-                    {card.description}
+                    {card.value}
                   </div>
                 </div>
 
@@ -585,17 +724,16 @@ function Dashboard() {
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
-                    background: "#eff6ff",
-                    border: "1px solid #dbeafe",
-                    color: "#2563eb",
+                    background: card.background,
+                    color: card.color,
                     fontSize: "9px",
                     fontWeight: 800,
                   }}
                 >
-                  {card.icon}
+                  {card.short}
                 </div>
               </div>
-            </button>
+            </article>
           ))}
         </section>
 
@@ -603,7 +741,7 @@ function Dashboard() {
           style={{
             display: "grid",
             gridTemplateColumns:
-              "minmax(0, 1.4fr) minmax(280px, 0.8fr)",
+              "minmax(0, 1.15fr) minmax(300px, 0.85fr)",
             gap: "16px",
             marginBottom: "18px",
           }}
@@ -620,29 +758,53 @@ function Dashboard() {
           >
             <div
               style={{
-                marginBottom: "17px",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                marginBottom: "20px",
               }}
             >
-              <h2
+              <div
                 style={{
-                  margin: 0,
-                  fontSize: "15px",
-                  fontWeight: 750,
-                  color: "#172033",
+                  width: "52px",
+                  height: "52px",
+                  borderRadius: "12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#eff6ff",
+                  color: "#2563eb",
+                  fontSize: "17px",
+                  fontWeight: 800,
+                  flexShrink: 0,
                 }}
               >
-                My HR Services
-              </h2>
+                {initials}
+              </div>
 
-              <p
-                style={{
-                  margin: "5px 0 0",
-                  fontSize: "10px",
-                  color: "#8a94a6",
-                }}
-              >
-                Frequently used employee services
-              </p>
+              <div>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: "17px",
+                    fontWeight: 750,
+                    color: "#172033",
+                  }}
+                >
+                  {personalName}
+                </h2>
+
+                <p
+                  style={{
+                    margin: "5px 0 0",
+                    fontSize: "10px",
+                    color: "#8a94a6",
+                  }}
+                >
+                  {employeeProfile?.email ||
+                    user.username}
+                </p>
+              </div>
             </div>
 
             <div
@@ -653,72 +815,125 @@ function Dashboard() {
                 gap: "10px",
               }}
             >
-              {employeeQuickActions.map((item) => (
-                <button
-                  key={item.path}
-                  type="button"
-                  onClick={() =>
-                    navigate(item.path)
-                  }
+              <div
+                style={{
+                  padding: "12px",
+                  borderRadius: "8px",
+                  background: "#fafbfc",
+                  border: "1px solid #edf0f5",
+                }}
+              >
+                <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    minHeight: "66px",
-                    padding: "10px",
-                    border: "1px solid #e7ebf2",
-                    borderRadius: "8px",
-                    background: "#fafbfc",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    boxSizing: "border-box",
+                    marginBottom: "5px",
+                    fontSize: "9px",
+                    color: "#94a3b8",
                   }}
                 >
-                  <div
-                    style={{
-                      width: "35px",
-                      height: "35px",
-                      borderRadius: "8px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      background: "#eff6ff",
-                      color: "#2563eb",
-                      fontSize: "8px",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {item.icon}
-                  </div>
+                  Employment Type
+                </div>
 
-                  <div
-                    style={{
-                      minWidth: 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        color: "#334155",
-                      }}
-                    >
-                      {item.label}
-                    </div>
+                <strong
+                  style={{
+                    fontSize: "11px",
+                    color: "#334155",
+                  }}
+                >
+                  {employeeProfile?.employment_type ||
+                    "Not available"}
+                </strong>
+              </div>
 
-                    <div
-                      style={{
-                        marginTop: "3px",
-                        fontSize: "8px",
-                        color: "#94a3b8",
-                      }}
-                    >
-                      Open module
-                    </div>
-                  </div>
-                </button>
-              ))}
+              <div
+                style={{
+                  padding: "12px",
+                  borderRadius: "8px",
+                  background: "#fafbfc",
+                  border: "1px solid #edf0f5",
+                }}
+              >
+                <div
+                  style={{
+                    marginBottom: "5px",
+                    fontSize: "9px",
+                    color: "#94a3b8",
+                  }}
+                >
+                  Joining Date
+                </div>
+
+                <strong
+                  style={{
+                    fontSize: "11px",
+                    color: "#334155",
+                  }}
+                >
+                  {employeeProfile?.joining_date ||
+                    "Not available"}
+                </strong>
+              </div>
+
+              <div
+                style={{
+                  padding: "12px",
+                  borderRadius: "8px",
+                  background: "#fafbfc",
+                  border: "1px solid #edf0f5",
+                }}
+              >
+                <div
+                  style={{
+                    marginBottom: "5px",
+                    fontSize: "9px",
+                    color: "#94a3b8",
+                  }}
+                >
+                  Manager
+                </div>
+
+                <strong
+                  style={{
+                    fontSize: "11px",
+                    color: "#334155",
+                  }}
+                >
+                  {employeeProfile?.manager ||
+                    "Not assigned"}
+                </strong>
+              </div>
+
+              <div
+                style={{
+                  padding: "12px",
+                  borderRadius: "8px",
+                  background: "#fafbfc",
+                  border: "1px solid #edf0f5",
+                }}
+              >
+                <div
+                  style={{
+                    marginBottom: "5px",
+                    fontSize: "9px",
+                    color: "#94a3b8",
+                  }}
+                >
+                  Status
+                </div>
+
+                <strong
+                  style={{
+                    fontSize: "11px",
+                    color:
+                      employeeProfile?.employment_status ===
+                      "Active"
+                        ? "#16a34a"
+                        : "#d97706",
+                  }}
+                >
+                  {employeeProfile?.employment_status ||
+                    "Not available"}
+                </strong>
+              </div>
             </div>
           </article>
 
@@ -745,7 +960,9 @@ function Dashboard() {
                   color: "#172033",
                 }}
               >
-                My Profile
+                {isEmployee
+                  ? "My HR Modules"
+                  : "Team HR Modules"}
               </h2>
 
               <p
@@ -755,121 +972,188 @@ function Dashboard() {
                   color: "#8a94a6",
                 }}
               >
-                Your account information
+                Quick access to available HR functions
               </p>
             </div>
 
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "13px",
-                borderRadius: "8px",
-                background: "#f8fafc",
-                border: "1px solid #edf0f5",
-                marginBottom: "10px",
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(2, minmax(0, 1fr))",
+                gap: "9px",
               }}
             >
-              <div
-                style={{
-                  width: "42px",
-                  height: "42px",
-                  borderRadius: "10px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#eff6ff",
-                  color: "#2563eb",
-                  fontSize: "15px",
-                  fontWeight: 800,
-                }}
-              >
-                {displayName
-                  .slice(0, 1)
-                  .toUpperCase()}
-              </div>
-
-              <div
-                style={{
-                  minWidth: 0,
-                }}
-              >
-                <div
+              {personalModules.map((item) => (
+                <button
+                  key={item.path}
+                  type="button"
+                  onClick={() =>
+                    navigate(item.path)
+                  }
                   style={{
-                    fontSize: "12px",
-                    fontWeight: 750,
-                    color: "#334155",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    minHeight: "52px",
+                    padding: "8px",
+                    border: "1px solid #e7ebf2",
+                    borderRadius: "8px",
+                    background: "#fafbfc",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    boxSizing: "border-box",
                   }}
                 >
-                  {displayName}
-                </div>
+                  <div
+                    style={{
+                      width: "30px",
+                      height: "30px",
+                      borderRadius: "7px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      background: "#eff6ff",
+                      color: "#2563eb",
+                      fontSize: "7px",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {item.icon}
+                  </div>
 
-                <div
-                  style={{
-                    marginTop: "3px",
-                    fontSize: "9px",
-                    color: "#94a3b8",
-                  }}
-                >
-                  {user.username}
-                </div>
-              </div>
+                  <div
+                    style={{
+                      minWidth: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "9px",
+                        fontWeight: 700,
+                        color: "#334155",
+                      }}
+                    >
+                      {item.label}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: "3px",
+                        fontSize: "7px",
+                        color: "#94a3b8",
+                      }}
+                    >
+                      Open module
+                    </div>
+                  </div>
+                </button>
+              ))}
             </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "9px 2px",
-                borderBottom: "1px solid #edf0f5",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "10px",
-                  color: "#7c8798",
-                }}
-              >
-                Role
-              </span>
-
-              <strong
-                style={{
-                  fontSize: "10px",
-                  color: "#334155",
-                }}
-              >
-                Employee
-              </strong>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                navigate("/change-password")
-              }
-              style={{
-                width: "100%",
-                marginTop: "12px",
-                padding: "9px 12px",
-                border: "1px solid #dbe3ef",
-                borderRadius: "7px",
-                background: "#ffffff",
-                color: "#2563eb",
-                fontSize: "10px",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              Change Password
-            </button>
           </article>
         </section>
+
+        {!isEmployee && (
+          <section
+            style={{
+              marginBottom: "18px",
+            }}
+          >
+            <article
+              style={{
+                padding: "20px",
+                background: "#ffffff",
+                border: "1px solid #e5eaf1",
+                borderRadius: "10px",
+                boxSizing: "border-box",
+              }}
+            >
+              <div
+                style={{
+                  marginBottom: "17px",
+                }}
+              >
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: "15px",
+                    fontWeight: 750,
+                    color: "#172033",
+                  }}
+                >
+                  Team Overview
+                </h2>
+
+                <p
+                  style={{
+                    margin: "5px 0 0",
+                    fontSize: "10px",
+                    color: "#8a94a6",
+                  }}
+                >
+                  Current employee status within your team
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(4, minmax(0, 1fr))",
+                  gap: "10px",
+                }}
+              >
+                {workforceStatuses.map(
+                  (status) => (
+                    <div
+                      key={status.label}
+                      style={{
+                        padding: "13px",
+                        borderRadius: "8px",
+                        background:
+                          status.background,
+                        border: `1px solid ${status.background}`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "8px",
+                          fontWeight: 800,
+                          color: status.color,
+                        }}
+                      >
+                        {status.short}
+                      </div>
+
+                      <strong
+                        style={{
+                          display: "block",
+                          marginTop: "7px",
+                          fontSize: "22px",
+                          lineHeight: 1,
+                          color: "#172033",
+                        }}
+                      >
+                        {status.value}
+                      </strong>
+
+                      <div
+                        style={{
+                          marginTop: "6px",
+                          fontSize: "8px",
+                          color: "#64748b",
+                        }}
+                      >
+                        {status.label}
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            </article>
+          </section>
+        )}
 
         <section
           style={{
@@ -899,7 +1183,7 @@ function Dashboard() {
                   color: "#172033",
                 }}
               >
-                Employee Services
+                Available Modules
               </h2>
 
               <p
@@ -909,7 +1193,7 @@ function Dashboard() {
                   color: "#8a94a6",
                 }}
               >
-                Services available for your account
+                Modules available for your current role
               </p>
             </div>
 
@@ -925,7 +1209,7 @@ function Dashboard() {
                 fontWeight: 700,
               }}
             >
-              {employeeModules.length} Available
+              {visibleModules.length} Available
             </span>
           </div>
 
@@ -937,7 +1221,7 @@ function Dashboard() {
               gap: "10px",
             }}
           >
-            {employeeModules.map((item) => (
+            {visibleModules.map((item) => (
               <button
                 key={item.path}
                 type="button"
@@ -957,6 +1241,26 @@ function Dashboard() {
                   cursor: "pointer",
                   textAlign: "left",
                   boxSizing: "border-box",
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.transform =
+                    "translateY(-2px)"
+                  event.currentTarget.style.borderColor =
+                    "#bfdbfe"
+                  event.currentTarget.style.background =
+                    "#f8fbff"
+                  event.currentTarget.style.boxShadow =
+                    "0 5px 14px rgba(15, 23, 42, 0.06)"
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.transform =
+                    "translateY(0)"
+                  event.currentTarget.style.borderColor =
+                    "#e7ebf2"
+                  event.currentTarget.style.background =
+                    "#ffffff"
+                  event.currentTarget.style.boxShadow =
+                    "none"
                 }}
               >
                 <div
@@ -1058,7 +1362,7 @@ function Dashboard() {
                 color: "#334155",
               }}
             >
-              {displayName}
+              {personalName}
             </strong>
           </div>
 
@@ -1072,133 +1376,12 @@ function Dashboard() {
               fontWeight: 700,
             }}
           >
-            Employee
+            {currentRole}
           </div>
         </section>
       </div>
     )
   }
-
-  const employeeMetrics =
-    dashboard?.employees
-
-  const userMetrics =
-    dashboard?.users
-
-  const totalEmployees =
-    employeeMetrics?.total ?? 0
-
-  const activeEmployees =
-    employeeMetrics?.active ?? 0
-
-  const inactiveEmployees =
-    employeeMetrics?.inactive ?? 0
-
-  const resignedEmployees =
-    employeeMetrics?.resigned ?? 0
-
-  const terminatedEmployees =
-    employeeMetrics?.terminated ?? 0
-
-  const totalUsers =
-    userMetrics?.total ?? 0
-
-  const activePercentage =
-    totalEmployees > 0
-      ? Math.round(
-          (activeEmployees /
-            totalEmployees) *
-            100,
-        )
-      : 0
-
-  const inactivePercentage =
-    totalEmployees > 0
-      ? Math.round(
-          (inactiveEmployees /
-            totalEmployees) *
-            100,
-        )
-      : 0
-
-  const resignedPercentage =
-    totalEmployees > 0
-      ? Math.round(
-          (resignedEmployees /
-            totalEmployees) *
-            100,
-        )
-      : 0
-
-  const terminatedPercentage =
-    totalEmployees > 0
-      ? Math.round(
-          (terminatedEmployees /
-            totalEmployees) *
-            100,
-        )
-      : 0
-
-  const roleDistribution = Object.entries(
-    userMetrics?.roles ?? {},
-  )
-
-  const getRoleLabel = (role: string) =>
-    roleLabels[role] || role
-
-  const getRolePercentage = (count: number) =>
-    totalUsers > 0
-      ? Math.round((count / totalUsers) * 100)
-      : 0
-
-  const quickActionLabels = [
-    "Employees",
-    "Departments",
-    "Attendance",
-    "Leave",
-    "Payroll",
-    "Recruitment",
-  ]
-
-  const quickActions = visibleModules.filter(
-    (item) =>
-      quickActionLabels.includes(item.label),
-  )
-
-  const workforceStatuses = [
-    {
-      label: "Active",
-      value: activeEmployees,
-      percentage: activePercentage,
-      short: "ACT",
-      background: "#eff6ff",
-      color: "#2563eb",
-    },
-    {
-      label: "Inactive",
-      value: inactiveEmployees,
-      percentage: inactivePercentage,
-      short: "INA",
-      background: "#fffbeb",
-      color: "#d97706",
-    },
-    {
-      label: "Resigned",
-      value: resignedEmployees,
-      percentage: resignedPercentage,
-      short: "RES",
-      background: "#f5f3ff",
-      color: "#7c3aed",
-    },
-    {
-      label: "Terminated",
-      value: terminatedEmployees,
-      percentage: terminatedPercentage,
-      short: "TER",
-      background: "#fff1f2",
-      color: "#e11d48",
-    },
-  ]
 
   const kpiCards = [
     {
@@ -1989,18 +2172,6 @@ function Dashboard() {
                   cursor: "pointer",
                   textAlign: "left",
                   boxSizing: "border-box",
-                }}
-                onMouseEnter={(event) => {
-                  event.currentTarget.style.borderColor =
-                    "#bfdbfe"
-                  event.currentTarget.style.background =
-                    "#f8fbff"
-                }}
-                onMouseLeave={(event) => {
-                  event.currentTarget.style.borderColor =
-                    "#e7ebf2"
-                  event.currentTarget.style.background =
-                    "#fafbfc"
                 }}
               >
                 <div
