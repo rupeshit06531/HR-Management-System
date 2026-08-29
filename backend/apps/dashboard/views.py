@@ -17,14 +17,16 @@ class DashboardView(APIView):
 
         employee_queryset = Employee.objects.all()
 
+        employee_profile = None
+
         if user.role == User.Role.MANAGER:
             try:
-                manager_employee = user.employee_profile
+                employee_profile = user.employee_profile
             except Employee.DoesNotExist:
                 employee_queryset = employee_queryset.none()
             else:
                 employee_queryset = employee_queryset.filter(
-                    manager=manager_employee,
+                    manager=employee_profile,
                 )
 
         elif user.role == User.Role.EMPLOYEE:
@@ -81,6 +83,42 @@ class DashboardView(APIView):
             },
             "employees": employee_metrics,
         }
+
+        if employee_profile is not None:
+            dashboard_data["employee"] = {
+                "id": employee_profile.id,
+                "employee_id": employee_profile.employee_id,
+                "full_name": employee_profile.user.get_full_name(),
+                "first_name": employee_profile.user.first_name,
+                "last_name": employee_profile.user.last_name,
+                "email": employee_profile.user.email,
+                "department": (
+                    employee_profile.department.name
+                    if employee_profile.department
+                    else None
+                ),
+                "designation": (
+                    employee_profile.designation.name
+                    if employee_profile.designation
+                    else None
+                ),
+                "joining_date": (
+                    employee_profile.joining_date.isoformat()
+                    if employee_profile.joining_date
+                    else None
+                ),
+                "employment_type": (
+                    employee_profile.get_employment_type_display()
+                ),
+                "employment_status": (
+                    employee_profile.get_employment_status_display()
+                ),
+                "manager": (
+                    employee_profile.manager.user.get_full_name()
+                    if employee_profile.manager
+                    else None
+                ),
+            }
 
         if user.role in {
             User.Role.SUPER_ADMIN,
