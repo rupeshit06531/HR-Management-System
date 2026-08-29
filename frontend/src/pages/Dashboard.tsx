@@ -138,19 +138,9 @@ function Dashboard() {
   const [error, setError] =
     useState<string | null>(null)
 
-  const [isRefreshing, setIsRefreshing] =
-    useState(false)
-
-  const loadDashboard = async (
-    showRefreshState = false,
-  ) => {
+  const loadDashboard = async () => {
     try {
-      if (showRefreshState) {
-        setIsRefreshing(true)
-      } else {
-        setIsLoading(true)
-      }
-
+      setIsLoading(true)
       setError(null)
 
       const data = await getDashboard()
@@ -167,7 +157,6 @@ function Dashboard() {
       )
     } finally {
       setIsLoading(false)
-      setIsRefreshing(false)
     }
   }
 
@@ -199,14 +188,17 @@ function Dashboard() {
           color: "#64748b",
           fontFamily:
             '"Inter", "Segoe UI", Arial, sans-serif',
-          fontSize: "14px",
         }}
       >
-        <div style={{ textAlign: "center" }}>
+        <div
+          style={{
+            textAlign: "center",
+          }}
+        >
           <div
             style={{
-              width: "38px",
-              height: "38px",
+              width: "36px",
+              height: "36px",
               borderRadius: "50%",
               border: "3px solid #dbeafe",
               borderTopColor: "#2563eb",
@@ -216,7 +208,14 @@ function Dashboard() {
             }}
           />
 
-          Loading dashboard...
+          <div
+            style={{
+              fontSize: "13px",
+              fontWeight: 600,
+            }}
+          >
+            Loading dashboard...
+          </div>
         </div>
 
         <style>
@@ -268,9 +267,6 @@ function Dashboard() {
   const totalUsers =
     userMetrics?.total ?? 0
 
-  const userRoleCounts =
-    userMetrics?.roles ?? {}
-
   const activePercentage =
     totalEmployees > 0
       ? Math.round(
@@ -289,13 +285,92 @@ function Dashboard() {
         )
       : 0
 
-  const adminStats = [
+  const resignedPercentage =
+    totalEmployees > 0
+      ? Math.round(
+          (resignedEmployees /
+            totalEmployees) *
+            100,
+        )
+      : 0
+
+  const terminatedPercentage =
+    totalEmployees > 0
+      ? Math.round(
+          (terminatedEmployees /
+            totalEmployees) *
+            100,
+        )
+      : 0
+
+  const roleDistribution = Object.entries(
+    userMetrics?.roles ?? {},
+  )
+
+  const getRoleLabel = (role: string) =>
+    roleLabels[role] || role
+
+  const getRolePercentage = (count: number) =>
+    totalUsers > 0
+      ? Math.round((count / totalUsers) * 100)
+      : 0
+
+  const quickActionLabels = [
+    "Employees",
+    "Departments",
+    "Attendance",
+    "Leave",
+    "Payroll",
+    "Recruitment",
+  ]
+
+  const quickActions = visibleModules.filter(
+    (item) =>
+      quickActionLabels.includes(item.label),
+  )
+
+  const workforceStatuses = [
+    {
+      label: "Active",
+      value: activeEmployees,
+      percentage: activePercentage,
+      short: "ACT",
+      background: "#eff6ff",
+      color: "#2563eb",
+    },
+    {
+      label: "Inactive",
+      value: inactiveEmployees,
+      percentage: inactivePercentage,
+      short: "INA",
+      background: "#fffbeb",
+      color: "#d97706",
+    },
+    {
+      label: "Resigned",
+      value: resignedEmployees,
+      percentage: resignedPercentage,
+      short: "RES",
+      background: "#f5f3ff",
+      color: "#7c3aed",
+    },
+    {
+      label: "Terminated",
+      value: terminatedEmployees,
+      percentage: terminatedPercentage,
+      short: "TER",
+      background: "#fff1f2",
+      color: "#e11d48",
+    },
+  ]
+
+  const kpiCards = [
     {
       label: "Total Employees",
       value: totalEmployees,
       description: "All employee records",
-      icon: "EMP",
-      accent: "#2563eb",
+      short: "EMP",
+      color: "#2563eb",
       background: "#eff6ff",
       border: "#dbeafe",
     },
@@ -303,8 +378,8 @@ function Dashboard() {
       label: "Active Employees",
       value: activeEmployees,
       description: `${activePercentage}% of workforce`,
-      icon: "ACT",
-      accent: "#16a34a",
+      short: "ACT",
+      color: "#16a34a",
       background: "#f0fdf4",
       border: "#dcfce7",
     },
@@ -312,8 +387,8 @@ function Dashboard() {
       label: "Inactive Employees",
       value: inactiveEmployees,
       description: `${inactivePercentage}% of workforce`,
-      icon: "INA",
-      accent: "#d97706",
+      short: "INA",
+      color: "#d97706",
       background: "#fffbeb",
       border: "#fef3c7",
     },
@@ -321,90 +396,19 @@ function Dashboard() {
       label: "Total Users",
       value: totalUsers,
       description: "Registered system users",
-      icon: "USR",
-      accent: "#7c3aed",
+      short: "USR",
+      color: "#7c3aed",
       background: "#f5f3ff",
       border: "#ede9fe",
     },
   ]
-
-  const employeeStatusStats = [
-    {
-      label: "Active",
-      value: activeEmployees,
-      percentage:
-        totalEmployees > 0
-          ? Math.round(
-              (activeEmployees /
-                totalEmployees) *
-                100,
-            )
-          : 0,
-      accent: "#16a34a",
-    },
-    {
-      label: "Inactive",
-      value: inactiveEmployees,
-      percentage:
-        totalEmployees > 0
-          ? Math.round(
-              (inactiveEmployees /
-                totalEmployees) *
-                100,
-            )
-          : 0,
-      accent: "#f59e0b",
-    },
-    {
-      label: "Resigned",
-      value: resignedEmployees,
-      percentage:
-        totalEmployees > 0
-          ? Math.round(
-              (resignedEmployees /
-                totalEmployees) *
-                100,
-            )
-          : 0,
-      accent: "#64748b",
-    },
-    {
-      label: "Terminated",
-      value: terminatedEmployees,
-      percentage:
-        totalEmployees > 0
-          ? Math.round(
-              (terminatedEmployees /
-                totalEmployees) *
-                100,
-            )
-          : 0,
-      accent: "#dc2626",
-    },
-  ]
-
-  const roleEntries = Object.entries(
-    userRoleCounts,
-  ).sort(([, first], [, second]) => second - first)
-
-  const quickActions = visibleModules.filter(
-    (item) =>
-      [
-        "Employees",
-        "Departments",
-        "Attendance",
-        "Leave",
-        "Payroll",
-        "Recruitment",
-      ].includes(item.label),
-  )
 
   return (
     <div
       style={{
         minHeight: "100%",
         background: "#f6f8fc",
-        padding: "24px",
+        padding: "26px",
         fontFamily:
           '"Inter", "Segoe UI", Arial, sans-serif',
         color: "#172033",
@@ -414,7 +418,7 @@ function Dashboard() {
       <header
         style={{
           display: "flex",
-          alignItems: "flex-start",
+          alignItems: "flex-end",
           justifyContent: "space-between",
           gap: "20px",
           marginBottom: "24px",
@@ -424,31 +428,46 @@ function Dashboard() {
         <div>
           <div
             style={{
-              display: "inline-flex",
+              display: "flex",
               alignItems: "center",
               gap: "7px",
-              padding: "5px 9px",
-              borderRadius: "6px",
-              background: "#eef3ff",
-              color: "#315efb",
-              fontSize: "10px",
-              fontWeight: 800,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
               marginBottom: "9px",
+              fontSize: "10px",
+              fontWeight: 700,
+              color: "#64748b",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
             }}
           >
-            Admin Dashboard
+            <span
+              style={{
+                color: "#2563eb",
+              }}
+            >
+              Admin
+            </span>
+
+            <span
+              style={{
+                color: "#cbd5e1",
+              }}
+            >
+              /
+            </span>
+
+            <span>
+              Dashboard
+            </span>
           </div>
 
           <h1
             style={{
               margin: 0,
-              fontSize: "28px",
+              fontSize: "27px",
               lineHeight: 1.2,
               fontWeight: 750,
+              letterSpacing: "-0.025em",
               color: "#172033",
-              letterSpacing: "-0.02em",
             }}
           >
             Welcome back, {displayName}
@@ -457,13 +476,12 @@ function Dashboard() {
           <p
             style={{
               margin: "7px 0 0",
-              color: "#7c8798",
-              fontSize: "13px",
+              fontSize: "12px",
               lineHeight: 1.5,
+              color: "#7c8798",
             }}
           >
-            Here's an overview of your HR
-            management system.
+            Here's an overview of your HR management system.
           </p>
         </div>
 
@@ -472,18 +490,36 @@ function Dashboard() {
             display: "flex",
             alignItems: "center",
             gap: "10px",
-            flexWrap: "wrap",
           }}
         >
+          <button
+            type="button"
+            onClick={() => void loadDashboard()}
+            style={{
+              border: "1px solid #dce3ed",
+              background: "#ffffff",
+              color: "#475569",
+              borderRadius: "8px",
+              padding: "9px 13px",
+              fontSize: "11px",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Refresh
+          </button>
+
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: "10px",
+              minWidth: "190px",
+              padding: "9px 12px",
               background: "#ffffff",
               border: "1px solid #e5eaf1",
-              borderRadius: "10px",
-              padding: "9px 12px",
+              borderRadius: "9px",
+              boxSizing: "border-box",
             }}
           >
             <div
@@ -491,12 +527,13 @@ function Dashboard() {
                 width: "34px",
                 height: "34px",
                 borderRadius: "8px",
-                background: "#eff6ff",
-                color: "#2563eb",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "11px",
+                flexShrink: 0,
+                background: "#eff6ff",
+                color: "#2563eb",
+                fontSize: "12px",
                 fontWeight: 800,
               }}
             >
@@ -505,12 +542,16 @@ function Dashboard() {
                 .toUpperCase()}
             </div>
 
-            <div>
+            <div
+              style={{
+                minWidth: 0,
+              }}
+            >
               <div
                 style={{
-                  fontSize: "10px",
+                  marginBottom: "2px",
+                  fontSize: "9px",
                   color: "#94a3b8",
-                  marginBottom: "3px",
                 }}
               >
                 Current role
@@ -518,9 +559,12 @@ function Dashboard() {
 
               <div
                 style={{
-                  fontSize: "12px",
+                  fontSize: "11px",
                   fontWeight: 700,
                   color: "#334155",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 }}
               >
                 {currentRole}
@@ -528,52 +572,30 @@ function Dashboard() {
             </div>
 
             <span
+              title="System operational"
               style={{
                 width: "7px",
                 height: "7px",
+                marginLeft: "auto",
                 borderRadius: "50%",
                 background: "#22c55e",
-                marginLeft: "4px",
+                flexShrink: 0,
               }}
-              title="System operational"
             />
           </div>
-
-          <button
-            type="button"
-            onClick={() => void loadDashboard(true)}
-            disabled={isRefreshing}
-            style={{
-              border: "1px solid #dbe3ef",
-              background: "#ffffff",
-              color: "#2563eb",
-              borderRadius: "8px",
-              padding: "10px 13px",
-              fontSize: "11px",
-              fontWeight: 700,
-              cursor: isRefreshing
-                ? "not-allowed"
-                : "pointer",
-              opacity: isRefreshing ? 0.7 : 1,
-            }}
-          >
-            {isRefreshing
-              ? "Refreshing..."
-              : "Refresh"}
-          </button>
         </div>
       </header>
 
       {error && (
         <section
           style={{
-            marginBottom: "20px",
-            padding: "12px 15px",
-            background: "#fff5f5",
+            marginBottom: "18px",
+            padding: "11px 14px",
             border: "1px solid #fecaca",
-            borderRadius: "9px",
+            borderRadius: "8px",
+            background: "#fff5f5",
             color: "#b91c1c",
-            fontSize: "13px",
+            fontSize: "12px",
             fontWeight: 600,
           }}
         >
@@ -585,25 +607,23 @@ function Dashboard() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "repeat(auto-fit, minmax(210px, 1fr))",
-          gap: "14px",
-          marginBottom: "20px",
+            "repeat(auto-fit, minmax(205px, 1fr))",
+          gap: "13px",
+          marginBottom: "18px",
         }}
       >
-        {adminStats.map((stat) => (
+        {kpiCards.map((card) => (
           <article
-            key={stat.label}
+            key={card.label}
             style={{
               position: "relative",
-              overflow: "hidden",
+              minHeight: "124px",
+              padding: "17px 18px 16px 20px",
               background: "#ffffff",
               border: "1px solid #e5eaf1",
-              borderRadius: "11px",
-              padding: "18px",
-              minHeight: "125px",
+              borderRadius: "10px",
               boxSizing: "border-box",
-              boxShadow:
-                "0 2px 8px rgba(15, 23, 42, 0.025)",
+              overflow: "hidden",
             }}
           >
             <div
@@ -611,9 +631,9 @@ function Dashboard() {
                 position: "absolute",
                 left: 0,
                 top: 0,
-                width: "4px",
-                height: "100%",
-                background: stat.accent,
+                bottom: 0,
+                width: "3px",
+                background: card.color,
               }}
             />
 
@@ -628,55 +648,55 @@ function Dashboard() {
               <div>
                 <div
                   style={{
-                    fontSize: "11px",
-                    color: "#7c8798",
-                    fontWeight: 650,
                     marginBottom: "9px",
+                    fontSize: "10px",
+                    fontWeight: 700,
+                    color: "#7c8798",
                   }}
                 >
-                  {stat.label}
+                  {card.label}
                 </div>
 
                 <div
                   style={{
-                    fontSize: "29px",
+                    fontSize: "28px",
                     lineHeight: 1,
-                    color: "#172033",
                     fontWeight: 750,
-                    letterSpacing: "-0.025em",
+                    letterSpacing: "-0.03em",
+                    color: "#172033",
                   }}
                 >
-                  {stat.value}
+                  {card.value}
                 </div>
 
                 <div
                   style={{
                     marginTop: "9px",
-                    fontSize: "10px",
+                    fontSize: "9px",
                     color: "#9aa4b2",
                   }}
                 >
-                  {stat.description}
+                  {card.description}
                 </div>
               </div>
 
               <div
                 style={{
-                  width: "40px",
-                  height: "40px",
+                  width: "38px",
+                  height: "38px",
                   borderRadius: "9px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: stat.background,
-                  border: `1px solid ${stat.border}`,
-                  color: stat.accent,
+                  flexShrink: 0,
+                  background: card.background,
+                  border: `1px solid ${card.border}`,
+                  color: card.color,
                   fontSize: "9px",
                   fontWeight: 800,
-                  flexShrink: 0,
                 }}
               >
-                {stat.icon}
+                {card.short}
               </div>
             </div>
           </article>
@@ -687,20 +707,19 @@ function Dashboard() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "minmax(0, 1.45fr) minmax(300px, 0.85fr)",
+            "minmax(0, 1.45fr) minmax(310px, 0.9fr)",
           gap: "16px",
-          marginBottom: "20px",
+          marginBottom: "18px",
         }}
       >
         <article
           style={{
+            minWidth: 0,
+            padding: "20px",
             background: "#ffffff",
             border: "1px solid #e5eaf1",
-            borderRadius: "11px",
-            padding: "20px",
-            minWidth: 0,
-            boxShadow:
-              "0 2px 8px rgba(15, 23, 42, 0.025)",
+            borderRadius: "10px",
+            boxSizing: "border-box",
           }}
         >
           <div
@@ -708,47 +727,67 @@ function Dashboard() {
               display: "flex",
               alignItems: "flex-start",
               justifyContent: "space-between",
-              gap: "16px",
-              marginBottom: "20px",
+              gap: "15px",
+              marginBottom: "21px",
               flexWrap: "wrap",
             }}
           >
             <div>
-              <h2
+              <div
                 style={{
-                  margin: 0,
-                  fontSize: "16px",
-                  fontWeight: 750,
-                  color: "#172033",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "5px",
                 }}
               >
-                Workforce Overview
-              </h2>
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: "15px",
+                    fontWeight: 750,
+                    color: "#172033",
+                  }}
+                >
+                  Workforce Overview
+                </h2>
+
+                <span
+                  style={{
+                    padding: "3px 7px",
+                    borderRadius: "5px",
+                    background: "#f1f5f9",
+                    color: "#64748b",
+                    fontSize: "8px",
+                    fontWeight: 800,
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  LIVE
+                </span>
+              </div>
 
               <p
                 style={{
-                  margin: "5px 0 0",
-                  fontSize: "11px",
+                  margin: 0,
+                  fontSize: "10px",
                   color: "#8a94a6",
                 }}
               >
-                Current employee status across the
-                organization
+                Current employee status across the organization
               </p>
             </div>
 
             <button
               type="button"
-              onClick={() =>
-                navigate("/employees")
-              }
+              onClick={() => navigate("/employees")}
               style={{
                 border: "1px solid #dbe3ef",
                 background: "#ffffff",
                 color: "#2563eb",
                 borderRadius: "7px",
                 padding: "7px 10px",
-                fontSize: "11px",
+                fontSize: "10px",
                 fontWeight: 700,
                 cursor: "pointer",
               }}
@@ -761,8 +800,8 @@ function Dashboard() {
             style={{
               display: "grid",
               gridTemplateColumns:
-                "minmax(135px, 0.7fr) minmax(220px, 1fr)",
-              gap: "28px",
+                "minmax(145px, 0.72fr) minmax(220px, 1fr)",
+              gap: "30px",
               alignItems: "center",
             }}
           >
@@ -774,36 +813,36 @@ function Dashboard() {
             >
               <div
                 style={{
-                  width: "145px",
-                  height: "145px",
+                  width: "136px",
+                  height: "136px",
                   borderRadius: "50%",
-                  background: `conic-gradient(
-                    #2563eb 0% ${activePercentage}%,
-                    #e8edf5 ${activePercentage}% 100%
-                  )`,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  background: `conic-gradient(
+                    #2563eb 0% ${activePercentage}%,
+                    #e9eef5 ${activePercentage}% 100%
+                  )`,
                 }}
               >
                 <div
                   style={{
-                    width: "105px",
-                    height: "105px",
+                    width: "98px",
+                    height: "98px",
                     borderRadius: "50%",
-                    background: "#ffffff",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexDirection: "column",
+                    background: "#ffffff",
                   }}
                 >
                   <strong
                     style={{
-                      fontSize: "27px",
+                      fontSize: "25px",
                       lineHeight: 1,
-                      color: "#172033",
                       fontWeight: 750,
+                      color: "#172033",
                     }}
                   >
                     {activePercentage}%
@@ -812,7 +851,7 @@ function Dashboard() {
                   <span
                     style={{
                       marginTop: "6px",
-                      fontSize: "10px",
+                      fontSize: "9px",
                       color: "#8a94a6",
                     }}
                   >
@@ -823,21 +862,19 @@ function Dashboard() {
             </div>
 
             <div>
-              {employeeStatusStats.map(
+              {workforceStatuses.map(
                 (status, index) => (
                   <div
                     key={status.label}
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      justifyContent:
-                        "space-between",
+                      justifyContent: "space-between",
                       gap: "15px",
-                      padding: "11px 0",
+                      padding: "10px 0",
                       borderBottom:
                         index <
-                        employeeStatusStats.length -
-                          1
+                        workforceStatuses.length - 1
                           ? "1px solid #edf0f5"
                           : "none",
                     }}
@@ -847,6 +884,7 @@ function Dashboard() {
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
+                        minWidth: 0,
                       }}
                     >
                       <span
@@ -854,14 +892,15 @@ function Dashboard() {
                           width: "7px",
                           height: "7px",
                           borderRadius: "50%",
+                          flexShrink: 0,
                           background:
-                            status.accent,
+                            status.color,
                         }}
                       />
 
                       <span
                         style={{
-                          fontSize: "12px",
+                          fontSize: "11px",
                           color: "#64748b",
                         }}
                       >
@@ -873,12 +912,12 @@ function Dashboard() {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "9px",
+                        gap: "12px",
                       }}
                     >
                       <span
                         style={{
-                          fontSize: "10px",
+                          fontSize: "9px",
                           color: "#94a3b8",
                         }}
                       >
@@ -887,10 +926,10 @@ function Dashboard() {
 
                       <strong
                         style={{
-                          minWidth: "25px",
+                          minWidth: "24px",
                           textAlign: "right",
-                          fontSize: "13px",
-                          color: status.accent,
+                          fontSize: "12px",
+                          color: status.color,
                         }}
                       >
                         {status.value}
@@ -905,20 +944,23 @@ function Dashboard() {
 
         <article
           style={{
+            minWidth: 0,
+            padding: "20px",
             background: "#ffffff",
             border: "1px solid #e5eaf1",
-            borderRadius: "11px",
-            padding: "20px",
-            minWidth: 0,
-            boxShadow:
-              "0 2px 8px rgba(15, 23, 42, 0.025)",
+            borderRadius: "10px",
+            boxSizing: "border-box",
           }}
         >
-          <div style={{ marginBottom: "18px" }}>
+          <div
+            style={{
+              marginBottom: "17px",
+            }}
+          >
             <h2
               style={{
                 margin: 0,
-                fontSize: "16px",
+                fontSize: "15px",
                 fontWeight: 750,
                 color: "#172033",
               }}
@@ -929,7 +971,7 @@ function Dashboard() {
             <p
               style={{
                 margin: "5px 0 0",
-                fontSize: "11px",
+                fontSize: "10px",
                 color: "#8a94a6",
               }}
             >
@@ -937,27 +979,24 @@ function Dashboard() {
             </p>
           </div>
 
-          {roleEntries.length > 0 ? (
+          {roleDistribution.length > 0 ? (
             <div>
-              {roleEntries.map(
+              {roleDistribution.map(
                 ([role, count], index) => {
                   const percentage =
-                    totalUsers > 0
-                      ? Math.round(
-                          (count /
-                            totalUsers) *
-                            100,
-                        )
-                      : 0
+                    getRolePercentage(count)
 
                   return (
                     <div
                       key={role}
                       style={{
-                        padding: "11px 0",
+                        padding:
+                          index === 0
+                            ? "2px 0 10px"
+                            : "10px 0",
                         borderBottom:
                           index <
-                          roleEntries.length - 1
+                          roleDistribution.length - 1
                             ? "1px solid #edf0f5"
                             : "none",
                       }}
@@ -965,26 +1004,26 @@ function Dashboard() {
                       <div
                         style={{
                           display: "flex",
-                          justifyContent:
-                            "space-between",
-                          gap: "12px",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "10px",
                           marginBottom: "7px",
                         }}
                       >
                         <span
                           style={{
-                            fontSize: "11px",
-                            color: "#64748b",
+                            fontSize: "10px",
+                            fontWeight: 600,
+                            color: "#475569",
                           }}
                         >
-                          {roleLabels[role] ||
-                            role}
+                          {getRoleLabel(role)}
                         </span>
 
                         <strong
                           style={{
                             fontSize: "11px",
-                            color: "#334155",
+                            color: "#172033",
                           }}
                         >
                           {count}
@@ -993,30 +1032,28 @@ function Dashboard() {
 
                       <div
                         style={{
-                          height: "6px",
-                          background: "#eef2f7",
-                          borderRadius: "999px",
+                          height: "5px",
                           overflow: "hidden",
+                          borderRadius: "10px",
+                          background: "#edf1f6",
                         }}
                       >
                         <div
                           style={{
                             width: `${percentage}%`,
                             height: "100%",
-                            background:
-                              "#6366f1",
-                            borderRadius:
-                              "999px",
+                            borderRadius: "10px",
+                            background: "#2563eb",
                           }}
                         />
                       </div>
 
                       <div
                         style={{
-                          marginTop: "5px",
-                          fontSize: "9px",
-                          color: "#94a3b8",
+                          marginTop: "4px",
                           textAlign: "right",
+                          fontSize: "8px",
+                          color: "#94a3b8",
                         }}
                       >
                         {percentage}%
@@ -1031,14 +1068,13 @@ function Dashboard() {
               style={{
                 padding: "25px 10px",
                 textAlign: "center",
+                border: "1px dashed #dbe3ef",
+                borderRadius: "7px",
                 color: "#94a3b8",
-                fontSize: "11px",
-                border:
-                  "1px dashed #dbe3ef",
-                borderRadius: "8px",
+                fontSize: "10px",
               }}
             >
-              No user role data available.
+              No user distribution data available.
             </div>
           )}
         </article>
@@ -1048,31 +1084,30 @@ function Dashboard() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "minmax(0, 1.25fr) minmax(300px, 1fr)",
+            "minmax(0, 1.3fr) minmax(270px, 0.7fr)",
           gap: "16px",
-          marginBottom: "20px",
+          marginBottom: "18px",
         }}
       >
         <article
           style={{
+            minWidth: 0,
+            padding: "20px",
             background: "#ffffff",
             border: "1px solid #e5eaf1",
-            borderRadius: "11px",
-            padding: "20px",
-            minWidth: 0,
-            boxShadow:
-              "0 2px 8px rgba(15, 23, 42, 0.025)",
+            borderRadius: "10px",
+            boxSizing: "border-box",
           }}
         >
           <div
             style={{
-              marginBottom: "18px",
+              marginBottom: "17px",
             }}
           >
             <h2
               style={{
                 margin: 0,
-                fontSize: "16px",
+                fontSize: "15px",
                 fontWeight: 750,
                 color: "#172033",
               }}
@@ -1083,12 +1118,11 @@ function Dashboard() {
             <p
               style={{
                 margin: "5px 0 0",
-                fontSize: "11px",
+                fontSize: "10px",
                 color: "#8a94a6",
               }}
             >
-              Frequently used HR management
-              functions
+              Frequently used HR management functions
             </p>
           </div>
 
@@ -1111,10 +1145,9 @@ function Dashboard() {
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
-                  minHeight: "67px",
+                  minHeight: "64px",
                   padding: "10px",
-                  border:
-                    "1px solid #e7ebf2",
+                  border: "1px solid #e7ebf2",
                   borderRadius: "8px",
                   background: "#fafbfc",
                   cursor: "pointer",
@@ -1139,14 +1172,14 @@ function Dashboard() {
                     width: "34px",
                     height: "34px",
                     borderRadius: "8px",
-                    background: "#eff6ff",
-                    color: "#2563eb",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    flexShrink: 0,
+                    background: "#eff6ff",
+                    color: "#2563eb",
                     fontSize: "8px",
                     fontWeight: 800,
-                    flexShrink: 0,
                   }}
                 >
                   {item.icon}
@@ -1159,7 +1192,7 @@ function Dashboard() {
                 >
                   <div
                     style={{
-                      fontSize: "11px",
+                      fontSize: "10px",
                       fontWeight: 700,
                       color: "#334155",
                     }}
@@ -1170,7 +1203,7 @@ function Dashboard() {
                   <div
                     style={{
                       marginTop: "3px",
-                      fontSize: "9px",
+                      fontSize: "8px",
                       color: "#94a3b8",
                     }}
                   >
@@ -1184,63 +1217,39 @@ function Dashboard() {
 
         <article
           style={{
+            minWidth: 0,
+            padding: "20px",
             background: "#ffffff",
             border: "1px solid #e5eaf1",
-            borderRadius: "11px",
-            padding: "20px",
-            minWidth: 0,
-            boxShadow:
-              "0 2px 8px rgba(15, 23, 42, 0.025)",
+            borderRadius: "10px",
+            boxSizing: "border-box",
           }}
         >
           <div
             style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: "10px",
-              marginBottom: "18px",
+              marginBottom: "17px",
             }}
           >
-            <div>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: "16px",
-                  fontWeight: 750,
-                  color: "#172033",
-                }}
-              >
-                Workforce Actions
-              </h2>
-
-              <p
-                style={{
-                  margin: "5px 0 0",
-                  fontSize: "11px",
-                  color: "#8a94a6",
-                }}
-              >
-                Employee lifecycle overview
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                navigate("/employees")
-              }
+            <h2
               style={{
-                border: "none",
-                background: "transparent",
-                color: "#2563eb",
-                fontSize: "10px",
-                fontWeight: 700,
-                cursor: "pointer",
+                margin: 0,
+                fontSize: "15px",
+                fontWeight: 750,
+                color: "#172033",
               }}
             >
-              Manage
-            </button>
+              Workforce Actions
+            </h2>
+
+            <p
+              style={{
+                margin: "5px 0 0",
+                fontSize: "10px",
+                color: "#8a94a6",
+              }}
+            >
+              Employee lifecycle overview
+            </p>
           </div>
 
           <div
@@ -1248,140 +1257,85 @@ function Dashboard() {
               display: "grid",
               gridTemplateColumns:
                 "repeat(2, minmax(0, 1fr))",
-              gap: "10px",
+              gap: "8px",
             }}
           >
-            <div
-              style={{
-                padding: "13px",
-                border:
-                  "1px solid #dcfce7",
-                borderRadius: "8px",
-                background: "#f7fff9",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "9px",
-                  color: "#16a34a",
-                  fontWeight: 700,
-                  marginBottom: "5px",
-                }}
-              >
-                ACTIVE
-              </div>
+            {workforceStatuses.map(
+              (status) => (
+                <div
+                  key={status.label}
+                  style={{
+                    padding: "11px",
+                    borderRadius: "8px",
+                    background:
+                      status.background,
+                    border: `1px solid ${status.background}`,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "6px",
+                      marginBottom: "7px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "8px",
+                        fontWeight: 800,
+                        color: status.color,
+                      }}
+                    >
+                      {status.short}
+                    </span>
 
-              <strong
-                style={{
-                  fontSize: "22px",
-                  color: "#172033",
-                }}
-              >
-                {activeEmployees}
-              </strong>
-            </div>
+                    <span
+                      style={{
+                        fontSize: "8px",
+                        color: "#94a3b8",
+                      }}
+                    >
+                      {status.percentage}%
+                    </span>
+                  </div>
 
-            <div
-              style={{
-                padding: "13px",
-                border:
-                  "1px solid #fef3c7",
-                borderRadius: "8px",
-                background: "#fffdf6",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "9px",
-                  color: "#d97706",
-                  fontWeight: 700,
-                  marginBottom: "5px",
-                }}
-              >
-                INACTIVE
-              </div>
+                  <strong
+                    style={{
+                      display: "block",
+                      fontSize: "21px",
+                      lineHeight: 1,
+                      fontWeight: 750,
+                      color: "#172033",
+                    }}
+                  >
+                    {status.value}
+                  </strong>
 
-              <strong
-                style={{
-                  fontSize: "22px",
-                  color: "#172033",
-                }}
-              >
-                {inactiveEmployees}
-              </strong>
-            </div>
-
-            <div
-              style={{
-                padding: "13px",
-                border:
-                  "1px solid #e2e8f0",
-                borderRadius: "8px",
-                background: "#fafbfc",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "9px",
-                  color: "#64748b",
-                  fontWeight: 700,
-                  marginBottom: "5px",
-                }}
-              >
-                RESIGNED
-              </div>
-
-              <strong
-                style={{
-                  fontSize: "22px",
-                  color: "#172033",
-                }}
-              >
-                {resignedEmployees}
-              </strong>
-            </div>
-
-            <div
-              style={{
-                padding: "13px",
-                border:
-                  "1px solid #fee2e2",
-                borderRadius: "8px",
-                background: "#fffafa",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "9px",
-                  color: "#dc2626",
-                  fontWeight: 700,
-                  marginBottom: "5px",
-                }}
-              >
-                TERMINATED
-              </div>
-
-              <strong
-                style={{
-                  fontSize: "22px",
-                  color: "#172033",
-                }}
-              >
-                {terminatedEmployees}
-              </strong>
-            </div>
+                  <div
+                    style={{
+                      marginTop: "5px",
+                      fontSize: "8px",
+                      color: "#64748b",
+                    }}
+                  >
+                    {status.label}
+                  </div>
+                </div>
+              ),
+            )}
           </div>
         </article>
       </section>
 
       <section
         style={{
+          padding: "20px",
           background: "#ffffff",
           border: "1px solid #e5eaf1",
-          borderRadius: "11px",
-          padding: "20px",
-          boxShadow:
-            "0 2px 8px rgba(15, 23, 42, 0.025)",
+          borderRadius: "10px",
+          boxSizing: "border-box",
         }}
       >
         <div
@@ -1395,26 +1349,47 @@ function Dashboard() {
           }}
         >
           <div>
-            <h2
+            <div
               style={{
-                margin: 0,
-                fontSize: "16px",
-                fontWeight: 750,
-                color: "#172033",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "5px",
               }}
             >
-              HRMS Modules
-            </h2>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: "15px",
+                  fontWeight: 750,
+                  color: "#172033",
+                }}
+              >
+                HRMS Modules
+              </h2>
+
+              <span
+                style={{
+                  padding: "3px 7px",
+                  borderRadius: "5px",
+                  background: "#f1f5f9",
+                  color: "#64748b",
+                  fontSize: "8px",
+                  fontWeight: 800,
+                }}
+              >
+                MODULES
+              </span>
+            </div>
 
             <p
               style={{
-                margin: "5px 0 0",
-                fontSize: "11px",
+                margin: 0,
+                fontSize: "10px",
                 color: "#8a94a6",
               }}
             >
-              Access the HR management modules
-              available for your role
+              Access the HR management modules available for your role
             </p>
           </div>
 
@@ -1426,7 +1401,7 @@ function Dashboard() {
               borderRadius: "6px",
               background: "#eff6ff",
               color: "#2563eb",
-              fontSize: "10px",
+              fontSize: "9px",
               fontWeight: 700,
             }}
           >
@@ -1439,7 +1414,7 @@ function Dashboard() {
             style={{
               display: "grid",
               gridTemplateColumns:
-                "repeat(auto-fill, minmax(190px, 1fr))",
+                "repeat(auto-fill, minmax(185px, 1fr))",
               gap: "10px",
             }}
           >
@@ -1455,23 +1430,22 @@ function Dashboard() {
                   alignItems: "center",
                   gap: "11px",
                   width: "100%",
-                  minHeight: "64px",
+                  minHeight: "63px",
                   padding: "10px 12px",
-                  border:
-                    "1px solid #e7ebf2",
+                  border: "1px solid #e7ebf2",
                   borderRadius: "8px",
                   background: "#ffffff",
                   cursor: "pointer",
                   textAlign: "left",
                   boxSizing: "border-box",
-                  transition:
-                    "transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease",
                 }}
                 onMouseEnter={(event) => {
                   event.currentTarget.style.transform =
                     "translateY(-2px)"
                   event.currentTarget.style.borderColor =
                     "#bfdbfe"
+                  event.currentTarget.style.background =
+                    "#f8fbff"
                   event.currentTarget.style.boxShadow =
                     "0 5px 14px rgba(15, 23, 42, 0.06)"
                 }}
@@ -1480,23 +1454,25 @@ function Dashboard() {
                     "translateY(0)"
                   event.currentTarget.style.borderColor =
                     "#e7ebf2"
+                  event.currentTarget.style.background =
+                    "#ffffff"
                   event.currentTarget.style.boxShadow =
                     "none"
                 }}
               >
                 <div
                   style={{
-                    width: "36px",
-                    height: "36px",
+                    width: "35px",
+                    height: "35px",
                     borderRadius: "8px",
-                    background: "#f1f5f9",
-                    color: "#475569",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    flexShrink: 0,
+                    background: "#f1f5f9",
+                    color: "#475569",
                     fontSize: "8px",
                     fontWeight: 800,
-                    flexShrink: 0,
                   }}
                 >
                   {item.icon}
@@ -1512,21 +1488,19 @@ function Dashboard() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      justifyContent:
-                        "space-between",
+                      justifyContent: "space-between",
                       gap: "7px",
                     }}
                   >
                     <span
                       style={{
-                        fontSize: "11px",
+                        minWidth: 0,
+                        fontSize: "10px",
                         fontWeight: 700,
                         color: "#334155",
-                        whiteSpace:
-                          "nowrap",
+                        whiteSpace: "nowrap",
                         overflow: "hidden",
-                        textOverflow:
-                          "ellipsis",
+                        textOverflow: "ellipsis",
                       }}
                     >
                       {item.label}
@@ -1535,7 +1509,7 @@ function Dashboard() {
                     <span
                       style={{
                         color: "#94a3b8",
-                        fontSize: "14px",
+                        fontSize: "13px",
                         lineHeight: 1,
                         flexShrink: 0,
                       }}
@@ -1547,7 +1521,7 @@ function Dashboard() {
                   <div
                     style={{
                       marginTop: "4px",
-                      fontSize: "9px",
+                      fontSize: "8px",
                       color: "#94a3b8",
                     }}
                   >
@@ -1562,16 +1536,14 @@ function Dashboard() {
             style={{
               padding: "28px 15px",
               textAlign: "center",
-              border:
-                "1px dashed #dbe3ef",
+              border: "1px dashed #dbe3ef",
               borderRadius: "8px",
               background: "#fafbfc",
               color: "#8a94a6",
-              fontSize: "12px",
+              fontSize: "11px",
             }}
           >
-            No modules are available for
-            your current role.
+            No modules are available for your current role.
           </div>
         )}
       </section>
@@ -1583,16 +1555,16 @@ function Dashboard() {
           justifyContent: "space-between",
           gap: "15px",
           marginTop: "16px",
-          padding: "13px 16px",
+          padding: "12px 15px",
           background: "#ffffff",
-          border: "1px solid #e7ebf2",
+          border: "1px solid #e5eaf1",
           borderRadius: "9px",
           flexWrap: "wrap",
         }}
       >
         <div
           style={{
-            fontSize: "12px",
+            fontSize: "10px",
             color: "#7c8798",
           }}
         >
@@ -1609,10 +1581,10 @@ function Dashboard() {
         <div
           style={{
             padding: "5px 9px",
-            background: "#f1f5f9",
             borderRadius: "6px",
+            background: "#f1f5f9",
             color: "#475569",
-            fontSize: "11px",
+            fontSize: "9px",
             fontWeight: 700,
           }}
         >
