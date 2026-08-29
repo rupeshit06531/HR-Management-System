@@ -138,43 +138,42 @@ function Dashboard() {
   const [error, setError] =
     useState<string | null>(null)
 
-  useEffect(() => {
-    let isMounted = true
+  const [isRefreshing, setIsRefreshing] =
+    useState(false)
 
-    const loadDashboard = async () => {
-      try {
+  const loadDashboard = async (
+    showRefreshState = false,
+  ) => {
+    try {
+      if (showRefreshState) {
+        setIsRefreshing(true)
+      } else {
         setIsLoading(true)
-        setError(null)
-
-        const data = await getDashboard()
-
-        if (isMounted) {
-          setDashboard(data)
-        }
-      } catch (requestError) {
-        console.error(
-          "Failed to load dashboard:",
-          requestError,
-        )
-
-        if (isMounted) {
-          setError(
-            "Unable to load dashboard data. Please refresh the page.",
-          )
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
       }
-    }
 
+      setError(null)
+
+      const data = await getDashboard()
+
+      setDashboard(data)
+    } catch (requestError) {
+      console.error(
+        "Failed to load dashboard:",
+        requestError,
+      )
+
+      setError(
+        "Unable to load dashboard data. Please refresh the page.",
+      )
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
+    }
+  }
+
+  useEffect(() => {
     if (!authLoading && user) {
       void loadDashboard()
-    }
-
-    return () => {
-      isMounted = false
     }
   }, [authLoading, user])
 
@@ -196,18 +195,14 @@ function Dashboard() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f5f7fb",
+          background: "#f6f8fc",
           color: "#64748b",
           fontFamily:
             '"Inter", "Segoe UI", Arial, sans-serif',
           fontSize: "14px",
         }}
       >
-        <div
-          style={{
-            textAlign: "center",
-          }}
-        >
+        <div style={{ textAlign: "center" }}>
           <div
             style={{
               width: "38px",
@@ -264,8 +259,17 @@ function Dashboard() {
   const inactiveEmployees =
     employeeMetrics?.inactive ?? 0
 
+  const resignedEmployees =
+    employeeMetrics?.resigned ?? 0
+
+  const terminatedEmployees =
+    employeeMetrics?.terminated ?? 0
+
   const totalUsers =
     userMetrics?.total ?? 0
+
+  const userRoleCounts =
+    userMetrics?.roles ?? {}
 
   const activePercentage =
     totalEmployees > 0
@@ -276,25 +280,144 @@ function Dashboard() {
         )
       : 0
 
+  const inactivePercentage =
+    totalEmployees > 0
+      ? Math.round(
+          (inactiveEmployees /
+            totalEmployees) *
+            100,
+        )
+      : 0
+
+  const adminStats = [
+    {
+      label: "Total Employees",
+      value: totalEmployees,
+      description: "All employee records",
+      icon: "EMP",
+      accent: "#2563eb",
+      background: "#eff6ff",
+      border: "#dbeafe",
+    },
+    {
+      label: "Active Employees",
+      value: activeEmployees,
+      description: `${activePercentage}% of workforce`,
+      icon: "ACT",
+      accent: "#16a34a",
+      background: "#f0fdf4",
+      border: "#dcfce7",
+    },
+    {
+      label: "Inactive Employees",
+      value: inactiveEmployees,
+      description: `${inactivePercentage}% of workforce`,
+      icon: "INA",
+      accent: "#d97706",
+      background: "#fffbeb",
+      border: "#fef3c7",
+    },
+    {
+      label: "Total Users",
+      value: totalUsers,
+      description: "Registered system users",
+      icon: "USR",
+      accent: "#7c3aed",
+      background: "#f5f3ff",
+      border: "#ede9fe",
+    },
+  ]
+
+  const employeeStatusStats = [
+    {
+      label: "Active",
+      value: activeEmployees,
+      percentage:
+        totalEmployees > 0
+          ? Math.round(
+              (activeEmployees /
+                totalEmployees) *
+                100,
+            )
+          : 0,
+      accent: "#16a34a",
+    },
+    {
+      label: "Inactive",
+      value: inactiveEmployees,
+      percentage:
+        totalEmployees > 0
+          ? Math.round(
+              (inactiveEmployees /
+                totalEmployees) *
+                100,
+            )
+          : 0,
+      accent: "#f59e0b",
+    },
+    {
+      label: "Resigned",
+      value: resignedEmployees,
+      percentage:
+        totalEmployees > 0
+          ? Math.round(
+              (resignedEmployees /
+                totalEmployees) *
+                100,
+            )
+          : 0,
+      accent: "#64748b",
+    },
+    {
+      label: "Terminated",
+      value: terminatedEmployees,
+      percentage:
+        totalEmployees > 0
+          ? Math.round(
+              (terminatedEmployees /
+                totalEmployees) *
+                100,
+            )
+          : 0,
+      accent: "#dc2626",
+    },
+  ]
+
+  const roleEntries = Object.entries(
+    userRoleCounts,
+  ).sort(([, first], [, second]) => second - first)
+
+  const quickActions = visibleModules.filter(
+    (item) =>
+      [
+        "Employees",
+        "Departments",
+        "Attendance",
+        "Leave",
+        "Payroll",
+        "Recruitment",
+      ].includes(item.label),
+  )
+
   return (
     <div
       style={{
         minHeight: "100%",
-        background: "#f5f7fb",
+        background: "#f6f8fc",
         padding: "24px",
         fontFamily:
           '"Inter", "Segoe UI", Arial, sans-serif',
         color: "#172033",
+        boxSizing: "border-box",
       }}
     >
       <header
         style={{
           display: "flex",
+          alignItems: "flex-start",
           justifyContent: "space-between",
-          alignItems: "center",
           gap: "20px",
-          marginBottom: "22px",
-          padding: "2px 0",
+          marginBottom: "24px",
           flexWrap: "wrap",
         }}
       >
@@ -304,29 +427,18 @@ function Dashboard() {
               display: "inline-flex",
               alignItems: "center",
               gap: "7px",
-              minHeight: "26px",
-              padding: "0 10px",
+              padding: "5px 9px",
               borderRadius: "6px",
               background: "#eef3ff",
               color: "#315efb",
               fontSize: "10px",
-              fontWeight: 700,
+              fontWeight: 800,
               letterSpacing: "0.04em",
               textTransform: "uppercase",
-              marginBottom: "8px",
+              marginBottom: "9px",
             }}
           >
-            <span>Dashboard</span>
-
-            <span
-              style={{
-                color: "#9db5f5",
-              }}
-            >
-              /
-            </span>
-
-            <span>Overview</span>
+            Admin Dashboard
           </div>
 
           <h1
@@ -350,7 +462,8 @@ function Dashboard() {
               lineHeight: 1.5,
             }}
           >
-            Here's what's happening with your organization today.
+            Here's an overview of your HR
+            management system.
           </p>
         </div>
 
@@ -358,75 +471,96 @@ function Dashboard() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "11px",
-            background: "#ffffff",
-            border: "1px solid #e7ebf2",
-            borderRadius: "10px",
-            padding: "10px 14px",
-            minWidth: "205px",
-            boxSizing: "border-box",
+            gap: "10px",
+            flexWrap: "wrap",
           }}
         >
           <div
             style={{
-              width: "34px",
-              height: "34px",
-              borderRadius: "8px",
-              background: "#eff6ff",
-              color: "#2563eb",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              fontSize: "11px",
-              fontWeight: 800,
-              flexShrink: 0,
-            }}
-          >
-            {displayName
-              .slice(0, 1)
-              .toUpperCase()}
-          </div>
-
-          <div
-            style={{
-              minWidth: 0,
+              gap: "10px",
+              background: "#ffffff",
+              border: "1px solid #e5eaf1",
+              borderRadius: "10px",
+              padding: "9px 12px",
             }}
           >
             <div
               style={{
+                width: "34px",
+                height: "34px",
+                borderRadius: "8px",
+                background: "#eff6ff",
+                color: "#2563eb",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 fontSize: "11px",
-                color: "#94a3b8",
-                marginBottom: "3px",
+                fontWeight: 800,
               }}
             >
-              Current role
+              {displayName
+                .slice(0, 1)
+                .toUpperCase()}
             </div>
 
-            <div
-              style={{
-                fontSize: "12px",
-                fontWeight: 700,
-                color: "#334155",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {currentRole}
+            <div>
+              <div
+                style={{
+                  fontSize: "10px",
+                  color: "#94a3b8",
+                  marginBottom: "3px",
+                }}
+              >
+                Current role
+              </div>
+
+              <div
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: "#334155",
+                }}
+              >
+                {currentRole}
+              </div>
             </div>
+
+            <span
+              style={{
+                width: "7px",
+                height: "7px",
+                borderRadius: "50%",
+                background: "#22c55e",
+                marginLeft: "4px",
+              }}
+              title="System operational"
+            />
           </div>
 
-          <div
+          <button
+            type="button"
+            onClick={() => void loadDashboard(true)}
+            disabled={isRefreshing}
             style={{
-              width: "7px",
-              height: "7px",
-              borderRadius: "50%",
-              background: "#22c55e",
-              marginLeft: "auto",
-              flexShrink: 0,
+              border: "1px solid #dbe3ef",
+              background: "#ffffff",
+              color: "#2563eb",
+              borderRadius: "8px",
+              padding: "10px 13px",
+              fontSize: "11px",
+              fontWeight: 700,
+              cursor: isRefreshing
+                ? "not-allowed"
+                : "pointer",
+              opacity: isRefreshing ? 0.7 : 1,
             }}
-            title="System operational"
-          />
+          >
+            {isRefreshing
+              ? "Refreshing..."
+              : "Refresh"}
+          </button>
         </div>
       </header>
 
@@ -456,65 +590,30 @@ function Dashboard() {
           marginBottom: "20px",
         }}
       >
-        {[
-          {
-            label: "Total Employees",
-            value: totalEmployees,
-            short: "TE",
-            description: "All employee records",
-            color: "#2563eb",
-            background: "#eff6ff",
-            border: "#dbeafe",
-          },
-          {
-            label: "Active Employees",
-            value: activeEmployees,
-            short: "AE",
-            description: "Currently active",
-            color: "#16a34a",
-            background: "#f0fdf4",
-            border: "#dcfce7",
-          },
-          {
-            label: "Inactive Employees",
-            value: inactiveEmployees,
-            short: "IE",
-            description: "Not currently active",
-            color: "#d97706",
-            background: "#fffbeb",
-            border: "#fef3c7",
-          },
-          {
-            label: "Total Users",
-            value: totalUsers,
-            short: "TU",
-            description: "Registered system users",
-            color: "#7c3aed",
-            background: "#f5f3ff",
-            border: "#ede9fe",
-          },
-        ].map((card) => (
+        {adminStats.map((stat) => (
           <article
-            key={card.label}
+            key={stat.label}
             style={{
               position: "relative",
               overflow: "hidden",
               background: "#ffffff",
-              border: "1px solid #e6eaf0",
-              borderRadius: "10px",
-              padding: "17px 18px",
-              minHeight: "116px",
+              border: "1px solid #e5eaf1",
+              borderRadius: "11px",
+              padding: "18px",
+              minHeight: "125px",
               boxSizing: "border-box",
+              boxShadow:
+                "0 2px 8px rgba(15, 23, 42, 0.025)",
             }}
           >
             <div
               style={{
                 position: "absolute",
-                top: 0,
                 left: 0,
+                top: 0,
                 width: "4px",
                 height: "100%",
-                background: card.color,
+                background: stat.accent,
               }}
             />
 
@@ -531,53 +630,53 @@ function Dashboard() {
                   style={{
                     fontSize: "11px",
                     color: "#7c8798",
-                    fontWeight: 600,
-                    marginBottom: "8px",
+                    fontWeight: 650,
+                    marginBottom: "9px",
                   }}
                 >
-                  {card.label}
+                  {stat.label}
                 </div>
 
                 <div
                   style={{
-                    fontSize: "27px",
+                    fontSize: "29px",
                     lineHeight: 1,
                     color: "#172033",
                     fontWeight: 750,
-                    letterSpacing: "-0.02em",
+                    letterSpacing: "-0.025em",
                   }}
                 >
-                  {card.value}
+                  {stat.value}
                 </div>
 
                 <div
                   style={{
-                    marginTop: "8px",
+                    marginTop: "9px",
                     fontSize: "10px",
                     color: "#9aa4b2",
                   }}
                 >
-                  {card.description}
+                  {stat.description}
                 </div>
               </div>
 
               <div
                 style={{
-                  width: "39px",
-                  height: "39px",
+                  width: "40px",
+                  height: "40px",
                   borderRadius: "9px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: card.background,
-                  border: `1px solid ${card.border}`,
-                  color: card.color,
-                  fontSize: "10px",
+                  background: stat.background,
+                  border: `1px solid ${stat.border}`,
+                  color: stat.accent,
+                  fontSize: "9px",
                   fontWeight: 800,
                   flexShrink: 0,
                 }}
               >
-                {card.short}
+                {stat.icon}
               </div>
             </div>
           </article>
@@ -588,7 +687,7 @@ function Dashboard() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "minmax(0, 1.45fr) minmax(300px, 1fr)",
+            "minmax(0, 1.45fr) minmax(300px, 0.85fr)",
           gap: "16px",
           marginBottom: "20px",
         }}
@@ -596,10 +695,12 @@ function Dashboard() {
         <article
           style={{
             background: "#ffffff",
-            border: "1px solid #e6eaf0",
-            borderRadius: "10px",
+            border: "1px solid #e5eaf1",
+            borderRadius: "11px",
             padding: "20px",
             minWidth: 0,
+            boxShadow:
+              "0 2px 8px rgba(15, 23, 42, 0.025)",
           }}
         >
           <div
@@ -613,57 +714,35 @@ function Dashboard() {
             }}
           >
             <div>
-              <div
+              <h2
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  marginBottom: "5px",
+                  margin: 0,
+                  fontSize: "16px",
+                  fontWeight: 750,
+                  color: "#172033",
                 }}
               >
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: "16px",
-                    fontWeight: 750,
-                    color: "#172033",
-                  }}
-                >
-                  Workforce Overview
-                </h2>
-
-                <span
-                  style={{
-                    padding: "3px 7px",
-                    borderRadius: "5px",
-                    background: "#f1f5f9",
-                    color: "#64748b",
-                    fontSize: "9px",
-                    fontWeight: 700,
-                  }}
-                >
-                  LIVE
-                </span>
-              </div>
+                Workforce Overview
+              </h2>
 
               <p
                 style={{
-                  margin: 0,
+                  margin: "5px 0 0",
                   fontSize: "11px",
                   color: "#8a94a6",
                 }}
               >
-                Employee activity and workforce status
+                Current employee status across the
+                organization
               </p>
             </div>
 
             <button
               type="button"
-              onClick={() => navigate("/employees")}
+              onClick={() =>
+                navigate("/employees")
+              }
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
                 border: "1px solid #dbe3ef",
                 background: "#ffffff",
                 color: "#2563eb",
@@ -675,14 +754,6 @@ function Dashboard() {
               }}
             >
               View Employees
-              <span
-                style={{
-                  fontSize: "14px",
-                  lineHeight: 1,
-                }}
-              >
-                →
-              </span>
             </button>
           </div>
 
@@ -703,12 +774,12 @@ function Dashboard() {
             >
               <div
                 style={{
-                  width: "132px",
-                  height: "132px",
+                  width: "145px",
+                  height: "145px",
                   borderRadius: "50%",
                   background: `conic-gradient(
                     #2563eb 0% ${activePercentage}%,
-                    #e9eef5 ${activePercentage}% 100%
+                    #e8edf5 ${activePercentage}% 100%
                   )`,
                   display: "flex",
                   alignItems: "center",
@@ -717,8 +788,8 @@ function Dashboard() {
               >
                 <div
                   style={{
-                    width: "96px",
-                    height: "96px",
+                    width: "105px",
+                    height: "105px",
                     borderRadius: "50%",
                     background: "#ffffff",
                     display: "flex",
@@ -729,7 +800,7 @@ function Dashboard() {
                 >
                   <strong
                     style={{
-                      fontSize: "25px",
+                      fontSize: "27px",
                       lineHeight: 1,
                       color: "#172033",
                       fontWeight: 750,
@@ -752,142 +823,82 @@ function Dashboard() {
             </div>
 
             <div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "15px",
-                  padding: "11px 0",
-                  borderBottom: "1px solid #edf0f5",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <span
+              {employeeStatusStats.map(
+                (status, index) => (
+                  <div
+                    key={status.label}
                     style={{
-                      width: "7px",
-                      height: "7px",
-                      borderRadius: "50%",
-                      background: "#2563eb",
-                    }}
-                  />
-
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      color: "#64748b",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent:
+                        "space-between",
+                      gap: "15px",
+                      padding: "11px 0",
+                      borderBottom:
+                        index <
+                        employeeStatusStats.length -
+                          1
+                          ? "1px solid #edf0f5"
+                          : "none",
                     }}
                   >
-                    Total Employees
-                  </span>
-                </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: "7px",
+                          height: "7px",
+                          borderRadius: "50%",
+                          background:
+                            status.accent,
+                        }}
+                      />
 
-                <strong
-                  style={{
-                    fontSize: "13px",
-                    color: "#172033",
-                  }}
-                >
-                  {totalEmployees}
-                </strong>
-              </div>
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: "#64748b",
+                        }}
+                      >
+                        {status.label}
+                      </span>
+                    </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "15px",
-                  padding: "11px 0",
-                  borderBottom: "1px solid #edf0f5",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: "7px",
-                      height: "7px",
-                      borderRadius: "50%",
-                      background: "#16a34a",
-                    }}
-                  />
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "9px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "10px",
+                          color: "#94a3b8",
+                        }}
+                      >
+                        {status.percentage}%
+                      </span>
 
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      color: "#64748b",
-                    }}
-                  >
-                    Active Employees
-                  </span>
-                </div>
-
-                <strong
-                  style={{
-                    fontSize: "13px",
-                    color: "#16a34a",
-                  }}
-                >
-                  {activeEmployees}
-                </strong>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "15px",
-                  padding: "11px 0",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <span
-                    style={{
-                      width: "7px",
-                      height: "7px",
-                      borderRadius: "50%",
-                      background: "#f59e0b",
-                    }}
-                  />
-
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      color: "#64748b",
-                    }}
-                  >
-                    Inactive Employees
-                  </span>
-                </div>
-
-                <strong
-                  style={{
-                    fontSize: "13px",
-                    color: "#d97706",
-                  }}
-                >
-                  {inactiveEmployees}
-                </strong>
-              </div>
+                      <strong
+                        style={{
+                          minWidth: "25px",
+                          textAlign: "right",
+                          fontSize: "13px",
+                          color: status.accent,
+                        }}
+                      >
+                        {status.value}
+                      </strong>
+                    </div>
+                  </div>
+                ),
+              )}
             </div>
           </div>
         </article>
@@ -895,10 +906,162 @@ function Dashboard() {
         <article
           style={{
             background: "#ffffff",
-            border: "1px solid #e6eaf0",
-            borderRadius: "10px",
+            border: "1px solid #e5eaf1",
+            borderRadius: "11px",
             padding: "20px",
             minWidth: 0,
+            boxShadow:
+              "0 2px 8px rgba(15, 23, 42, 0.025)",
+          }}
+        >
+          <div style={{ marginBottom: "18px" }}>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "16px",
+                fontWeight: 750,
+                color: "#172033",
+              }}
+            >
+              User Distribution
+            </h2>
+
+            <p
+              style={{
+                margin: "5px 0 0",
+                fontSize: "11px",
+                color: "#8a94a6",
+              }}
+            >
+              System users grouped by role
+            </p>
+          </div>
+
+          {roleEntries.length > 0 ? (
+            <div>
+              {roleEntries.map(
+                ([role, count], index) => {
+                  const percentage =
+                    totalUsers > 0
+                      ? Math.round(
+                          (count /
+                            totalUsers) *
+                            100,
+                        )
+                      : 0
+
+                  return (
+                    <div
+                      key={role}
+                      style={{
+                        padding: "11px 0",
+                        borderBottom:
+                          index <
+                          roleEntries.length - 1
+                            ? "1px solid #edf0f5"
+                            : "none",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent:
+                            "space-between",
+                          gap: "12px",
+                          marginBottom: "7px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            color: "#64748b",
+                          }}
+                        >
+                          {roleLabels[role] ||
+                            role}
+                        </span>
+
+                        <strong
+                          style={{
+                            fontSize: "11px",
+                            color: "#334155",
+                          }}
+                        >
+                          {count}
+                        </strong>
+                      </div>
+
+                      <div
+                        style={{
+                          height: "6px",
+                          background: "#eef2f7",
+                          borderRadius: "999px",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${percentage}%`,
+                            height: "100%",
+                            background:
+                              "#6366f1",
+                            borderRadius:
+                              "999px",
+                          }}
+                        />
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: "5px",
+                          fontSize: "9px",
+                          color: "#94a3b8",
+                          textAlign: "right",
+                        }}
+                      >
+                        {percentage}%
+                      </div>
+                    </div>
+                  )
+                },
+              )}
+            </div>
+          ) : (
+            <div
+              style={{
+                padding: "25px 10px",
+                textAlign: "center",
+                color: "#94a3b8",
+                fontSize: "11px",
+                border:
+                  "1px dashed #dbe3ef",
+                borderRadius: "8px",
+              }}
+            >
+              No user role data available.
+            </div>
+          )}
+        </article>
+      </section>
+
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns:
+            "minmax(0, 1.25fr) minmax(300px, 1fr)",
+          gap: "16px",
+          marginBottom: "20px",
+        }}
+      >
+        <article
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e5eaf1",
+            borderRadius: "11px",
+            padding: "20px",
+            minWidth: 0,
+            boxShadow:
+              "0 2px 8px rgba(15, 23, 42, 0.025)",
           }}
         >
           <div
@@ -924,8 +1087,160 @@ function Dashboard() {
                 color: "#8a94a6",
               }}
             >
-              Frequently used HR functions
+              Frequently used HR management
+              functions
             </p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(3, minmax(0, 1fr))",
+              gap: "10px",
+            }}
+          >
+            {quickActions.map((item) => (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() =>
+                  navigate(item.path)
+                }
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  minHeight: "67px",
+                  padding: "10px",
+                  border:
+                    "1px solid #e7ebf2",
+                  borderRadius: "8px",
+                  background: "#fafbfc",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  boxSizing: "border-box",
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.borderColor =
+                    "#bfdbfe"
+                  event.currentTarget.style.background =
+                    "#f8fbff"
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.borderColor =
+                    "#e7ebf2"
+                  event.currentTarget.style.background =
+                    "#fafbfc"
+                }}
+              >
+                <div
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "8px",
+                    background: "#eff6ff",
+                    color: "#2563eb",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "8px",
+                    fontWeight: 800,
+                    flexShrink: 0,
+                  }}
+                >
+                  {item.icon}
+                </div>
+
+                <div
+                  style={{
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      color: "#334155",
+                    }}
+                  >
+                    {item.label}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: "3px",
+                      fontSize: "9px",
+                      color: "#94a3b8",
+                    }}
+                  >
+                    Open module
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </article>
+
+        <article
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e5eaf1",
+            borderRadius: "11px",
+            padding: "20px",
+            minWidth: 0,
+            boxShadow:
+              "0 2px 8px rgba(15, 23, 42, 0.025)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: "10px",
+              marginBottom: "18px",
+            }}
+          >
+            <div>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: "16px",
+                  fontWeight: 750,
+                  color: "#172033",
+                }}
+              >
+                Workforce Actions
+              </h2>
+
+              <p
+                style={{
+                  margin: "5px 0 0",
+                  fontSize: "11px",
+                  color: "#8a94a6",
+                }}
+              >
+                Employee lifecycle overview
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/employees")
+              }
+              style={{
+                border: "none",
+                background: "transparent",
+                color: "#2563eb",
+                fontSize: "10px",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Manage
+            </button>
           </div>
 
           <div
@@ -936,92 +1251,125 @@ function Dashboard() {
               gap: "10px",
             }}
           >
-            {visibleModules
-              .filter((item) =>
-                [
-                  "Employees",
-                  "Attendance",
-                  "Leave",
-                  "Payroll",
-                ].includes(item.label),
-              )
-              .map((item) => (
-                <button
-                  key={item.path}
-                  type="button"
-                  onClick={() => navigate(item.path)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    minHeight: "66px",
-                    padding: "10px",
-                    border: "1px solid #e7ebf2",
-                    borderRadius: "8px",
-                    background: "#fafbfc",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    transition:
-                      "border-color 0.15s ease, background 0.15s ease",
-                  }}
-                  onMouseEnter={(event) => {
-                    event.currentTarget.style.borderColor =
-                      "#bfdbfe"
-                    event.currentTarget.style.background =
-                      "#f8fbff"
-                  }}
-                  onMouseLeave={(event) => {
-                    event.currentTarget.style.borderColor =
-                      "#e7ebf2"
-                    event.currentTarget.style.background =
-                      "#fafbfc"
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "34px",
-                      height: "34px",
-                      borderRadius: "8px",
-                      background: "#eff6ff",
-                      color: "#2563eb",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "9px",
-                      fontWeight: 800,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {item.icon}
-                  </div>
+            <div
+              style={{
+                padding: "13px",
+                border:
+                  "1px solid #dcfce7",
+                borderRadius: "8px",
+                background: "#f7fff9",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "9px",
+                  color: "#16a34a",
+                  fontWeight: 700,
+                  marginBottom: "5px",
+                }}
+              >
+                ACTIVE
+              </div>
 
-                  <div
-                    style={{
-                      minWidth: 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        color: "#334155",
-                      }}
-                    >
-                      {item.label}
-                    </div>
+              <strong
+                style={{
+                  fontSize: "22px",
+                  color: "#172033",
+                }}
+              >
+                {activeEmployees}
+              </strong>
+            </div>
 
-                    <div
-                      style={{
-                        marginTop: "3px",
-                        fontSize: "9px",
-                        color: "#94a3b8",
-                      }}
-                    >
-                      Open module
-                    </div>
-                  </div>
-                </button>
-              ))}
+            <div
+              style={{
+                padding: "13px",
+                border:
+                  "1px solid #fef3c7",
+                borderRadius: "8px",
+                background: "#fffdf6",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "9px",
+                  color: "#d97706",
+                  fontWeight: 700,
+                  marginBottom: "5px",
+                }}
+              >
+                INACTIVE
+              </div>
+
+              <strong
+                style={{
+                  fontSize: "22px",
+                  color: "#172033",
+                }}
+              >
+                {inactiveEmployees}
+              </strong>
+            </div>
+
+            <div
+              style={{
+                padding: "13px",
+                border:
+                  "1px solid #e2e8f0",
+                borderRadius: "8px",
+                background: "#fafbfc",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "9px",
+                  color: "#64748b",
+                  fontWeight: 700,
+                  marginBottom: "5px",
+                }}
+              >
+                RESIGNED
+              </div>
+
+              <strong
+                style={{
+                  fontSize: "22px",
+                  color: "#172033",
+                }}
+              >
+                {resignedEmployees}
+              </strong>
+            </div>
+
+            <div
+              style={{
+                padding: "13px",
+                border:
+                  "1px solid #fee2e2",
+                borderRadius: "8px",
+                background: "#fffafa",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "9px",
+                  color: "#dc2626",
+                  fontWeight: 700,
+                  marginBottom: "5px",
+                }}
+              >
+                TERMINATED
+              </div>
+
+              <strong
+                style={{
+                  fontSize: "22px",
+                  color: "#172033",
+                }}
+              >
+                {terminatedEmployees}
+              </strong>
+            </div>
           </div>
         </article>
       </section>
@@ -1029,9 +1377,11 @@ function Dashboard() {
       <section
         style={{
           background: "#ffffff",
-          border: "1px solid #e6eaf0",
-          borderRadius: "10px",
+          border: "1px solid #e5eaf1",
+          borderRadius: "11px",
           padding: "20px",
+          boxShadow:
+            "0 2px 8px rgba(15, 23, 42, 0.025)",
         }}
       >
         <div
@@ -1045,47 +1395,26 @@ function Dashboard() {
           }}
         >
           <div>
-            <div
+            <h2
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginBottom: "5px",
+                margin: 0,
+                fontSize: "16px",
+                fontWeight: 750,
+                color: "#172033",
               }}
             >
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: "16px",
-                  fontWeight: 750,
-                  color: "#172033",
-                }}
-              >
-                HRMS Modules
-              </h2>
-
-              <span
-                style={{
-                  padding: "3px 7px",
-                  borderRadius: "5px",
-                  background: "#f1f5f9",
-                  color: "#64748b",
-                  fontSize: "9px",
-                  fontWeight: 700,
-                }}
-              >
-                MODULES
-              </span>
-            </div>
+              HRMS Modules
+            </h2>
 
             <p
               style={{
-                margin: 0,
+                margin: "5px 0 0",
                 fontSize: "11px",
                 color: "#8a94a6",
               }}
             >
-              Access the HR management modules available for your role
+              Access the HR management modules
+              available for your role
             </p>
           </div>
 
@@ -1118,7 +1447,9 @@ function Dashboard() {
               <button
                 key={item.path}
                 type="button"
-                onClick={() => navigate(item.path)}
+                onClick={() =>
+                  navigate(item.path)
+                }
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -1126,22 +1457,21 @@ function Dashboard() {
                   width: "100%",
                   minHeight: "64px",
                   padding: "10px 12px",
-                  border: "1px solid #e7ebf2",
+                  border:
+                    "1px solid #e7ebf2",
                   borderRadius: "8px",
                   background: "#ffffff",
                   cursor: "pointer",
                   textAlign: "left",
                   boxSizing: "border-box",
                   transition:
-                    "transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease",
+                    "transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease",
                 }}
                 onMouseEnter={(event) => {
                   event.currentTarget.style.transform =
                     "translateY(-2px)"
                   event.currentTarget.style.borderColor =
                     "#bfdbfe"
-                  event.currentTarget.style.background =
-                    "#f8fbff"
                   event.currentTarget.style.boxShadow =
                     "0 5px 14px rgba(15, 23, 42, 0.06)"
                 }}
@@ -1150,8 +1480,6 @@ function Dashboard() {
                     "translateY(0)"
                   event.currentTarget.style.borderColor =
                     "#e7ebf2"
-                  event.currentTarget.style.background =
-                    "#ffffff"
                   event.currentTarget.style.boxShadow =
                     "none"
                 }}
@@ -1166,7 +1494,7 @@ function Dashboard() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "9px",
+                    fontSize: "8px",
                     fontWeight: 800,
                     flexShrink: 0,
                   }}
@@ -1184,7 +1512,8 @@ function Dashboard() {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "space-between",
+                      justifyContent:
+                        "space-between",
                       gap: "7px",
                     }}
                   >
@@ -1193,9 +1522,11 @@ function Dashboard() {
                         fontSize: "11px",
                         fontWeight: 700,
                         color: "#334155",
-                        whiteSpace: "nowrap",
+                        whiteSpace:
+                          "nowrap",
                         overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        textOverflow:
+                          "ellipsis",
                       }}
                     >
                       {item.label}
@@ -1204,7 +1535,7 @@ function Dashboard() {
                     <span
                       style={{
                         color: "#94a3b8",
-                        fontSize: "13px",
+                        fontSize: "14px",
                         lineHeight: 1,
                         flexShrink: 0,
                       }}
@@ -1231,14 +1562,16 @@ function Dashboard() {
             style={{
               padding: "28px 15px",
               textAlign: "center",
-              border: "1px dashed #dbe3ef",
+              border:
+                "1px dashed #dbe3ef",
               borderRadius: "8px",
               background: "#fafbfc",
               color: "#8a94a6",
               fontSize: "12px",
             }}
           >
-            No modules are available for your current role.
+            No modules are available for
+            your current role.
           </div>
         )}
       </section>
