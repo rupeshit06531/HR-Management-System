@@ -1392,24 +1392,27 @@ function Dashboard() {
       color: "#2563eb",
       background: "#eff6ff",
       border: "#dbeafe",
+      trend: "Workforce",
     },
     {
       label: "Active Employees",
       value: activeEmployees,
-      description: `${activePercentage}% of workforce`,
+      description: `${activePercentage}% of total workforce`,
       short: "ACT",
       color: "#16a34a",
       background: "#f0fdf4",
       border: "#dcfce7",
+      trend: "Active",
     },
     {
       label: "Inactive Employees",
       value: inactiveEmployees,
-      description: `${inactivePercentage}% of workforce`,
+      description: `${inactivePercentage}% of total workforce`,
       short: "INA",
       color: "#d97706",
       background: "#fffbeb",
       border: "#fef3c7",
+      trend: "Inactive",
     },
     {
       label: "Total Users",
@@ -1419,6 +1422,7 @@ function Dashboard() {
       color: "#7c3aed",
       background: "#f5f3ff",
       border: "#ede9fe",
+      trend: "System",
     },
   ]
 
