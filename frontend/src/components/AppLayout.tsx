@@ -5,6 +5,7 @@ import {
 } from "react-router-dom"
 
 import { useAuth } from "../context/AuthContext"
+import { useTheme } from "../context/ThemeContext"
 
 interface NavigationItem {
   label: string
@@ -156,6 +157,11 @@ function AppLayout() {
     user,
     logout,
   } = useAuth()
+
+  const {
+    isDarkMode,
+    toggleDarkMode,
+  } = useTheme()
 
   const handleLogout = async () => {
     try {
@@ -501,15 +507,52 @@ function AppLayout() {
               gap: "12px",
             }}
           >
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              title={
+                isDarkMode
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "7px",
+                padding: "9px 14px",
+                border: isDarkMode
+                  ? "2px solid var(--app-primary)"
+                  : "1px solid var(--app-border)",
+                borderRadius: "10px",
+                background: isDarkMode
+                  ? "rgba(234, 88, 12, 0.12)"
+                  : "var(--app-surface)",
+                color: isDarkMode
+                  ? "var(--app-primary)"
+                  : "var(--app-text-secondary)",
+                cursor: "pointer",
+                fontSize: "12px",
+                fontWeight: 700,
+                boxShadow: isDarkMode
+                  ? "0 6px 18px rgba(234, 88, 12, 0.15)"
+                  : "none",
+                transition: "all 0.25s ease",
+              }}
+            >
+              <span aria-hidden="true">
+                {isDarkMode ? "☀️" : "🌙"}
+              </span>
+              <span>{isDarkMode ? "Light" : "Dark"}</span>
+            </button>
+
             <div
               style={{
                 width: "34px",
                 height: "34px",
                 borderRadius: "50%",
-                background: "#eff6ff",
-                border:
-                  "1px solid #dbeafe",
-                color: "#2563eb",
+                background: "var(--app-primary-soft)",
+                border: "1px solid var(--app-border)",
+                color: "var(--app-primary)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -529,7 +572,7 @@ function AppLayout() {
                 style={{
                   fontSize: "12px",
                   fontWeight: 700,
-                  color: "#334155",
+                  color: "var(--app-text)",
                 }}
               >
                 {displayName}
@@ -539,7 +582,7 @@ function AppLayout() {
                 style={{
                   marginTop: "2px",
                   fontSize: "10px",
-                  color: "#8a94a6",
+                  color: "var(--app-text-muted)",
                 }}
               >
                 {currentRole}
