@@ -205,8 +205,10 @@ function AppLayout() {
       style={{
         minHeight: "100vh",
         display: "flex",
-        background: "var(--app-bg)",
-        color: "var(--text-primary)",
+        background: isDarkMode
+          ? "linear-gradient(180deg, #071018 0%, #0f172a 100%)"
+          : "linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)",
+        color: isDarkMode ? "#f8fafc" : "#111827",
         fontFamily:
           '"Inter", "Segoe UI", Arial, sans-serif',
       }}
@@ -216,8 +218,12 @@ function AppLayout() {
           width: "245px",
           minWidth: "245px",
           minHeight: "100vh",
-          background: "var(--sidebar-bg)",
-          borderRight: `1px solid var(--border)`,
+          background: isDarkMode
+            ? "linear-gradient(180deg, rgba(8,12,18,0.96), rgba(12,17,25,0.98))"
+            : "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+          borderRight: isDarkMode
+            ? "1px solid rgba(148, 163, 184, 0.18)"
+            : "1px solid #e2e8f0",
           display: "flex",
           flexDirection: "column",
           boxSizing: "border-box",
@@ -226,6 +232,8 @@ function AppLayout() {
           alignSelf: "flex-start",
           height: "100vh",
           overflowY: "auto",
+          boxShadow:
+            "inset -1px 0 0 rgba(255,255,255,0.04)",
         }}
       >
         <div
@@ -258,18 +266,20 @@ function AppLayout() {
             >
               <div
                 style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "9px",
+                  width: "38px",
+                  height: "38px",
+                  borderRadius: "12px",
                   background:
-                    "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                    "linear-gradient(135deg, #f97316 0%, #fb923c 100%)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   color: "#ffffff",
-                  fontSize: "11px",
-                  fontWeight: 800,
-                  letterSpacing: "0.02em",
+                  fontSize: "12px",
+                  fontWeight: 900,
+                  letterSpacing: "0.04em",
+                  boxShadow:
+                    "0 10px 20px rgba(249, 115, 22, 0.35)",
                 }}
               >
                 HR
@@ -278,7 +288,7 @@ function AppLayout() {
               <div>
                 <div
                   style={{
-                    color: "#172033",
+                    color: isDarkMode ? "#f8fafc" : "#0f172a",
                     fontSize: "16px",
                     lineHeight: 1.2,
                     fontWeight: 800,
@@ -291,7 +301,7 @@ function AppLayout() {
                 <div
                   style={{
                     marginTop: "3px",
-                    color: "#8a94a6",
+                    color: isDarkMode ? "#94a3b8" : "#64748b",
                     fontSize: "10px",
                     fontWeight: 500,
                   }}
@@ -313,7 +323,7 @@ function AppLayout() {
             style={{
               padding:
                 "0 10px 9px",
-              color: "var(--text-muted)",
+              color: isDarkMode ? "#94a3b8" : "#64748b",
               fontSize: "10px",
               fontWeight: 800,
               letterSpacing: "0.08em",
@@ -341,23 +351,28 @@ function AppLayout() {
                     alignItems: "center",
                     gap: "11px",
                     minHeight: "42px",
-                    padding: "7px 10px",
-                    borderRadius: "8px",
+                    padding: "8px 12px",
+                    borderRadius: "10px",
                     color: isActive
-                      ? "var(--primary-600)"
-                      : "var(--text-secondary)",
-                    background:
-                      isActive
-                        ? "var(--primary-50)"
-                        : "transparent",
+                      ? "#fff7ed"
+                      : isDarkMode
+                        ? "#cbd5e1"
+                        : "#475569",
+                    background: isActive
+                      ? "linear-gradient(90deg, rgba(249,115,22,0.95), rgba(234,88,12,0.9))"
+                      : "transparent",
                     textDecoration: "none",
                     fontSize: "12px",
-                    fontWeight: isActive
-                      ? 700
-                      : 550,
+                    fontWeight: isActive ? 700 : 600,
                     boxSizing: "border-box",
+                    border: isActive
+                      ? "1px solid rgba(251,146,60,0.5)"
+                      : "1px solid transparent",
+                    boxShadow: isActive
+                      ? "0 10px 20px rgba(249,115,22,0.2)"
+                      : "none",
                     transition:
-                      "background 0.15s ease, color 0.15s ease",
+                      "all 0.2s ease",
                   })}
                 >
                   {({ isActive }) => (
@@ -367,14 +382,16 @@ function AppLayout() {
                           width: "30px",
                           height: "30px",
                           borderRadius: "7px",
-                          background:
-                            isActive
-                              ? "var(--primary-100)"
-                              : "var(--surface-subtle)",
-                          color:
-                            isActive
-                              ? "var(--primary-600)"
-                              : "var(--text-muted)",
+                          background: isActive
+                            ? "rgba(249,115,22,0.14)"
+                            : isDarkMode
+                              ? "rgba(148,163,184,0.08)"
+                              : "#f1f5f9",
+                          color: isActive
+                            ? "#ea580c"
+                            : isDarkMode
+                              ? "#cbd5e1"
+                              : "#475569",
                           display: "flex",
                           alignItems:
                             "center",
@@ -416,30 +433,35 @@ function AppLayout() {
               display: "flex",
               alignItems: "center",
               gap: "10px",
-              padding: "10px",
-              border:
-                `1px solid var(--border)`,
-              borderRadius: "8px",
-              background: "var(--surface)",
-              color: "var(--text-secondary)",
+              padding: "10px 12px",
+              border: "1px solid rgba(148,163,184,0.14)",
+              borderRadius: "10px",
+              background: isDarkMode
+                ? "linear-gradient(180deg, rgba(15,23,42,0.9), rgba(15,23,42,0.7))"
+                : "linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)",
+              color: isDarkMode ? "#e2e8f0" : "#0f172a",
               cursor: "pointer",
               textAlign: "left",
               fontSize: "12px",
               fontWeight: 650,
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.04)",
             }}
           >
             <span
               style={{
                 width: "28px",
                 height: "28px",
-                borderRadius: "7px",
-                background: "var(--surface-subtle)",
+                borderRadius: "8px",
+                background:
+                  "linear-gradient(135deg, rgba(249,115,22,0.2), rgba(251,146,60,0.18))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "9px",
                 fontWeight: 800,
-                color: "var(--text-secondary)",
+                color: "#fdba74",
+                border: "1px solid rgba(251,146,60,0.3)",
               }}
             >
               OUT
@@ -463,9 +485,12 @@ function AppLayout() {
         <header
           style={{
             minHeight: "68px",
-            background: "var(--header-bg)",
-            borderBottom:
-              `1px solid var(--border)`,
+            background: isDarkMode
+              ? "linear-gradient(180deg, rgba(11,16,23,0.96), rgba(15,23,42,0.9))"
+              : "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96))",
+            borderBottom: isDarkMode
+              ? "1px solid rgba(148, 163, 184, 0.18)"
+              : "1px solid #e2e8f0",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -475,6 +500,9 @@ function AppLayout() {
             position: "sticky",
             top: 0,
             zIndex: 20,
+            boxShadow: isDarkMode
+              ? "0 10px 30px rgba(2, 6, 23, 0.18)"
+              : "0 8px 20px rgba(15, 23, 42, 0.06)",
           }}
         >
           <div>
@@ -482,7 +510,7 @@ function AppLayout() {
               style={{
                 fontSize: "16px",
                 fontWeight: 750,
-                color: "var(--text-primary)",
+                color: isDarkMode ? "#f8fafc" : "#0f172a",
               }}
             >
               Human Resources
@@ -492,7 +520,7 @@ function AppLayout() {
               style={{
                 marginTop: "2px",
                 fontSize: "11px",
-                color: "var(--text-muted)",
+                color: isDarkMode ? "#94a3b8" : "#64748b",
               }}
             >
               Workforce management
@@ -521,21 +549,21 @@ function AppLayout() {
                 gap: "7px",
                 padding: "9px 14px",
                 border: isDarkMode
-                  ? "2px solid var(--app-primary)"
-                  : "1px solid var(--app-border)",
+                  ? "1px solid rgba(249,115,22,0.9)"
+                  : "1px solid #e2e8f0",
                 borderRadius: "10px",
                 background: isDarkMode
-                  ? "rgba(234, 88, 12, 0.12)"
-                  : "var(--app-surface)",
+                  ? "linear-gradient(135deg, rgba(249,115,22,0.18), rgba(251,146,60,0.12))"
+                  : "#ffffff",
                 color: isDarkMode
-                  ? "var(--app-primary)"
-                  : "var(--app-text-secondary)",
+                  ? "#fdba74"
+                  : "#0f172a",
                 cursor: "pointer",
                 fontSize: "12px",
                 fontWeight: 700,
                 boxShadow: isDarkMode
-                  ? "0 6px 18px rgba(234, 88, 12, 0.15)"
-                  : "none",
+                  ? "0 10px 24px rgba(249,115,22,0.2)"
+                  : "inset 0 1px 0 rgba(255,255,255,0.04)",
                 transition: "all 0.25s ease",
               }}
             >

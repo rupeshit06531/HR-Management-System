@@ -134,16 +134,16 @@ function Dashboard() {
   // Color scheme uses CSS variables that respond to dark mode
   // CSS variables automatically update when theme changes via data-theme attribute
   const colors = {
-    bg: "var(--app-bg)",
-    surface: "var(--app-surface)",
-    surfaceSoft: "var(--app-surface-soft)",
-    text: "var(--app-text)",
-    textSecondary: "var(--app-text-secondary)",
-    textMuted: "var(--app-text-muted)",
-    border: "var(--app-border)",
-    borderStrong: "var(--app-border-strong)",
+    bg: isDarkMode ? "#0b1220" : "#f4f7fb",
+    surface: isDarkMode ? "#111827" : "#ffffff",
+    surfaceSoft: isDarkMode ? "#172033" : "#f8fafc",
+    text: isDarkMode ? "#f8fafc" : "#0f172a",
+    textSecondary: isDarkMode ? "#cbd5e1" : "#334155",
+    textMuted: isDarkMode ? "#94a3b8" : "#475569",
+    border: isDarkMode ? "rgba(148,163,184,0.18)" : "#e2e8f0",
+    borderStrong: isDarkMode ? "#374151" : "#cbd5e1",
     primary: "var(--app-primary)",
-    primarySoft: "var(--app-primary-soft)",
+    primarySoft: isDarkMode ? "#3d2817" : "#fff7ed",
   }
 
   const [dashboard, setDashboard] =
@@ -465,12 +465,17 @@ function Dashboard() {
       <div
         style={{
           minHeight: "100%",
-          background: colors.bg,
-          padding: "26px",
+          background:
+            "linear-gradient(180deg, rgba(15,23,42,0.92) 0%, rgba(10,14,22,0.98) 100%)",
+          padding: "28px",
           fontFamily:
             '"Inter", "Segoe UI", Arial, sans-serif',
           color: colors.text,
           boxSizing: "border-box",
+          borderRadius: "18px",
+          boxShadow:
+            "0 18px 45px rgba(2, 6, 23, 0.22)",
+          border: "1px solid rgba(148,163,184,0.16)",
         }}
       >
         <header
@@ -481,6 +486,13 @@ function Dashboard() {
             gap: "20px",
             marginBottom: "24px",
             flexWrap: "wrap",
+            padding: "18px 20px",
+            borderRadius: "16px",
+            background:
+              "linear-gradient(180deg, rgba(15,23,42,0.9), rgba(17,24,39,0.75))",
+            border: "1px solid rgba(148,163,184,0.14)",
+            boxShadow:
+              "0 14px 28px rgba(15,23,42,0.18)",
           }}
         >
           <div>
@@ -736,10 +748,13 @@ function Dashboard() {
             gap: "13px",
             marginBottom: "18px",
             padding: "16px",
-            background: "#ffffff",
-            border: "1px solid #e5eaf1",
-            borderRadius: "10px",
+            background:
+              "linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.8))",
+            border: "1px solid rgba(148,163,184,0.14)",
+            borderRadius: "16px",
             boxSizing: "border-box",
+            boxShadow:
+              "0 14px 30px rgba(15,23,42,0.14)",
           }}
         >
           {personalCards.map((card) => (
@@ -749,11 +764,14 @@ function Dashboard() {
                 position: "relative",
                 minHeight: "124px",
                 padding: "17px 18px 16px 20px",
-                background: "#ffffff",
-                border: "1px solid #e5eaf1",
-                borderRadius: "10px",
+                background:
+                  "linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.8))",
+                border: "1px solid rgba(148,163,184,0.14)",
+                borderRadius: "12px",
                 boxSizing: "border-box",
                 overflow: "hidden",
+                boxShadow:
+                  "0 10px 24px rgba(15,23,42,0.16)",
               }}
             >
               <div
@@ -834,10 +852,13 @@ function Dashboard() {
             gap: "16px",
             marginBottom: "18px",
             padding: "16px",
-            background: "#ffffff",
-            border: "1px solid #e5eaf1",
-            borderRadius: "10px",
+            background:
+              "linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.8))",
+            border: "1px solid rgba(148,163,184,0.14)",
+            borderRadius: "16px",
             boxSizing: "border-box",
+            boxShadow:
+              "0 14px 30px rgba(15,23,42,0.14)",
           }}
         >
           <article
@@ -1524,12 +1545,21 @@ function Dashboard() {
     <div
       style={{
         minHeight: "100%",
-        background: colors.bg,
-        padding: "26px",
+        background: isDarkMode
+          ? "linear-gradient(180deg, rgba(15,23,42,0.93) 0%, rgba(10,14,22,0.98) 100%)"
+          : "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+        padding: "28px",
         fontFamily:
           '"Inter", "Segoe UI", Arial, sans-serif',
         color: colors.text,
         boxSizing: "border-box",
+        borderRadius: "18px",
+        border: isDarkMode
+          ? "1px solid rgba(148,163,184,0.16)"
+          : "1px solid #e2e8f0",
+        boxShadow: isDarkMode
+          ? "0 18px 45px rgba(2, 6, 23, 0.22)"
+          : "0 18px 45px rgba(15, 23, 42, 0.08)",
       }}
     >
       <header
@@ -1540,6 +1570,17 @@ function Dashboard() {
           gap: "20px",
           marginBottom: "24px",
           flexWrap: "wrap",
+          padding: "18px 20px",
+          borderRadius: "16px",
+          background: isDarkMode
+            ? "linear-gradient(180deg, rgba(15,23,42,0.88), rgba(17,24,39,0.75))"
+            : "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+          border: isDarkMode
+            ? "1px solid rgba(148,163,184,0.14)"
+            : "1px solid #e2e8f0",
+          boxShadow: isDarkMode
+            ? "0 14px 30px rgba(15,23,42,0.18)"
+            : "0 12px 28px rgba(15, 23, 42, 0.08)",
         }}
       >
         <div>
@@ -1797,10 +1838,17 @@ function Dashboard() {
           gap: "13px",
           marginBottom: "18px",
           padding: "16px",
-          background: colors.surface,
-          border: `1px solid ${colors.border}`,
-          borderRadius: "10px",
+          background: isDarkMode
+            ? "linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.82))"
+            : "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+          border: isDarkMode
+            ? "1px solid rgba(148,163,184,0.14)"
+            : "1px solid #e2e8f0",
+          borderRadius: "16px",
           boxSizing: "border-box",
+          boxShadow: isDarkMode
+            ? "0 14px 28px rgba(15,23,42,0.14)"
+            : "0 12px 24px rgba(15, 23, 42, 0.06)",
         }}
       >
         {kpiCards.map((card) => (
@@ -1810,11 +1858,18 @@ function Dashboard() {
               position: "relative",
               minHeight: "124px",
               padding: "17px 18px 16px 20px",
-              background: colors.surface,
-              border: `1px solid ${colors.border}`,
-              borderRadius: "10px",
+              background: isDarkMode
+                ? "linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.78))"
+                : "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+              border: isDarkMode
+                ? "1px solid rgba(148,163,184,0.12)"
+                : "1px solid #e2e8f0",
+              borderRadius: "12px",
               boxSizing: "border-box",
               overflow: "hidden",
+              boxShadow: isDarkMode
+                ? "0 12px 24px rgba(15,23,42,0.12)"
+                : "0 10px 22px rgba(15, 23, 42, 0.05)",
             }}
           >
             <div
