@@ -1,21 +1,21 @@
 :root {
-  --app-primary: #1d4ed8;
-  --app-primary-dark: #1e40af;
-  --app-primary-soft: #eff6ff;
+  --app-primary: #ea580c;
+  --app-primary-dark: #c2410c;
+  --app-primary-soft: #fff7ed;
 
-  --app-bg: #f5f7fb;
+  --app-bg: #faf5f0;
   --app-surface: #ffffff;
-  --app-surface-soft: #f8fafc;
+  --app-surface-soft: #fffbf8;
 
-  --app-text: #111827;
-  --app-text-secondary: #475569;
-  --app-text-muted: #64748b;
+  --app-text: #1f1209;
+  --app-text-secondary: #57453a;
+  --app-text-muted: #78625c;
 
-  --app-border: #e2e8f0;
-  --app-border-strong: #cbd5e1;
+  --app-border: #e8dcd4;
+  --app-border-strong: #d7c9bd;
 
-  --app-success: #15803d;
-  --app-warning: #b45309;
+  --app-success: #16a34a;
+  --app-warning: #ea580c;
   --app-danger: #dc2626;
 
   --app-radius-sm: 8px;
@@ -30,6 +30,42 @@
 
   --app-shadow-lg:
     0 10px 30px rgba(15, 23, 42, 0.08);
+
+  /* MNC Level Shadows */
+  --app-shadow-elevated:
+    0 8px 24px rgba(15, 23, 42, 0.12);
+
+  --app-shadow-hover:
+    0 12px 32px rgba(15, 23, 42, 0.14);
+
+  --app-transition: all 0.3s cubic-bezier(
+    0.4,
+    0,
+    0.2,
+    1
+  );
+}
+
+/* Dark Mode */
+html[data-theme="dark"] {
+  --app-primary: #ea580c;
+  --app-primary-dark: #ff9844;
+  --app-primary-soft: #3d2817;
+
+  --app-bg: #0f1419;
+  --app-surface: #1a1f2e;
+  --app-surface-soft: #252d3d;
+
+  --app-text: #e4e8f0;
+  --app-text-secondary: #b4bcc8;
+  --app-text-muted: #8a92a1;
+
+  --app-border: #374151;
+  --app-border-strong: #4b5563;
+
+  --app-success: #4ade80;
+  --app-warning: #ea580c;
+  --app-danger: #f87171;
 }
 
 * {
@@ -63,7 +99,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 a:focus-visible {
-  outline: 3px solid rgba(37, 99, 235, 0.2);
+  outline: 3px solid rgba(234, 88, 12, 0.2);
   outline-offset: 2px;
 }
 
@@ -91,7 +127,7 @@ a:focus-visible {
   min-height: 100vh;
   flex-shrink: 0;
   padding: 22px 14px;
-  background: #0f172a;
+  background: #2d1810;
   color: #ffffff;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 8px 0 24px rgba(15, 23, 42, 0.08);
@@ -114,11 +150,11 @@ a:focus-visible {
   justify-content: center;
   flex-shrink: 0;
   border-radius: 10px;
-  background: #2563eb;
+  background: #ea580c;
   color: #ffffff;
   font-size: 16px;
   font-weight: 800;
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 6px 16px rgba(234, 88, 12, 0.3);
 }
 
 .dashboard-brand-title {
@@ -175,10 +211,10 @@ a:focus-visible {
 }
 
 .dashboard-nav-item.active {
-  background: #1d4ed8;
-  border-color: rgba(96, 165, 250, 0.25);
+  background: #ea580c;
+  border-color: rgba(234, 88, 12, 0.25);
   color: #ffffff;
-  box-shadow: 0 5px 14px rgba(29, 78, 216, 0.22);
+  box-shadow: 0 5px 14px rgba(234, 88, 12, 0.22);
 }
 
 .dashboard-nav-item:active {
@@ -359,7 +395,7 @@ a:focus-visible {
 
 .dashboard-module-card:hover {
   background: var(--app-primary-soft);
-  border-color: #bfdbfe;
+  border-color: #fed7aa;
   color: var(--app-primary-dark);
   box-shadow: var(--app-shadow-sm);
   transform: translateY(-1px);
@@ -383,19 +419,32 @@ a:focus-visible {
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
-  transition:
-    background-color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.18s ease;
+  transition: var(--app-transition);
+  position: relative;
+  overflow: hidden;
 }
 
 .enterprise-button:hover {
   background: var(--app-primary-dark);
-  box-shadow: 0 5px 14px rgba(29, 78, 216, 0.2);
+  box-shadow: 0 8px 20px rgba(234, 88, 12, 0.25);
+  transform: translateY(-2px);
 }
 
 .enterprise-button:active {
-  transform: translateY(1px);
+  transform: translateY(0);
+}
+
+.enterprise-button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 .enterprise-button.secondary {
@@ -428,8 +477,8 @@ a:focus-visible {
 }
 
 .enterprise-input:focus {
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.1);
   outline: none;
 }
 

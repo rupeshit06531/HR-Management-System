@@ -199,8 +199,8 @@ function AppLayout() {
       style={{
         minHeight: "100vh",
         display: "flex",
-        background: "#f5f7fb",
-        color: "#172033",
+        background: "var(--app-bg)",
+        color: "var(--text-primary)",
         fontFamily:
           '"Inter", "Segoe UI", Arial, sans-serif',
       }}
@@ -210,8 +210,8 @@ function AppLayout() {
           width: "245px",
           minWidth: "245px",
           minHeight: "100vh",
-          background: "#ffffff",
-          borderRight: "1px solid #e7ebf2",
+          background: "var(--sidebar-bg)",
+          borderRight: `1px solid var(--border)`,
           display: "flex",
           flexDirection: "column",
           boxSizing: "border-box",
@@ -226,7 +226,7 @@ function AppLayout() {
           style={{
             padding: "21px 20px 20px",
             borderBottom:
-              "1px solid #edf0f5",
+              `1px solid var(--border)`,
           }}
         >
           <button
@@ -307,7 +307,7 @@ function AppLayout() {
             style={{
               padding:
                 "0 10px 9px",
-              color: "#a0a8b5",
+              color: "var(--text-muted)",
               fontSize: "10px",
               fontWeight: 800,
               letterSpacing: "0.08em",
@@ -338,11 +338,11 @@ function AppLayout() {
                     padding: "7px 10px",
                     borderRadius: "8px",
                     color: isActive
-                      ? "#2563eb"
-                      : "#5e697a",
+                      ? "var(--primary-600)"
+                      : "var(--text-secondary)",
                     background:
                       isActive
-                        ? "#eff6ff"
+                        ? "var(--primary-50)"
                         : "transparent",
                     textDecoration: "none",
                     fontSize: "12px",
@@ -363,12 +363,12 @@ function AppLayout() {
                           borderRadius: "7px",
                           background:
                             isActive
-                              ? "#dbeafe"
-                              : "#f3f5f8",
+                              ? "var(--primary-100)"
+                              : "var(--surface-subtle)",
                           color:
                             isActive
-                              ? "#2563eb"
-                              : "#7c8798",
+                              ? "var(--primary-600)"
+                              : "var(--text-muted)",
                           display: "flex",
                           alignItems:
                             "center",
@@ -397,7 +397,7 @@ function AppLayout() {
           style={{
             padding: "13px 12px",
             borderTop:
-              "1px solid #edf0f5",
+              `1px solid var(--border)`,
           }}
         >
           <button
@@ -412,10 +412,10 @@ function AppLayout() {
               gap: "10px",
               padding: "10px",
               border:
-                "1px solid #e7ebf2",
+                `1px solid var(--border)`,
               borderRadius: "8px",
-              background: "#ffffff",
-              color: "#64748b",
+              background: "var(--surface)",
+              color: "var(--text-secondary)",
               cursor: "pointer",
               textAlign: "left",
               fontSize: "12px",
@@ -427,13 +427,13 @@ function AppLayout() {
                 width: "28px",
                 height: "28px",
                 borderRadius: "7px",
-                background: "#f8fafc",
+                background: "var(--surface-subtle)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: "9px",
                 fontWeight: 800,
-                color: "#64748b",
+                color: "var(--text-secondary)",
               }}
             >
               OUT
@@ -457,9 +457,9 @@ function AppLayout() {
         <header
           style={{
             minHeight: "68px",
-            background: "#ffffff",
+            background: "var(--header-bg)",
             borderBottom:
-              "1px solid #e7ebf2",
+              `1px solid var(--border)`,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -476,7 +476,7 @@ function AppLayout() {
               style={{
                 fontSize: "16px",
                 fontWeight: 750,
-                color: "#172033",
+                color: "var(--text-primary)",
               }}
             >
               Human Resources
@@ -486,7 +486,7 @@ function AppLayout() {
               style={{
                 marginTop: "2px",
                 fontSize: "11px",
-                color: "#8a94a6",
+                color: "var(--text-muted)",
               }}
             >
               Workforce management

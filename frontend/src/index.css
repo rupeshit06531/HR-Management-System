@@ -165,6 +165,63 @@
   color-scheme: light;
 }
 
+/* Dark Mode Overrides */
+html[data-theme="dark"] {
+  /* Brand - Orange stays vibrant */
+  --primary-50: #3d2817;
+  --primary-100: #5c3d23;
+  --primary-200: #7c522d;
+  --primary-300: #a06837;
+  --primary-400: #c27e41;
+  --primary-500: #ea580c;
+  --primary-600: #ff7722;
+  --primary-700: #ff9844;
+  --primary-800: #ffb366;
+  --primary-900: #ffd699;
+
+  /* Secondary - Light neutrals for dark mode */
+  --secondary-50: #1f2937;
+  --secondary-100: #2d3748;
+  --secondary-200: #3d4556;
+  --secondary-300: #4d5564;
+  --secondary-400: #6b7280;
+  --secondary-500: #9ca3af;
+  --secondary-600: #d1d5db;
+  --secondary-700: #e5e7eb;
+  --secondary-800: #f3f4f6;
+  --secondary-900: #f9fafb;
+
+  /* Application */
+  --app-bg: #0f1419;
+  --surface: #1a1f2e;
+  --surface-subtle: #252d3d;
+  --surface-hover: #3d4556;
+
+  --text-primary: #e4e8f0;
+  --text-secondary: #b4bcc8;
+  --text-muted: #8a92a1;
+  --text-placeholder: #6b7280;
+
+  --border: #374151;
+  --border-light: #4b5563;
+  --border-focus: #ea580c;
+
+  /* Sidebar - Dark mode */
+  --sidebar-bg: #0f1419;
+  --sidebar-bg-hover: #1a1f2e;
+  --sidebar-text: #b4bcc8;
+  --sidebar-text-active: #ffffff;
+  --sidebar-active: #ea580c;
+
+  /* Header / Navigation */
+  --header-bg: #1a1f2e;
+  --header-border: #374151;
+
+  color-scheme: dark;
+  color: var(--text-primary);
+  background: var(--app-bg);
+}
+
 /* =========================================================
    GLOBAL RESET
    ========================================================= */

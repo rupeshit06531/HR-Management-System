@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom"
 
 import { getDashboard } from "../api/dashboard"
 import { useAuth } from "../context/AuthContext"
+import { useTheme } from "../context/ThemeContext"
 
 interface ModuleItem {
   label: string
@@ -127,6 +128,24 @@ function Dashboard() {
     isLoading: authLoading,
   } = useAuth()
 
+  const { isDarkMode, toggleDarkMode } =
+    useTheme()
+
+  // Color scheme uses CSS variables that respond to dark mode
+  // CSS variables automatically update when theme changes via data-theme attribute
+  const colors = {
+    bg: "var(--app-bg)",
+    surface: "var(--app-surface)",
+    surfaceSoft: "var(--app-surface-soft)",
+    text: "var(--app-text)",
+    textSecondary: "var(--app-text-secondary)",
+    textMuted: "var(--app-text-muted)",
+    border: "var(--app-border)",
+    borderStrong: "var(--app-border-strong)",
+    primary: "var(--app-primary)",
+    primarySoft: "var(--app-primary-soft)",
+  }
+
   const [dashboard, setDashboard] =
     useState<Awaited<
       ReturnType<typeof getDashboard>
@@ -184,8 +203,8 @@ function Dashboard() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f6f8fc",
-          color: "#64748b",
+          background: colors.bg,
+          color: colors.textMuted,
           fontFamily:
             '"Inter", "Segoe UI", Arial, sans-serif',
         }}
@@ -446,11 +465,11 @@ function Dashboard() {
       <div
         style={{
           minHeight: "100%",
-          background: "#f6f8fc",
+          background: colors.bg,
           padding: "26px",
           fontFamily:
             '"Inter", "Segoe UI", Arial, sans-serif',
-          color: "#172033",
+          color: colors.text,
           boxSizing: "border-box",
         }}
       >
@@ -473,14 +492,14 @@ function Dashboard() {
                 marginBottom: "9px",
                 fontSize: "10px",
                 fontWeight: 700,
-                color: "#64748b",
+                color: colors.textMuted,
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
               }}
             >
               <span
                 style={{
-                  color: "#2563eb",
+                  color: colors.primary,
                 }}
               >
                 {isEmployee
@@ -490,7 +509,7 @@ function Dashboard() {
 
               <span
                 style={{
-                  color: "#cbd5e1",
+                  color: colors.border,
                 }}
               >
                 /
@@ -508,7 +527,7 @@ function Dashboard() {
                 lineHeight: 1.2,
                 fontWeight: 750,
                 letterSpacing: "-0.025em",
-                color: "#172033",
+                color: colors.text,
               }}
             >
               Welcome back, {personalName}
@@ -519,7 +538,7 @@ function Dashboard() {
                 margin: "7px 0 0",
                 fontSize: "12px",
                 lineHeight: 1.5,
-                color: "#7c8798",
+                color: colors.textMuted,
               }}
             >
               {isEmployee
@@ -532,24 +551,89 @@ function Dashboard() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "12px",
             }}
           >
             <button
               type="button"
-              onClick={() => void loadDashboard()}
+              onClick={() => toggleDarkMode()}
+              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
               style={{
-                border: "1px solid #dce3ed",
-                background: "#ffffff",
-                color: "#475569",
-                borderRadius: "8px",
-                padding: "9px 13px",
-                fontSize: "11px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "10px 16px",
+                border: isDarkMode
+                  ? `2px solid var(--app-primary)`
+                  : `2px solid #e5eaf1`,
+                background: isDarkMode
+                  ? "rgba(234, 88, 12, 0.1)"
+                  : "#ffffff",
+                color: isDarkMode
+                  ? "var(--app-primary)"
+                  : "#64748b",
+                borderRadius: "10px",
+                fontSize: "12px",
                 fontWeight: 700,
                 cursor: "pointer",
+                transition: "all 0.3s ease",
+                boxShadow: isDarkMode
+                  ? "0 4px 12px rgba(234, 88, 12, 0.15)"
+                  : "none",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform =
+                  "translateY(-2px)"
+                e.currentTarget.style.boxShadow =
+                  isDarkMode
+                    ? "0 6px 16px rgba(234, 88, 12, 0.2)"
+                    : "0 4px 12px rgba(0,0,0,0.08)"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform =
+                  "translateY(0)"
+                e.currentTarget.style.boxShadow =
+                  isDarkMode
+                    ? "0 4px 12px rgba(234, 88, 12, 0.15)"
+                    : "none"
               }}
             >
-              Refresh
+              <span>{isDarkMode ? "☀️" : "🌙"}</span>
+              <span>{isDarkMode ? "Light" : "Dark"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => void loadDashboard()}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "10px 16px",
+                border: `1px solid ${colors.border}`,
+                background: colors.surface,
+                color: colors.textSecondary,
+                borderRadius: "10px",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background =
+                  colors.surfaceSoft
+                e.currentTarget.style.transform =
+                  "translateY(-2px)"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background =
+                  colors.surface
+                e.currentTarget.style.transform =
+                  "translateY(0)"
+              }}
+            >
+              <span>↻</span>
+              <span>Refresh</span>
             </button>
 
             <div
@@ -559,8 +643,8 @@ function Dashboard() {
                 gap: "10px",
                 minWidth: "190px",
                 padding: "9px 12px",
-                background: "#ffffff",
-                border: "1px solid #e5eaf1",
+                background: colors.surface,
+                border: `1px solid ${colors.border}`,
                 borderRadius: "9px",
                 boxSizing: "border-box",
               }}
@@ -651,6 +735,11 @@ function Dashboard() {
               "repeat(auto-fit, minmax(205px, 1fr))",
             gap: "13px",
             marginBottom: "18px",
+            padding: "16px",
+            background: "#ffffff",
+            border: "1px solid #e5eaf1",
+            borderRadius: "10px",
+            boxSizing: "border-box",
           }}
         >
           {personalCards.map((card) => (
@@ -744,6 +833,11 @@ function Dashboard() {
               "minmax(0, 1.15fr) minmax(300px, 0.85fr)",
             gap: "16px",
             marginBottom: "18px",
+            padding: "16px",
+            background: "#ffffff",
+            border: "1px solid #e5eaf1",
+            borderRadius: "10px",
+            boxSizing: "border-box",
           }}
         >
           <article
@@ -1430,11 +1524,11 @@ function Dashboard() {
     <div
       style={{
         minHeight: "100%",
-        background: "#f6f8fc",
+        background: colors.bg,
         padding: "26px",
         fontFamily:
           '"Inter", "Segoe UI", Arial, sans-serif',
-        color: "#172033",
+        color: colors.text,
         boxSizing: "border-box",
       }}
     >
@@ -1457,14 +1551,14 @@ function Dashboard() {
               marginBottom: "9px",
               fontSize: "10px",
               fontWeight: 700,
-              color: "#64748b",
+              color: colors.textMuted,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
             }}
           >
             <span
               style={{
-                color: "#2563eb",
+                color: colors.primary,
               }}
             >
               Admin
@@ -1472,7 +1566,7 @@ function Dashboard() {
 
             <span
               style={{
-                color: "#cbd5e1",
+                color: colors.border,
               }}
             >
               /
@@ -1490,7 +1584,7 @@ function Dashboard() {
               lineHeight: 1.2,
               fontWeight: 750,
               letterSpacing: "-0.025em",
-              color: "#172033",
+              color: colors.text,
             }}
           >
             Welcome back, {displayName}
@@ -1501,7 +1595,7 @@ function Dashboard() {
               margin: "7px 0 0",
               fontSize: "12px",
               lineHeight: 1.5,
-              color: "#7c8798",
+              color: colors.textMuted,
             }}
           >
             Here's an overview of your HR management system.
@@ -1512,24 +1606,89 @@ function Dashboard() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "12px",
           }}
         >
           <button
             type="button"
-            onClick={() => void loadDashboard()}
+            onClick={() => toggleDarkMode()}
+            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             style={{
-              border: "1px solid #dce3ed",
-              background: "#ffffff",
-              color: "#475569",
-              borderRadius: "8px",
-              padding: "9px 13px",
-              fontSize: "11px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "10px 16px",
+              border: isDarkMode
+                ? `2px solid var(--app-primary)`
+                : `2px solid #e5eaf1`,
+              background: isDarkMode
+                ? "rgba(234, 88, 12, 0.1)"
+                : "#ffffff",
+              color: isDarkMode
+                ? "var(--app-primary)"
+                : "#64748b",
+              borderRadius: "10px",
+              fontSize: "12px",
               fontWeight: 700,
               cursor: "pointer",
+              transition: "all 0.3s ease",
+              boxShadow: isDarkMode
+                ? "0 4px 12px rgba(234, 88, 12, 0.15)"
+                : "none",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform =
+                "translateY(-2px)"
+              e.currentTarget.style.boxShadow =
+                isDarkMode
+                  ? "0 6px 16px rgba(234, 88, 12, 0.2)"
+                  : "0 4px 12px rgba(0,0,0,0.08)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform =
+                "translateY(0)"
+              e.currentTarget.style.boxShadow =
+                isDarkMode
+                  ? "0 4px 12px rgba(234, 88, 12, 0.15)"
+                  : "none"
             }}
           >
-            Refresh
+            <span>{isDarkMode ? "☀️" : "🌙"}</span>
+            <span>{isDarkMode ? "Light" : "Dark"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void loadDashboard()}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "10px 16px",
+              border: `1px solid ${colors.border}`,
+              background: colors.surface,
+              color: colors.textSecondary,
+              borderRadius: "10px",
+              fontSize: "12px",
+              fontWeight: 700,
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background =
+                colors.surfaceSoft
+              e.currentTarget.style.transform =
+                "translateY(-2px)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background =
+                colors.surface
+              e.currentTarget.style.transform =
+                "translateY(0)"
+            }}
+          >
+            <span>↻</span>
+            <span>Refresh</span>
           </button>
 
           <div
@@ -1539,8 +1698,8 @@ function Dashboard() {
               gap: "10px",
               minWidth: "190px",
               padding: "9px 12px",
-              background: "#ffffff",
-              border: "1px solid #e5eaf1",
+              background: colors.surface,
+              border: `1px solid ${colors.border}`,
               borderRadius: "9px",
               boxSizing: "border-box",
             }}
@@ -1614,10 +1773,14 @@ function Dashboard() {
           style={{
             marginBottom: "18px",
             padding: "11px 14px",
-            border: "1px solid #fecaca",
+            border: isDarkMode
+              ? "1px solid #7c4444"
+              : "1px solid #fecaca",
             borderRadius: "8px",
-            background: "#fff5f5",
-            color: "#b91c1c",
+            background: isDarkMode
+              ? "#3d2323"
+              : "#fff5f5",
+            color: isDarkMode ? "#fca5a5" : "#b91c1c",
             fontSize: "12px",
             fontWeight: 600,
           }}
@@ -1633,6 +1796,11 @@ function Dashboard() {
             "repeat(auto-fit, minmax(205px, 1fr))",
           gap: "13px",
           marginBottom: "18px",
+          padding: "16px",
+          background: colors.surface,
+          border: `1px solid ${colors.border}`,
+          borderRadius: "10px",
+          boxSizing: "border-box",
         }}
       >
         {kpiCards.map((card) => (
@@ -1642,8 +1810,8 @@ function Dashboard() {
               position: "relative",
               minHeight: "124px",
               padding: "17px 18px 16px 20px",
-              background: "#ffffff",
-              border: "1px solid #e5eaf1",
+              background: colors.surface,
+              border: `1px solid ${colors.border}`,
               borderRadius: "10px",
               boxSizing: "border-box",
               overflow: "hidden",
@@ -1733,6 +1901,11 @@ function Dashboard() {
             "minmax(0, 1.45fr) minmax(310px, 0.9fr)",
           gap: "16px",
           marginBottom: "18px",
+          padding: "16px",
+          background: "#ffffff",
+          border: "1px solid #e5eaf1",
+          borderRadius: "10px",
+          boxSizing: "border-box",
         }}
       >
         <article
@@ -2110,6 +2283,11 @@ function Dashboard() {
             "minmax(0, 1.3fr) minmax(270px, 0.7fr)",
           gap: "16px",
           marginBottom: "18px",
+          padding: "16px",
+          background: "#ffffff",
+          border: "1px solid #e5eaf1",
+          borderRadius: "10px",
+          boxSizing: "border-box",
         }}
       >
         <article
