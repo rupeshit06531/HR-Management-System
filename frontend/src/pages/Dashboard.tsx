@@ -131,19 +131,24 @@ function Dashboard() {
   const { isDarkMode, toggleDarkMode } =
     useTheme()
 
-  // Color scheme uses CSS variables that respond to dark mode
-  // CSS variables automatically update when theme changes via data-theme attribute
+  // Premium color scheme with enhanced contrast and hierarchy
   const colors = {
-    bg: isDarkMode ? "#0b1220" : "#f4f7fb",
+    bg: isDarkMode 
+      ? "linear-gradient(135deg, #0a0e14 0%, #0f1419 100%)" 
+      : "linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%)",
     surface: isDarkMode ? "#111827" : "#ffffff",
     surfaceSoft: isDarkMode ? "#172033" : "#f8fafc",
     text: isDarkMode ? "#f8fafc" : "#0f172a",
     textSecondary: isDarkMode ? "#cbd5e1" : "#334155",
     textMuted: isDarkMode ? "#94a3b8" : "#475569",
-    border: isDarkMode ? "rgba(148,163,184,0.18)" : "#e2e8f0",
+    border: isDarkMode ? "rgba(148,163,184,0.12)" : "#e2e8f0",
     borderStrong: isDarkMode ? "#374151" : "#cbd5e1",
     primary: "var(--app-primary)",
     primarySoft: isDarkMode ? "#3d2817" : "#fff7ed",
+    accentBlue: "#0f7ce3",
+    accentGreen: "#10b981",
+    accentOrange: "var(--app-primary)",
+    accentPurple: "#7c3aed",
   }
 
   const [dashboard, setDashboard] =
@@ -465,17 +470,14 @@ function Dashboard() {
       <div
         style={{
           minHeight: "100%",
-          background:
-            "linear-gradient(180deg, rgba(15,23,42,0.92) 0%, rgba(10,14,22,0.98) 100%)",
-          padding: "28px",
-          fontFamily:
-            '"Inter", "Segoe UI", Arial, sans-serif',
+          background: isDarkMode
+            ? "linear-gradient(135deg, #0a0e14 0%, #0f1419 100%)"
+            : "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+          padding: "32px",
+          fontFamily: '"Inter", "Segoe UI", -apple-system, sans-serif',
           color: colors.text,
           boxSizing: "border-box",
-          borderRadius: "18px",
-          boxShadow:
-            "0 18px 45px rgba(2, 6, 23, 0.22)",
-          border: "1px solid rgba(148,163,184,0.16)",
+          borderRadius: "20px",
         }}
       >
         <header
@@ -483,16 +485,20 @@ function Dashboard() {
             display: "flex",
             alignItems: "flex-end",
             justifyContent: "space-between",
-            gap: "20px",
-            marginBottom: "24px",
+            gap: "24px",
+            marginBottom: "32px",
             flexWrap: "wrap",
-            padding: "18px 20px",
-            borderRadius: "16px",
-            background:
-              "linear-gradient(180deg, rgba(15,23,42,0.9), rgba(17,24,39,0.75))",
-            border: "1px solid rgba(148,163,184,0.14)",
-            boxShadow:
-              "0 14px 28px rgba(15,23,42,0.18)",
+            padding: "24px",
+            borderRadius: "18px",
+            background: isDarkMode
+              ? "linear-gradient(135deg, rgba(17,24,39,0.85), rgba(15,23,42,0.72))"
+              : "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.92))",
+            border: isDarkMode
+              ? "1px solid rgba(148,163,184,0.1)"
+              : "1px solid rgba(226,232,240,0.8)",
+            boxShadow: isDarkMode
+              ? "0 20px 40px rgba(0,0,0,0.25)"
+              : "0 15px 35px rgba(15,23,42,0.08)",
           }}
         >
           <div>
@@ -535,11 +541,17 @@ function Dashboard() {
             <h1
               style={{
                 margin: 0,
-                fontSize: "27px",
-                lineHeight: 1.2,
-                fontWeight: 750,
-                letterSpacing: "-0.025em",
+                fontSize: "32px",
+                lineHeight: 1.15,
+                fontWeight: 800,
+                letterSpacing: "-0.03em",
                 color: colors.text,
+                background: isDarkMode
+                  ? "linear-gradient(135deg, #f8fafc, #cbd5e1)"
+                  : "linear-gradient(135deg, #0f172a, #1e293b)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: isDarkMode ? "transparent" : "inherit",
+                backgroundClip: "text",
               }}
             >
               Welcome back, {personalName}
@@ -547,10 +559,11 @@ function Dashboard() {
 
             <p
               style={{
-                margin: "7px 0 0",
-                fontSize: "12px",
-                lineHeight: 1.5,
+                margin: "10px 0 0",
+                fontSize: "13px",
+                lineHeight: 1.6,
                 color: colors.textMuted,
+                fontWeight: 500,
               }}
             >
               {isEmployee
@@ -744,17 +757,21 @@ function Dashboard() {
           style={{
             display: "grid",
             gridTemplateColumns:
-              "repeat(auto-fit, minmax(205px, 1fr))",
-            gap: "13px",
-            marginBottom: "18px",
-            padding: "16px",
-            background:
-              "linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.8))",
-            border: "1px solid rgba(148,163,184,0.14)",
-            borderRadius: "16px",
+              "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "16px",
+            marginBottom: "24px",
+            padding: "20px",
+            background: isDarkMode
+              ? "linear-gradient(135deg, rgba(17,24,39,0.8), rgba(15,23,42,0.72))"
+              : "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.9))",
+            border: isDarkMode
+              ? "1px solid rgba(148,163,184,0.1)"
+              : "1px solid rgba(226,232,240,0.8)",
+            borderRadius: "18px",
             boxSizing: "border-box",
-            boxShadow:
-              "0 14px 30px rgba(15,23,42,0.14)",
+            boxShadow: isDarkMode
+              ? "0 16px 32px rgba(0,0,0,0.2)"
+              : "0 12px 28px rgba(15,23,42,0.06)",
           }}
         >
           {personalCards.map((card) => (
@@ -762,16 +779,34 @@ function Dashboard() {
               key={card.label}
               style={{
                 position: "relative",
-                minHeight: "124px",
-                padding: "17px 18px 16px 20px",
-                background:
-                  "linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.8))",
-                border: "1px solid rgba(148,163,184,0.14)",
-                borderRadius: "12px",
+                minHeight: "136px",
+                padding: "20px",
+                background: isDarkMode
+                  ? "linear-gradient(135deg, rgba(17,24,39,0.95), rgba(15,23,42,0.85))"
+                  : "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96))",
+                border: isDarkMode
+                  ? "1px solid rgba(148,163,184,0.1)"
+                  : "1px solid rgba(226,232,240,0.7)",
+                borderRadius: "14px",
                 boxSizing: "border-box",
                 overflow: "hidden",
-                boxShadow:
-                  "0 10px 24px rgba(15,23,42,0.16)",
+                boxShadow: isDarkMode
+                  ? "0 12px 24px rgba(0,0,0,0.15)"
+                  : "0 10px 22px rgba(15,23,42,0.06)",
+                transition: "all 0.3s ease",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = isDarkMode
+                  ? "0 16px 32px rgba(0,0,0,0.2)"
+                  : "0 14px 28px rgba(15,23,42,0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = isDarkMode
+                  ? "0 12px 24px rgba(0,0,0,0.15)"
+                  : "0 10px 22px rgba(15,23,42,0.06)";
               }}
             >
               <div
@@ -800,10 +835,12 @@ function Dashboard() {
                 >
                   <div
                     style={{
-                      marginBottom: "9px",
-                      fontSize: "10px",
+                      marginBottom: "10px",
+                      fontSize: "11px",
                       fontWeight: 700,
-                      color: "#7c8798",
+                      color: colors.textMuted,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
                     }}
                   >
                     {card.label}
@@ -811,10 +848,11 @@ function Dashboard() {
 
                   <div
                     style={{
-                      fontSize: "16px",
+                      fontSize: "19px",
                       lineHeight: 1.25,
-                      fontWeight: 750,
-                      color: "#172033",
+                      fontWeight: 800,
+                      letterSpacing: "-0.02em",
+                      color: colors.text,
                       wordBreak: "break-word",
                     }}
                   >
@@ -1546,20 +1584,13 @@ function Dashboard() {
       style={{
         minHeight: "100%",
         background: isDarkMode
-          ? "linear-gradient(180deg, rgba(15,23,42,0.93) 0%, rgba(10,14,22,0.98) 100%)"
-          : "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
-        padding: "28px",
-        fontFamily:
-          '"Inter", "Segoe UI", Arial, sans-serif',
+          ? "linear-gradient(135deg, #0a0e14 0%, #0f1419 100%)"
+          : "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+        padding: "32px",
+        fontFamily: '"Inter", "Segoe UI", -apple-system, sans-serif',
         color: colors.text,
         boxSizing: "border-box",
-        borderRadius: "18px",
-        border: isDarkMode
-          ? "1px solid rgba(148,163,184,0.16)"
-          : "1px solid #e2e8f0",
-        boxShadow: isDarkMode
-          ? "0 18px 45px rgba(2, 6, 23, 0.22)"
-          : "0 18px 45px rgba(15, 23, 42, 0.08)",
+        borderRadius: "20px",
       }}
     >
       <header
@@ -1567,20 +1598,20 @@ function Dashboard() {
           display: "flex",
           alignItems: "flex-end",
           justifyContent: "space-between",
-          gap: "20px",
-          marginBottom: "24px",
+          gap: "24px",
+          marginBottom: "32px",
           flexWrap: "wrap",
-          padding: "18px 20px",
-          borderRadius: "16px",
+          padding: "24px",
+          borderRadius: "18px",
           background: isDarkMode
-            ? "linear-gradient(180deg, rgba(15,23,42,0.88), rgba(17,24,39,0.75))"
-            : "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+            ? "linear-gradient(135deg, rgba(17,24,39,0.85), rgba(15,23,42,0.72))"
+            : "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.92))",
           border: isDarkMode
-            ? "1px solid rgba(148,163,184,0.14)"
-            : "1px solid #e2e8f0",
+            ? "1px solid rgba(148,163,184,0.1)"
+            : "1px solid rgba(226,232,240,0.8)",
           boxShadow: isDarkMode
-            ? "0 14px 30px rgba(15,23,42,0.18)"
-            : "0 12px 28px rgba(15, 23, 42, 0.08)",
+            ? "0 20px 40px rgba(0,0,0,0.25)"
+            : "0 15px 35px rgba(15,23,42,0.08)",
         }}
       >
         <div>
@@ -1621,11 +1652,17 @@ function Dashboard() {
           <h1
             style={{
               margin: 0,
-              fontSize: "27px",
-              lineHeight: 1.2,
-              fontWeight: 750,
-              letterSpacing: "-0.025em",
+              fontSize: "32px",
+              lineHeight: 1.15,
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
               color: colors.text,
+              background: isDarkMode
+                ? "linear-gradient(135deg, #f8fafc, #cbd5e1)"
+                : "linear-gradient(135deg, #0f172a, #1e293b)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: isDarkMode ? "transparent" : "inherit",
+              backgroundClip: "text",
             }}
           >
             Welcome back, {displayName}
@@ -1834,21 +1871,21 @@ function Dashboard() {
         style={{
           display: "grid",
           gridTemplateColumns:
-            "repeat(auto-fit, minmax(205px, 1fr))",
-          gap: "13px",
-          marginBottom: "18px",
-          padding: "16px",
+            "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "16px",
+          marginBottom: "24px",
+          padding: "20px",
           background: isDarkMode
-            ? "linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.82))"
-            : "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+            ? "linear-gradient(135deg, rgba(17,24,39,0.8), rgba(15,23,42,0.72))"
+            : "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.9))",
           border: isDarkMode
-            ? "1px solid rgba(148,163,184,0.14)"
-            : "1px solid #e2e8f0",
-          borderRadius: "16px",
+            ? "1px solid rgba(148,163,184,0.1)"
+            : "1px solid rgba(226,232,240,0.8)",
+          borderRadius: "18px",
           boxSizing: "border-box",
           boxShadow: isDarkMode
-            ? "0 14px 28px rgba(15,23,42,0.14)"
-            : "0 12px 24px rgba(15, 23, 42, 0.06)",
+            ? "0 16px 32px rgba(0,0,0,0.2)"
+            : "0 12px 28px rgba(15,23,42,0.06)",
         }}
       >
         {kpiCards.map((card) => (
@@ -1856,20 +1893,34 @@ function Dashboard() {
             key={card.label}
             style={{
               position: "relative",
-              minHeight: "124px",
-              padding: "17px 18px 16px 20px",
+              minHeight: "140px",
+              padding: "20px",
               background: isDarkMode
-                ? "linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.78))"
-                : "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+                ? "linear-gradient(135deg, rgba(17,24,39,0.95), rgba(15,23,42,0.85))"
+                : "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96))",
               border: isDarkMode
-                ? "1px solid rgba(148,163,184,0.12)"
-                : "1px solid #e2e8f0",
-              borderRadius: "12px",
+                ? "1px solid rgba(148,163,184,0.1)"
+                : "1px solid rgba(226,232,240,0.7)",
+              borderRadius: "14px",
               boxSizing: "border-box",
               overflow: "hidden",
               boxShadow: isDarkMode
-                ? "0 12px 24px rgba(15,23,42,0.12)"
-                : "0 10px 22px rgba(15, 23, 42, 0.05)",
+                ? "0 12px 24px rgba(0,0,0,0.15)"
+                : "0 10px 22px rgba(15,23,42,0.06)",
+              transition: "all 0.3s ease",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-4px)";
+              e.currentTarget.style.boxShadow = isDarkMode
+                ? "0 16px 32px rgba(0,0,0,0.2)"
+                : "0 14px 28px rgba(15,23,42,0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = isDarkMode
+                ? "0 12px 24px rgba(0,0,0,0.15)"
+                : "0 10px 22px rgba(15,23,42,0.06)";
             }}
           >
             <div
@@ -1894,10 +1945,12 @@ function Dashboard() {
               <div>
                 <div
                   style={{
-                    marginBottom: "9px",
-                    fontSize: "10px",
+                    marginBottom: "10px",
+                    fontSize: "11px",
                     fontWeight: 700,
-                    color: "#7c8798",
+                    color: colors.textMuted,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
                   }}
                 >
                   {card.label}
@@ -1905,11 +1958,11 @@ function Dashboard() {
 
                 <div
                   style={{
-                    fontSize: "28px",
+                    fontSize: "32px",
                     lineHeight: 1,
-                    fontWeight: 750,
+                    fontWeight: 800,
                     letterSpacing: "-0.03em",
-                    color: "#172033",
+                    color: colors.text,
                   }}
                 >
                   {card.value}
@@ -1917,9 +1970,10 @@ function Dashboard() {
 
                 <div
                   style={{
-                    marginTop: "9px",
-                    fontSize: "9px",
-                    color: "#9aa4b2",
+                    marginTop: "10px",
+                    fontSize: "12px",
+                    color: colors.textMuted,
+                    fontWeight: 500,
                   }}
                 >
                   {card.description}
