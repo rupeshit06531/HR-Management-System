@@ -2,6 +2,8 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
+  type ReactNode,
 } from "react"
 import { useNavigate } from "react-router-dom"
 
@@ -12,83 +14,10 @@ import { useTheme } from "../context/ThemeContext"
 interface ModuleItem {
   label: string
   path: string
-  roles: string[]
   description: string
+  roles: string[]
   icon: string
 }
-
-const moduleItems: ModuleItem[] = [
-  {
-    label: "Employees",
-    path: "/employees",
-    roles: ["SUPER_ADMIN", "HR", "MANAGER"],
-    description: "Manage employee records and workforce information",
-    icon: "EM",
-  },
-  {
-    label: "Departments",
-    path: "/departments",
-    roles: ["SUPER_ADMIN", "HR"],
-    description: "Manage departments and designations",
-    icon: "DP",
-  },
-  {
-    label: "Attendance",
-    path: "/attendance",
-    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
-    description: "Track attendance and daily check-ins",
-    icon: "AT",
-  },
-  {
-    label: "Leave",
-    path: "/leave",
-    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
-    description: "Manage leave requests and approvals",
-    icon: "LV",
-  },
-  {
-    label: "Payroll",
-    path: "/payroll",
-    roles: ["SUPER_ADMIN", "HR", "EMPLOYEE"],
-    description: "View and manage payroll information",
-    icon: "PR",
-  },
-  {
-    label: "Performance",
-    path: "/performance",
-    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
-    description: "Review employee performance",
-    icon: "PF",
-  },
-  {
-    label: "Recruitment",
-    path: "/recruitment",
-    roles: ["SUPER_ADMIN", "HR"],
-    description: "Manage recruitment and hiring activities",
-    icon: "RC",
-  },
-  {
-    label: "Documents",
-    path: "/documents",
-    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
-    description: "Access employee and HR documents",
-    icon: "DC",
-  },
-  {
-    label: "Announcements",
-    path: "/announcements",
-    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
-    description: "View company announcements",
-    icon: "AN",
-  },
-  {
-    label: "Holidays",
-    path: "/holidays",
-    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
-    description: "View company holidays",
-    icon: "HD",
-  },
-]
 
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: "Super Admin",
@@ -99,718 +28,87 @@ const roleLabels: Record<string, string> = {
 
 const roleDescriptions: Record<string, string> = {
   SUPER_ADMIN:
-    "Organization-wide visibility and administrative control",
+    "Complete visibility and control across your organization's workforce and HR operations.",
   HR:
-    "Human resources operations and workforce management",
+    "Manage people, HR operations, employee services and workforce information from one place.",
   MANAGER:
-    "Team management, employee oversight and daily operations",
+    "Monitor your team, manage daily workforce activities and access team HR services.",
   EMPLOYEE:
-    "Your personal HR workspace and employment information",
+    "View your employment information and access the HR services available to you.",
 }
 
-const styles = `
-  .dashboard-page {
-    min-height: 100vh;
-    padding: 28px;
-    background: var(--dashboard-bg);
-    color: var(--dashboard-text);
-    box-sizing: border-box;
-  }
-
-  .dashboard-shell {
-    width: min(1480px, 100%);
-    margin: 0 auto;
-  }
-
-  .dashboard-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    margin-bottom: 26px;
-  }
-
-  .dashboard-heading {
-    min-width: 0;
-  }
-
-  .dashboard-eyebrow {
-    margin: 0 0 7px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--dashboard-muted);
-  }
-
-  .dashboard-title {
-    margin: 0;
-    font-size: clamp(26px, 3vw, 34px);
-    line-height: 1.15;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-  }
-
-  .dashboard-subtitle {
-    margin: 8px 0 0;
-    color: var(--dashboard-muted);
-    font-size: 14px;
-    line-height: 1.6;
-  }
-
-  .dashboard-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-  }
-
-  .dashboard-action {
-    min-height: 40px;
-    padding: 0 14px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 10px;
-    background: var(--dashboard-card);
-    color: var(--dashboard-text);
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: 160ms ease;
-  }
-
-  .dashboard-action:hover {
-    border-color: var(--dashboard-accent);
-    transform: translateY(-1px);
-  }
-
-  .dashboard-action.primary {
-    border-color: var(--dashboard-accent);
-    background: var(--dashboard-accent);
-    color: #ffffff;
-  }
-
-  .dashboard-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 24px;
-    padding: 28px;
-    margin-bottom: 22px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 18px;
-    background:
-      linear-gradient(
-        135deg,
-        var(--dashboard-hero-start),
-        var(--dashboard-hero-end)
-      );
-    box-shadow: var(--dashboard-shadow);
-  }
-
-  .dashboard-hero-content {
-    min-width: 0;
-  }
-
-  .dashboard-role-badge {
-    display: inline-flex;
-    align-items: center;
-    min-height: 28px;
-    padding: 0 10px;
-    border-radius: 999px;
-    background: var(--dashboard-badge-bg);
-    color: var(--dashboard-accent);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .dashboard-hero-title {
-    margin: 13px 0 7px;
-    font-size: clamp(24px, 3vw, 32px);
-    line-height: 1.2;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-  }
-
-  .dashboard-hero-text {
-    max-width: 720px;
-    margin: 0;
-    color: var(--dashboard-muted);
-    font-size: 14px;
-    line-height: 1.65;
-  }
-
-  .dashboard-profile-summary {
-    display: flex;
-    align-items: center;
-    gap: 13px;
-    min-width: 230px;
-    align-self: center;
-  }
-
-  .dashboard-avatar {
-    display: grid;
-    place-items: center;
-    width: 58px;
-    height: 58px;
-    flex-shrink: 0;
-    border-radius: 16px;
-    background: var(--dashboard-accent-soft);
-    color: var(--dashboard-accent);
-    font-size: 18px;
-    font-weight: 800;
-  }
-
-  .dashboard-profile-name {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 800;
-  }
-
-  .dashboard-profile-role {
-    margin: 4px 0 0;
-    color: var(--dashboard-muted);
-    font-size: 12px;
-  }
-
-  .dashboard-section {
-    margin-top: 24px;
-  }
-
-  .dashboard-section-header {
-    display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: 15px;
-    margin-bottom: 13px;
-  }
-
-  .dashboard-section-title {
-    margin: 0;
-    font-size: 17px;
-    font-weight: 800;
-  }
-
-  .dashboard-section-description {
-    margin: 4px 0 0;
-    color: var(--dashboard-muted);
-    font-size: 12px;
-  }
-
-  .dashboard-kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-  }
-
-  .dashboard-kpi {
-    padding: 19px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 15px;
-    background: var(--dashboard-card);
-    box-shadow: var(--dashboard-shadow);
-  }
-
-  .dashboard-kpi-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .dashboard-kpi-label {
-    color: var(--dashboard-muted);
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  .dashboard-kpi-icon {
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-    background: var(--dashboard-accent-soft);
-    color: var(--dashboard-accent);
-    font-size: 10px;
-    font-weight: 800;
-  }
-
-  .dashboard-kpi-value {
-    margin: 13px 0 0;
-    font-size: 27px;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-  }
-
-  .dashboard-kpi-meta {
-    margin: 5px 0 0;
-    color: var(--dashboard-muted);
-    font-size: 11px;
-  }
-
-  .dashboard-content-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
-    gap: 18px;
-  }
-
-  .dashboard-panel {
-    min-width: 0;
-    padding: 20px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 15px;
-    background: var(--dashboard-card);
-    box-shadow: var(--dashboard-shadow);
-  }
-
-  .dashboard-panel-title {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 800;
-  }
-
-  .dashboard-panel-subtitle {
-    margin: 5px 0 18px;
-    color: var(--dashboard-muted);
-    font-size: 11px;
-    line-height: 1.5;
-  }
-
-  .dashboard-workforce {
-    display: grid;
-    grid-template-columns: 190px minmax(0, 1fr);
-    align-items: center;
-    gap: 25px;
-  }
-
-  .dashboard-donut {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: 170px;
-    height: 170px;
-    margin: 0 auto;
-    border-radius: 50%;
-    background:
-      conic-gradient(
-        var(--dashboard-accent) 0deg,
-        var(--dashboard-accent) var(--active-angle),
-        var(--dashboard-track) var(--active-angle),
-        var(--dashboard-track) 360deg
-      );
-  }
-
-  .dashboard-donut::after {
-    content: "";
-    position: absolute;
-    inset: 20px;
-    border-radius: 50%;
-    background: var(--dashboard-card);
-  }
-
-  .dashboard-donut-center {
-    position: relative;
-    z-index: 1;
-    text-align: center;
-  }
-
-  .dashboard-donut-value {
-    display: block;
-    font-size: 28px;
-    font-weight: 800;
-  }
-
-  .dashboard-donut-label {
-    display: block;
-    margin-top: 2px;
-    color: var(--dashboard-muted);
-    font-size: 10px;
-    font-weight: 700;
-  }
-
-  .dashboard-status-list {
-    display: grid;
-    gap: 12px;
-  }
-
-  .dashboard-status-row {
-    display: grid;
-    grid-template-columns: minmax(110px, 1fr) auto;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .dashboard-status-name {
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  .dashboard-status-value {
-    color: var(--dashboard-muted);
-    font-size: 11px;
-    font-weight: 700;
-  }
-
-  .dashboard-status-track {
-    grid-column: 1 / -1;
-    height: 6px;
-    overflow: hidden;
-    margin-top: -7px;
-    border-radius: 999px;
-    background: var(--dashboard-track);
-  }
-
-  .dashboard-status-progress {
-    height: 100%;
-    border-radius: inherit;
-    background: var(--dashboard-accent);
-  }
-
-  .dashboard-role-list {
-    display: grid;
-    gap: 12px;
-  }
-
-  .dashboard-role-row {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 10px;
-    align-items: center;
-  }
-
-  .dashboard-role-name {
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  .dashboard-role-count {
-    color: var(--dashboard-muted);
-    font-size: 11px;
-    font-weight: 700;
-  }
-
-  .dashboard-role-track {
-    grid-column: 1 / -1;
-    height: 6px;
-    overflow: hidden;
-    margin-top: -5px;
-    border-radius: 999px;
-    background: var(--dashboard-track);
-  }
-
-  .dashboard-role-progress {
-    height: 100%;
-    border-radius: inherit;
-    background: var(--dashboard-accent);
-  }
-
-  .dashboard-profile-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  .dashboard-info-card {
-    min-width: 0;
-    padding: 15px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 12px;
-    background: var(--dashboard-surface);
-  }
-
-  .dashboard-info-label {
-    margin: 0 0 6px;
-    color: var(--dashboard-muted);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-  }
-
-  .dashboard-info-value {
-    margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 13px;
-    font-weight: 800;
-  }
-
-  .dashboard-info-value.muted {
-    color: var(--dashboard-muted);
-  }
-
-  .dashboard-module-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 13px;
-  }
-
-  .dashboard-module {
-    display: flex;
-    flex-direction: column;
-    min-height: 142px;
-    padding: 17px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 14px;
-    background: var(--dashboard-card);
-    color: var(--dashboard-text);
-    text-align: left;
-    cursor: pointer;
-    box-shadow: var(--dashboard-shadow);
-    transition:
-      transform 160ms ease,
-      border-color 160ms ease,
-      box-shadow 160ms ease;
-  }
-
-  .dashboard-module:hover {
-    transform: translateY(-2px);
-    border-color: var(--dashboard-accent);
-    box-shadow: var(--dashboard-shadow-hover);
-  }
-
-  .dashboard-module-icon {
-    display: grid;
-    place-items: center;
-    width: 38px;
-    height: 38px;
-    margin-bottom: 16px;
-    border-radius: 10px;
-    background: var(--dashboard-accent-soft);
-    color: var(--dashboard-accent);
-    font-size: 10px;
-    font-weight: 800;
-  }
-
-  .dashboard-module-title {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 800;
-  }
-
-  .dashboard-module-description {
-    margin: 6px 0 0;
-    color: var(--dashboard-muted);
-    font-size: 11px;
-    line-height: 1.55;
-  }
-
-  .dashboard-module-arrow {
-    margin-top: auto;
-    padding-top: 14px;
-    color: var(--dashboard-accent);
-    font-size: 11px;
-    font-weight: 800;
-  }
-
-  .dashboard-quick-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  .dashboard-quick-action {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    min-height: 64px;
-    padding: 12px 15px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 12px;
-    background: var(--dashboard-card);
-    color: var(--dashboard-text);
-    text-align: left;
-    cursor: pointer;
-    transition: 160ms ease;
-  }
-
-  .dashboard-quick-action:hover {
-    border-color: var(--dashboard-accent);
-    transform: translateY(-1px);
-  }
-
-  .dashboard-quick-left {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    min-width: 0;
-  }
-
-  .dashboard-quick-icon {
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    flex-shrink: 0;
-    border-radius: 9px;
-    background: var(--dashboard-accent-soft);
-    color: var(--dashboard-accent);
-    font-size: 9px;
-    font-weight: 800;
-  }
-
-  .dashboard-quick-title {
-    margin: 0;
-    font-size: 12px;
-    font-weight: 800;
-  }
-
-  .dashboard-quick-text {
-    margin: 3px 0 0;
-    overflow: hidden;
-    color: var(--dashboard-muted);
-    font-size: 10px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .dashboard-quick-arrow {
-    color: var(--dashboard-muted);
-    font-size: 15px;
-  }
-
-  .dashboard-footer {
-    margin-top: 25px;
-    padding: 14px 2px 2px;
-    color: var(--dashboard-muted);
-    font-size: 11px;
-    text-align: center;
-  }
-
-  .dashboard-state {
-    display: grid;
-    min-height: 420px;
-    place-items: center;
-    padding: 30px;
-    text-align: center;
-  }
-
-  .dashboard-state-card {
-    width: min(420px, 100%);
-    padding: 28px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 16px;
-    background: var(--dashboard-card);
-    box-shadow: var(--dashboard-shadow);
-  }
-
-  .dashboard-state-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 800;
-  }
-
-  .dashboard-state-text {
-    margin: 8px 0 20px;
-    color: var(--dashboard-muted);
-    font-size: 13px;
-    line-height: 1.6;
-  }
-
-  .dashboard-spinner {
-    width: 30px;
-    height: 30px;
-    margin: 0 auto 15px;
-    border: 3px solid var(--dashboard-track);
-    border-top-color: var(--dashboard-accent);
-    border-radius: 50%;
-    animation: dashboard-spin 700ms linear infinite;
-  }
-
-  @keyframes dashboard-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @media (max-width: 1150px) {
-    .dashboard-kpi-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .dashboard-module-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .dashboard-content-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 800px) {
-    .dashboard-page {
-      padding: 18px;
-    }
-
-    .dashboard-header {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
-    .dashboard-header-actions {
-      width: 100%;
-    }
-
-    .dashboard-header-actions .dashboard-action {
-      flex: 1;
-    }
-
-    .dashboard-hero {
-      grid-template-columns: 1fr;
-      padding: 21px;
-    }
-
-    .dashboard-profile-summary {
-      min-width: 0;
-    }
-
-    .dashboard-workforce {
-      grid-template-columns: 1fr;
-    }
-
-    .dashboard-module-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .dashboard-quick-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 520px) {
-    .dashboard-page {
-      padding: 14px;
-    }
-
-    .dashboard-kpi-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .dashboard-module-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .dashboard-profile-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .dashboard-panel {
-      padding: 16px;
-    }
-
-    .dashboard-donut {
-      width: 150px;
-      height: 150px;
-    }
-
-    .dashboard-donut::after {
-      inset: 18px;
-    }
-  }
-`
+const moduleItems: ModuleItem[] = [
+  {
+    label: "Employees",
+    path: "/employees",
+    description: "Manage employee records, profiles and workforce information.",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER"],
+    icon: "EM",
+  },
+  {
+    label: "Departments",
+    path: "/departments",
+    description: "Manage departments and organizational structure.",
+    roles: ["SUPER_ADMIN", "HR"],
+    icon: "DP",
+  },
+  {
+    label: "Attendance",
+    path: "/attendance",
+    description: "Track attendance, check-ins, check-outs and daily presence.",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    icon: "AT",
+  },
+  {
+    label: "Leave",
+    path: "/leave",
+    description: "Manage leave requests, approvals and leave information.",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    icon: "LV",
+  },
+  {
+    label: "Payroll",
+    path: "/payroll",
+    description: "Access payroll and employee compensation information.",
+    roles: ["SUPER_ADMIN", "HR", "EMPLOYEE"],
+    icon: "PY",
+  },
+  {
+    label: "Performance",
+    path: "/performance",
+    description: "Review employee performance and development information.",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    icon: "PF",
+  },
+  {
+    label: "Recruitment",
+    path: "/recruitment",
+    description: "Manage recruitment activities and candidate information.",
+    roles: ["SUPER_ADMIN", "HR"],
+    icon: "RC",
+  },
+  {
+    label: "Documents",
+    path: "/documents",
+    description: "Access and manage important HR documents.",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    icon: "DC",
+  },
+  {
+    label: "Announcements",
+    path: "/announcements",
+    description: "View and manage important organization announcements.",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    icon: "AN",
+  },
+  {
+    label: "Holidays",
+    path: "/holidays",
+    description: "View organization holidays and upcoming days off.",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    icon: "HD",
+  },
+]
 
 function formatDate(value: string | null | undefined) {
   if (!value) {
@@ -849,8 +147,8 @@ function getInitials(name: string) {
 
 function Dashboard() {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
-  const { isDarkMode, toggleTheme } = useTheme()
+  const { user } = useAuth()
+  const { isDarkMode } = useTheme()
 
   const [dashboard, setDashboard] = useState<
     Awaited<ReturnType<typeof getDashboard>> | null
@@ -877,9 +175,10 @@ function Dashboard() {
   }, [])
 
   const currentRole = roleLabels[user?.role ?? ""] || user?.role || "User"
+
   const roleDescription =
     roleDescriptions[user?.role ?? ""] ||
-    "Your HR management workspace"
+    "Your HR management workspace."
 
   const displayName =
     user?.first_name?.trim() ||
@@ -903,26 +202,56 @@ function Dashboard() {
       : 0
 
   const visibleModules = useMemo(() => {
-    const role = user?.role
-
-    if (!role) {
+    if (!user?.role) {
       return []
     }
 
-    return moduleItems.filter((item) => item.roles.includes(role))
+    return moduleItems.filter((item) =>
+      item.roles.includes(user.role),
+    )
   }, [user?.role])
 
   const quickActionNames =
     user?.role === "SUPER_ADMIN"
-      ? ["Employees", "Departments", "Attendance", "Leave", "Recruitment", "Documents"]
+      ? [
+          "Employees",
+          "Departments",
+          "Attendance",
+          "Leave",
+          "Recruitment",
+          "Documents",
+        ]
       : user?.role === "HR"
-        ? ["Employees", "Departments", "Attendance", "Leave", "Recruitment", "Documents"]
+        ? [
+            "Employees",
+            "Departments",
+            "Attendance",
+            "Leave",
+            "Recruitment",
+            "Documents",
+          ]
         : user?.role === "MANAGER"
-          ? ["Employees", "Attendance", "Leave", "Performance", "Documents", "Announcements"]
-          : ["Attendance", "Leave", "Payroll", "Performance", "Documents", "Holidays"]
+          ? [
+              "Employees",
+              "Attendance",
+              "Leave",
+              "Performance",
+              "Documents",
+              "Announcements",
+            ]
+          : [
+              "Attendance",
+              "Leave",
+              "Payroll",
+              "Performance",
+              "Documents",
+              "Holidays",
+            ]
 
   const quickActions = quickActionNames
-    .map((name) => visibleModules.find((item) => item.label === name))
+    .map((name) =>
+      visibleModules.find((item) => item.label === name),
+    )
     .filter((item): item is ModuleItem => Boolean(item))
 
   const workforceStatuses = [
@@ -960,9 +289,9 @@ function Dashboard() {
     },
   ]
 
-  const roleDistribution = Object.entries(userMetrics?.roles ?? {}).sort(
-    ([, first], [, second]) => second - first,
-  )
+  const roleDistribution = Object.entries(
+    userMetrics?.roles ?? {},
+  ).sort(([, first], [, second]) => second - first)
 
   const maxRoleCount = Math.max(
     ...roleDistribution.map(([, count]) => count),
@@ -977,7 +306,10 @@ function Dashboard() {
   const personalProfileCards = [
     {
       label: "Employee ID",
-      value: employeeProfile?.employee_id || user?.employee_id || "Not available",
+      value:
+        employeeProfile?.employee_id ||
+        user?.employee_id ||
+        "Not available",
     },
     {
       label: "Department",
@@ -989,11 +321,15 @@ function Dashboard() {
     },
     {
       label: "Employment Status",
-      value: employeeProfile?.employment_status || "Not available",
+      value:
+        employeeProfile?.employment_status ||
+        "Not available",
     },
     {
       label: "Employment Type",
-      value: employeeProfile?.employment_type || "Not available",
+      value:
+        employeeProfile?.employment_type ||
+        "Not available",
     },
     {
       label: "Joining Date",
@@ -1005,510 +341,454 @@ function Dashboard() {
     },
     {
       label: "Email",
-      value: employeeProfile?.email || user?.email || "Not available",
+      value:
+        employeeProfile?.email ||
+        user?.email ||
+        "Not available",
     },
   ]
 
   if (isLoading) {
     return (
-      <DashboardLayout
-        isDarkMode={isDarkMode}
-        toggleTheme={toggleTheme}
-        logout={logout}
-      >
-        <div className="dashboard-state">
-          <div className="dashboard-state-card">
-            <div className="dashboard-spinner" />
-            <h2 className="dashboard-state-title">
-              Loading dashboard
-            </h2>
-            <p className="dashboard-state-text">
-              Preparing your HR management workspace.
-            </p>
-          </div>
-        </div>
+      <DashboardLayout isDarkMode={isDarkMode}>
+        <DashboardState
+          title="Loading dashboard"
+          text="Preparing your HR management workspace."
+          loading
+        />
       </DashboardLayout>
     )
   }
 
   if (error) {
     return (
-      <DashboardLayout
-        isDarkMode={isDarkMode}
-        toggleTheme={toggleTheme}
-        logout={logout}
-      >
-        <div className="dashboard-state">
-          <div className="dashboard-state-card">
-            <h2 className="dashboard-state-title">
-              Dashboard unavailable
-            </h2>
-            <p className="dashboard-state-text">
-              {error}
-            </p>
-            <button
-              type="button"
-              className="dashboard-action primary"
-              onClick={() => void loadDashboard()}
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
+      <DashboardLayout isDarkMode={isDarkMode}>
+        <DashboardState
+          title="Dashboard unavailable"
+          text={error}
+          actionLabel="Try Again"
+          onAction={() => void loadDashboard()}
+        />
       </DashboardLayout>
     )
   }
 
   return (
-    <DashboardLayout
-      isDarkMode={isDarkMode}
-      toggleTheme={toggleTheme}
-      logout={logout}
-    >
+    <DashboardLayout isDarkMode={isDarkMode}>
       <div className="dashboard-shell">
-        <header className="dashboard-header">
-          <div className="dashboard-heading">
+        <header className="dashboard-topbar">
+          <div>
             <p className="dashboard-eyebrow">
-              HR Management System
+              HR MANAGEMENT SYSTEM
             </p>
+
             <h1 className="dashboard-title">
               Dashboard
             </h1>
+
             <p className="dashboard-subtitle">
-              Manage your HR operations from one professional workspace.
+              Welcome back, {displayName}. Here is your
+              workspace overview.
             </p>
           </div>
 
-          <div className="dashboard-header-actions">
-            <button
-              type="button"
-              className="dashboard-action"
-              onClick={() => void loadDashboard()}
-            >
-              Refresh
-            </button>
-
-            <button
-              type="button"
-              className="dashboard-action"
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-            >
-              {isDarkMode ? "Light Mode" : "Dark Mode"}
-            </button>
-          </div>
+          <button
+            type="button"
+            className="dashboard-refresh"
+            onClick={() => void loadDashboard()}
+          >
+            Refresh Data
+          </button>
         </header>
 
-        <section className="dashboard-hero">
-          <div className="dashboard-hero-content">
+        <section className="dashboard-welcome">
+          <div className="dashboard-welcome-content">
             <span className="dashboard-role-badge">
               {currentRole}
             </span>
 
-            <h2 className="dashboard-hero-title">
-              Welcome back, {displayName}
+            <h2>
+              {getGreeting()}, {displayName}
             </h2>
 
-            <p className="dashboard-hero-text">
-              {roleDescription}
-            </p>
+            <p>{roleDescription}</p>
           </div>
 
-          <div className="dashboard-profile-summary">
+          <div className="dashboard-user-summary">
             <div className="dashboard-avatar">
               {personalInitials}
             </div>
 
             <div>
-              <p className="dashboard-profile-name">
-                {personalName}
-              </p>
-              <p className="dashboard-profile-role">
-                {currentRole}
-              </p>
+              <strong>{personalName}</strong>
+              <span>{currentRole}</span>
             </div>
           </div>
         </section>
 
         {user?.role === "EMPLOYEE" && (
-          <>
-            <section className="dashboard-section">
-              <div className="dashboard-section-header">
-                <div>
-                  <h2 className="dashboard-section-title">
-                    My Employment Profile
-                  </h2>
-                  <p className="dashboard-section-description">
-                    Your current employment information.
-                  </p>
-                </div>
-              </div>
-
-              <div className="dashboard-panel">
-                <div className="dashboard-profile-grid">
-                  {personalProfileCards.map((card) => (
-                    <div
-                      className="dashboard-info-card"
-                      key={card.label}
-                    >
-                      <p className="dashboard-info-label">
-                        {card.label}
-                      </p>
-                      <p
-                        className={`dashboard-info-value ${
-                          card.value === "Not available" ||
-                          card.value === "Not assigned"
-                            ? "muted"
-                            : ""
-                        }`}
-                        title={card.value}
-                      >
-                        {card.value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-
-            <section className="dashboard-section">
-              <div className="dashboard-section-header">
-                <div>
-                  <h2 className="dashboard-section-title">
-                    My HR Workspace
-                  </h2>
-                  <p className="dashboard-section-description">
-                    Access your personal HR services.
-                  </p>
-                </div>
-              </div>
-
-              <ModuleGrid
-                modules={visibleModules}
-                navigate={navigate}
-              />
-            </section>
-          </>
+          <EmployeeDashboard
+            personalProfileCards={personalProfileCards}
+            visibleModules={visibleModules}
+            navigate={navigate}
+          />
         )}
 
         {user?.role === "MANAGER" && (
-          <>
-            <section className="dashboard-section">
-              <div className="dashboard-section-header">
-                <div>
-                  <h2 className="dashboard-section-title">
-                    Team Overview
-                  </h2>
-                  <p className="dashboard-section-description">
-                    Workforce information available to your manager role.
-                  </p>
-                </div>
-              </div>
-
-              <div className="dashboard-kpi-grid">
-                <MetricCard
-                  label="Team Employees"
-                  value={totalEmployees}
-                  meta="Employees in your accessible team"
-                  icon="TM"
-                />
-
-                <MetricCard
-                  label="Active"
-                  value={activeEmployees}
-                  meta={`${activePercentage}% of accessible team`}
-                  icon="AC"
-                />
-
-                <MetricCard
-                  label="Inactive"
-                  value={inactiveEmployees}
-                  meta="Currently inactive"
-                  icon="IN"
-                />
-
-                <MetricCard
-                  label="Resigned"
-                  value={resignedEmployees}
-                  meta="Resigned employees"
-                  icon="RS"
-                />
-              </div>
-            </section>
-
-            <section className="dashboard-section">
-              <div className="dashboard-content-grid">
-                <WorkforcePanel
-                  totalEmployees={totalEmployees}
-                  activeEmployees={activeEmployees}
-                  workforceStatuses={workforceStatuses}
-                />
-
-                <div className="dashboard-panel">
-                  <h2 className="dashboard-panel-title">
-                    Team Actions
-                  </h2>
-                  <p className="dashboard-panel-subtitle">
-                    Frequently used manager operations.
-                  </p>
-
-                  <div className="dashboard-quick-grid">
-                    {quickActions.map((item) => (
-                      <QuickAction
-                        key={item.path}
-                        item={item}
-                        navigate={navigate}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="dashboard-section">
-              <div className="dashboard-section-header">
-                <div>
-                  <h2 className="dashboard-section-title">
-                    Manager Modules
-                  </h2>
-                  <p className="dashboard-section-description">
-                    Modules available to your role.
-                  </p>
-                </div>
-              </div>
-
-              <ModuleGrid
-                modules={visibleModules}
-                navigate={navigate}
-              />
-            </section>
-          </>
+          <ManagerDashboard
+            totalEmployees={totalEmployees}
+            activeEmployees={activeEmployees}
+            inactiveEmployees={inactiveEmployees}
+            resignedEmployees={resignedEmployees}
+            activePercentage={activePercentage}
+            workforceStatuses={workforceStatuses}
+            quickActions={quickActions}
+            visibleModules={visibleModules}
+            navigate={navigate}
+          />
         )}
 
-        {(user?.role === "SUPER_ADMIN" || user?.role === "HR") && (
-          <>
-            <section className="dashboard-section">
-              <div className="dashboard-section-header">
-                <div>
-                  <h2 className="dashboard-section-title">
-                    {user.role === "SUPER_ADMIN"
-                      ? "Organization Overview"
-                      : "HR Workforce Overview"}
-                  </h2>
-                  <p className="dashboard-section-description">
-                    {user.role === "SUPER_ADMIN"
-                      ? "High-level workforce and system visibility."
-                      : "Workforce information for HR operations."}
-                  </p>
-                </div>
-              </div>
-
-              <div className="dashboard-kpi-grid">
-                <MetricCard
-                  label="Total Employees"
-                  value={totalEmployees}
-                  meta="Employees in the organization"
-                  icon="EM"
-                />
-
-                <MetricCard
-                  label="Active Employees"
-                  value={activeEmployees}
-                  meta={`${activePercentage}% of total workforce`}
-                  icon="AC"
-                />
-
-                <MetricCard
-                  label="Inactive Employees"
-                  value={inactiveEmployees}
-                  meta="Currently inactive"
-                  icon="IN"
-                />
-
-                <MetricCard
-                  label="Total Users"
-                  value={totalUsers}
-                  meta="Registered system users"
-                  icon="US"
-                />
-              </div>
-            </section>
-
-            <section className="dashboard-section">
-              <div className="dashboard-content-grid">
-                <WorkforcePanel
-                  totalEmployees={totalEmployees}
-                  activeEmployees={activeEmployees}
-                  workforceStatuses={workforceStatuses}
-                />
-
-                {user?.role === "SUPER_ADMIN" ? (
-                  <RoleDistribution
-                    roleDistribution={roleDistribution}
-                    maxRoleCount={maxRoleCount}
-                  />
-                ) : (
-                  <div className="dashboard-panel">
-                    <h2 className="dashboard-panel-title">
-                      HR Operations
-                    </h2>
-                    <p className="dashboard-panel-subtitle">
-                      Common HR activities available from this workspace.
-                    </p>
-
-                    <div className="dashboard-quick-grid">
-                      {quickActions.map((item) => (
-                        <QuickAction
-                          key={item.path}
-                          item={item}
-                          navigate={navigate}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {user?.role === "SUPER_ADMIN" && (
-              <section className="dashboard-section">
-                <div className="dashboard-section-header">
-                  <div>
-                    <h2 className="dashboard-section-title">
-                      Administrative Actions
-                    </h2>
-                    <p className="dashboard-section-description">
-                      Direct access to commonly used organization controls.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="dashboard-quick-grid">
-                  {quickActions.map((item) => (
-                    <QuickAction
-                      key={item.path}
-                      item={item}
-                      navigate={navigate}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            <section className="dashboard-section">
-              <div className="dashboard-section-header">
-                <div>
-                  <h2 className="dashboard-section-title">
-                    HRMS Modules
-                  </h2>
-                  <p className="dashboard-section-description">
-                    Access the modules available to your role.
-                  </p>
-                </div>
-              </div>
-
-              <ModuleGrid
-                modules={visibleModules}
-                navigate={navigate}
-              />
-            </section>
-          </>
+        {(user?.role === "SUPER_ADMIN" ||
+          user?.role === "HR") && (
+          <AdminHrDashboard
+            role={user.role}
+            totalEmployees={totalEmployees}
+            activeEmployees={activeEmployees}
+            inactiveEmployees={inactiveEmployees}
+            totalUsers={totalUsers}
+            activePercentage={activePercentage}
+            workforceStatuses={workforceStatuses}
+            roleDistribution={roleDistribution}
+            maxRoleCount={maxRoleCount}
+            quickActions={quickActions}
+            visibleModules={visibleModules}
+            navigate={navigate}
+          />
         )}
 
         <footer className="dashboard-footer">
-          Signed in as {personalName} · {currentRole}
+          <span>{personalName}</span>
+          <span className="dashboard-footer-separator">
+            |
+          </span>
+          <span>{currentRole}</span>
         </footer>
       </div>
     </DashboardLayout>
   )
 }
 
+function getGreeting() {
+  const hour = new Date().getHours()
+
+  if (hour < 12) {
+    return "Good morning"
+  }
+
+  if (hour < 17) {
+    return "Good afternoon"
+  }
+
+  return "Good evening"
+}
+
 function DashboardLayout({
   children,
   isDarkMode,
-  toggleTheme,
-  logout,
 }: {
-  children: React.ReactNode
+  children: ReactNode
   isDarkMode: boolean
-  toggleTheme: () => void
-  logout: () => void
+}) {
+  return (
+    <div
+      className={`dashboard-page ${
+        isDarkMode ? "dashboard-dark" : ""
+      }`}
+    >
+      <style>{dashboardStyles}</style>
+      {children}
+    </div>
+  )
+}
+
+function EmployeeDashboard({
+  personalProfileCards,
+  visibleModules,
+  navigate,
+}: {
+  personalProfileCards: Array<{
+    label: string
+    value: string
+  }>
+  visibleModules: ModuleItem[]
+  navigate: ReturnType<typeof useNavigate>
 }) {
   return (
     <>
-      <style>{`
-        :root {
-          --dashboard-bg: #f5f7fb;
-          --dashboard-card: #ffffff;
-          --dashboard-surface: #f8fafc;
-          --dashboard-text: #172033;
-          --dashboard-muted: #687386;
-          --dashboard-border: #e5e9f0;
-          --dashboard-accent: #4f46e5;
-          --dashboard-accent-soft: #eef2ff;
-          --dashboard-badge-bg: #eef2ff;
-          --dashboard-track: #e9edf3;
-          --dashboard-hero-start: #ffffff;
-          --dashboard-hero-end: #f4f6ff;
-          --dashboard-shadow: 0 4px 18px rgba(16, 24, 40, 0.045);
-          --dashboard-shadow-hover: 0 10px 26px rgba(16, 24, 40, 0.09);
-        }
+      <SectionHeader
+        title="My Employment Profile"
+        description="Your current employment information."
+      />
 
-        [data-theme="dark"] {
-          --dashboard-bg: #0f1420;
-          --dashboard-card: #171d2a;
-          --dashboard-surface: #131925;
-          --dashboard-text: #f4f7fb;
-          --dashboard-muted: #9ba6b7;
-          --dashboard-border: #283143;
-          --dashboard-accent: #818cf8;
-          --dashboard-accent-soft: #24294a;
-          --dashboard-badge-bg: #24294a;
-          --dashboard-track: #2a3344;
-          --dashboard-hero-start: #171d2a;
-          --dashboard-hero-end: #1a2033;
-          --dashboard-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-          --dashboard-shadow-hover: 0 10px 28px rgba(0, 0, 0, 0.28);
-        }
-
-        body {
-          margin: 0;
-          background: var(--dashboard-bg);
-        }
-      `}</style>
-
-      <div className="dashboard-page">
-        <div
-          style={{
-            position: "fixed",
-            top: 18,
-            right: 28,
-            zIndex: 10,
-            display: "flex",
-            gap: 8,
-          }}
-        >
-          <button
-            type="button"
-            className="dashboard-action"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-          >
-            {isDarkMode ? "Light" : "Dark"}
-          </button>
-
-          <button
-            type="button"
-            className="dashboard-action"
-            onClick={logout}
-          >
-            Logout
-          </button>
+      <div className="dashboard-profile-card">
+        <div className="dashboard-profile-grid">
+          {personalProfileCards.map((card) => (
+            <InfoCard
+              key={card.label}
+              label={card.label}
+              value={card.value}
+            />
+          ))}
         </div>
-
-        {children}
       </div>
+
+      <SectionHeader
+        title="My HR Workspace"
+        description="Quick access to your personal HR services."
+      />
+
+      <ModuleGrid
+        modules={visibleModules}
+        navigate={navigate}
+      />
     </>
+  )
+}
+
+function ManagerDashboard({
+  totalEmployees,
+  activeEmployees,
+  inactiveEmployees,
+  resignedEmployees,
+  activePercentage,
+  workforceStatuses,
+  quickActions,
+  visibleModules,
+  navigate,
+}: {
+  totalEmployees: number
+  activeEmployees: number
+  inactiveEmployees: number
+  resignedEmployees: number
+  activePercentage: number
+  workforceStatuses: WorkforceStatus[]
+  quickActions: ModuleItem[]
+  visibleModules: ModuleItem[]
+  navigate: ReturnType<typeof useNavigate>
+}) {
+  return (
+    <>
+      <SectionHeader
+        title="Team Overview"
+        description="A focused view of the workforce available to your manager role."
+      />
+
+      <div className="dashboard-kpi-grid">
+        <MetricCard
+          label="Team Employees"
+          value={totalEmployees}
+          meta="Accessible team members"
+          icon="TM"
+        />
+
+        <MetricCard
+          label="Active"
+          value={activeEmployees}
+          meta={`${activePercentage}% of your team`}
+          icon="AC"
+        />
+
+        <MetricCard
+          label="Inactive"
+          value={inactiveEmployees}
+          meta="Currently inactive"
+          icon="IN"
+        />
+
+        <MetricCard
+          label="Resigned"
+          value={resignedEmployees}
+          meta="Resigned employees"
+          icon="RS"
+        />
+      </div>
+
+      <div className="dashboard-two-column">
+        <WorkforcePanel
+          totalEmployees={totalEmployees}
+          activeEmployees={activeEmployees}
+          workforceStatuses={workforceStatuses}
+        />
+
+        <QuickActionsPanel
+          title="Team Actions"
+          description="Frequently used manager operations."
+          actions={quickActions}
+          navigate={navigate}
+        />
+      </div>
+
+      <SectionHeader
+        title="Manager Modules"
+        description="All modules currently available to your role."
+      />
+
+      <ModuleGrid
+        modules={visibleModules}
+        navigate={navigate}
+      />
+    </>
+  )
+}
+
+function AdminHrDashboard({
+  role,
+  totalEmployees,
+  activeEmployees,
+  inactiveEmployees,
+  totalUsers,
+  activePercentage,
+  workforceStatuses,
+  roleDistribution,
+  maxRoleCount,
+  quickActions,
+  visibleModules,
+  navigate,
+}: {
+  role: string
+  totalEmployees: number
+  activeEmployees: number
+  inactiveEmployees: number
+  totalUsers: number
+  activePercentage: number
+  workforceStatuses: WorkforceStatus[]
+  roleDistribution: Array<[string, number]>
+  maxRoleCount: number
+  quickActions: ModuleItem[]
+  visibleModules: ModuleItem[]
+  navigate: ReturnType<typeof useNavigate>
+}) {
+  const isSuperAdmin = role === "SUPER_ADMIN"
+
+  return (
+    <>
+      <SectionHeader
+        title={
+          isSuperAdmin
+            ? "Organization Overview"
+            : "HR Workforce Overview"
+        }
+        description={
+          isSuperAdmin
+            ? "Complete workforce and system visibility."
+            : "Workforce information and operational HR visibility."
+        }
+      />
+
+      <div className="dashboard-kpi-grid">
+        <MetricCard
+          label="Total Employees"
+          value={totalEmployees}
+          meta="Organization workforce"
+          icon="EM"
+        />
+
+        <MetricCard
+          label="Active Employees"
+          value={activeEmployees}
+          meta={`${activePercentage}% of workforce`}
+          icon="AC"
+        />
+
+        <MetricCard
+          label="Inactive Employees"
+          value={inactiveEmployees}
+          meta="Currently inactive"
+          icon="IN"
+        />
+
+        <MetricCard
+          label="Total Users"
+          value={totalUsers}
+          meta="Registered system users"
+          icon="US"
+        />
+      </div>
+
+      <div className="dashboard-two-column">
+        <WorkforcePanel
+          totalEmployees={totalEmployees}
+          activeEmployees={activeEmployees}
+          workforceStatuses={workforceStatuses}
+        />
+
+        {isSuperAdmin ? (
+          <RoleDistribution
+            roleDistribution={roleDistribution}
+            maxRoleCount={maxRoleCount}
+          />
+        ) : (
+          <QuickActionsPanel
+            title="HR Operations"
+            description="Frequently used HR operations."
+            actions={quickActions}
+            navigate={navigate}
+          />
+        )}
+      </div>
+
+      {isSuperAdmin && (
+        <>
+          <SectionHeader
+            title="Administrative Actions"
+            description="Direct access to commonly used organization controls."
+          />
+
+          <div className="dashboard-action-grid">
+            {quickActions.map((item) => (
+              <QuickAction
+                key={item.path}
+                item={item}
+                navigate={navigate}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      <SectionHeader
+        title="HRMS Modules"
+        description="Access all modules available to your role."
+      />
+
+      <ModuleGrid
+        modules={visibleModules}
+        navigate={navigate}
+      />
+    </>
+  )
+}
+
+interface WorkforceStatus {
+  label: string
+  value: number
+  percentage: number
+}
+
+function SectionHeader({
+  title,
+  description,
+}: {
+  title: string
+  description: string
+}) {
+  return (
+    <div className="dashboard-section-header">
+      <div>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+    </div>
   )
 }
 
@@ -1525,23 +805,37 @@ function MetricCard({
 }) {
   return (
     <div className="dashboard-kpi">
-      <div className="dashboard-kpi-top">
-        <span className="dashboard-kpi-label">
-          {label}
-        </span>
-
-        <span className="dashboard-kpi-icon">
-          {icon}
-        </span>
+      <div className="dashboard-kpi-heading">
+        <span>{label}</span>
+        <b>{icon}</b>
       </div>
 
-      <p className="dashboard-kpi-value">
+      <strong>
         {value.toLocaleString("en-IN")}
-      </p>
+      </strong>
 
-      <p className="dashboard-kpi-meta">
-        {meta}
-      </p>
+      <small>{meta}</small>
+    </div>
+  )
+}
+
+function InfoCard({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  const muted =
+    value === "Not available" ||
+    value === "Not assigned"
+
+  return (
+    <div className="dashboard-info-card">
+      <span>{label}</span>
+      <strong className={muted ? "muted" : ""}>
+        {value}
+      </strong>
     </div>
   )
 }
@@ -1553,11 +847,7 @@ function WorkforcePanel({
 }: {
   totalEmployees: number
   activeEmployees: number
-  workforceStatuses: Array<{
-    label: string
-    value: number
-    percentage: number
-  }>
+  workforceStatuses: WorkforceStatus[]
 }) {
   const activeAngle =
     totalEmployees > 0
@@ -1566,13 +856,14 @@ function WorkforcePanel({
 
   return (
     <div className="dashboard-panel">
-      <h2 className="dashboard-panel-title">
-        Workforce Status
-      </h2>
-
-      <p className="dashboard-panel-subtitle">
-        Current employee distribution by employment status.
-      </p>
+      <div className="dashboard-panel-heading">
+        <div>
+          <h2>Workforce Status</h2>
+          <p>
+            Current employee distribution by employment status.
+          </p>
+        </div>
+      </div>
 
       <div className="dashboard-workforce">
         <div
@@ -1580,16 +871,12 @@ function WorkforcePanel({
           style={
             {
               "--active-angle": `${activeAngle}deg`,
-            } as React.CSSProperties
+            } as CSSProperties
           }
         >
           <div className="dashboard-donut-center">
-            <span className="dashboard-donut-value">
-              {activeEmployees}
-            </span>
-            <span className="dashboard-donut-label">
-              Active
-            </span>
+            <strong>{activeEmployees}</strong>
+            <span>Active</span>
           </div>
         </div>
 
@@ -1599,19 +886,19 @@ function WorkforcePanel({
               className="dashboard-status-row"
               key={status.label}
             >
-              <span className="dashboard-status-name">
-                {status.label}
-              </span>
-
-              <span className="dashboard-status-value">
-                {status.value}
-              </span>
+              <div className="dashboard-status-top">
+                <span>{status.label}</span>
+                <strong>{status.value}</strong>
+              </div>
 
               <div className="dashboard-status-track">
                 <div
                   className="dashboard-status-progress"
                   style={{
-                    width: `${Math.min(status.percentage, 100)}%`,
+                    width: `${Math.min(
+                      status.percentage,
+                      100,
+                    )}%`,
                   }}
                 />
               </div>
@@ -1632,17 +919,18 @@ function RoleDistribution({
 }) {
   return (
     <div className="dashboard-panel">
-      <h2 className="dashboard-panel-title">
-        User Distribution
-      </h2>
-
-      <p className="dashboard-panel-subtitle">
-        System users grouped by assigned role.
-      </p>
+      <div className="dashboard-panel-heading">
+        <div>
+          <h2>User Distribution</h2>
+          <p>
+            System users grouped by assigned role.
+          </p>
+        </div>
+      </div>
 
       <div className="dashboard-role-list">
         {roleDistribution.length === 0 ? (
-          <p className="dashboard-panel-subtitle">
+          <p className="dashboard-empty-text">
             No role distribution data available.
           </p>
         ) : (
@@ -1651,13 +939,13 @@ function RoleDistribution({
               className="dashboard-role-row"
               key={role}
             >
-              <span className="dashboard-role-name">
-                {roleLabels[role] || role}
-              </span>
+              <div className="dashboard-role-top">
+                <span>
+                  {roleLabels[role] || role}
+                </span>
 
-              <span className="dashboard-role-count">
-                {count}
-              </span>
+                <strong>{count}</strong>
+              </div>
 
               <div className="dashboard-role-track">
                 <div
@@ -1673,6 +961,39 @@ function RoleDistribution({
             </div>
           ))
         )}
+      </div>
+    </div>
+  )
+}
+
+function QuickActionsPanel({
+  title,
+  description,
+  actions,
+  navigate,
+}: {
+  title: string
+  description: string
+  actions: ModuleItem[]
+  navigate: ReturnType<typeof useNavigate>
+}) {
+  return (
+    <div className="dashboard-panel">
+      <div className="dashboard-panel-heading">
+        <div>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </div>
+      </div>
+
+      <div className="dashboard-quick-list">
+        {actions.map((item) => (
+          <QuickAction
+            key={item.path}
+            item={item}
+            navigate={navigate}
+          />
+        ))}
       </div>
     </div>
   )
@@ -1696,14 +1017,9 @@ function QuickAction({
           {item.icon}
         </span>
 
-        <span>
-          <span className="dashboard-quick-title">
-            {item.label}
-          </span>
-
-          <span className="dashboard-quick-text">
-            Open module
-          </span>
+        <span className="dashboard-quick-copy">
+          <strong>{item.label}</strong>
+          <small>Open module</small>
         </span>
       </span>
 
@@ -1724,7 +1040,7 @@ function ModuleGrid({
   if (modules.length === 0) {
     return (
       <div className="dashboard-panel">
-        <p className="dashboard-panel-subtitle">
+        <p className="dashboard-empty-text">
           No modules are currently available for this role.
         </p>
       </div>
@@ -1744,15 +1060,11 @@ function ModuleGrid({
             {item.icon}
           </span>
 
-          <p className="dashboard-module-title">
-            {item.label}
-          </p>
+          <strong>{item.label}</strong>
 
-          <p className="dashboard-module-description">
-            {item.description}
-          </p>
+          <p>{item.description}</p>
 
-          <span className="dashboard-module-arrow">
+          <span className="dashboard-module-link">
             Open Module →
           </span>
         </button>
@@ -1760,5 +1072,799 @@ function ModuleGrid({
     </div>
   )
 }
+
+function DashboardState({
+  title,
+  text,
+  loading = false,
+  actionLabel,
+  onAction,
+}: {
+  title: string
+  text: string
+  loading?: boolean
+  actionLabel?: string
+  onAction?: () => void
+}) {
+  return (
+    <div className="dashboard-state">
+      <div className="dashboard-state-card">
+        {loading && (
+          <div className="dashboard-spinner" />
+        )}
+
+        <h2>{title}</h2>
+        <p>{text}</p>
+
+        {actionLabel && onAction && (
+          <button
+            type="button"
+            className="dashboard-state-button"
+            onClick={onAction}
+          >
+            {actionLabel}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const dashboardStyles = `
+  .dashboard-page {
+    --dashboard-bg: #f5f7fb;
+    --dashboard-card: #ffffff;
+    --dashboard-surface: #f8fafc;
+    --dashboard-text: #172033;
+    --dashboard-muted: #687386;
+    --dashboard-border: #e5e9f0;
+    --dashboard-accent: #4f46e5;
+    --dashboard-accent-soft: #eef2ff;
+    --dashboard-track: #e9edf3;
+    --dashboard-shadow: 0 4px 18px rgba(16, 24, 40, 0.05);
+    --dashboard-shadow-hover: 0 12px 30px rgba(16, 24, 40, 0.10);
+
+    width: 100%;
+    min-height: calc(100vh - 48px);
+    background: var(--dashboard-bg);
+    color: var(--dashboard-text);
+    border-radius: 18px;
+  }
+
+  .dashboard-dark {
+    --dashboard-bg: #0f1420;
+    --dashboard-card: #171d2a;
+    --dashboard-surface: #131925;
+    --dashboard-text: #f4f7fb;
+    --dashboard-muted: #9ba6b7;
+    --dashboard-border: #283143;
+    --dashboard-accent: #818cf8;
+    --dashboard-accent-soft: #24294a;
+    --dashboard-track: #2a3344;
+    --dashboard-shadow: 0 4px 20px rgba(0, 0, 0, 0.20);
+    --dashboard-shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.28);
+  }
+
+  .dashboard-shell {
+    width: 100%;
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 8px 0 30px;
+  }
+
+  .dashboard-topbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 22px;
+  }
+
+  .dashboard-eyebrow {
+    margin: 0 0 7px;
+    color: var(--dashboard-accent);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+  }
+
+  .dashboard-title {
+    margin: 0;
+    color: var(--dashboard-text);
+    font-size: clamp(28px, 3vw, 38px);
+    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .dashboard-subtitle {
+    margin: 9px 0 0;
+    color: var(--dashboard-muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .dashboard-refresh,
+  .dashboard-state-button {
+    border: 1px solid var(--dashboard-border);
+    border-radius: 10px;
+    background: var(--dashboard-card);
+    color: var(--dashboard-text);
+    padding: 10px 15px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--dashboard-shadow);
+    transition: 0.2s ease;
+  }
+
+  .dashboard-refresh:hover,
+  .dashboard-state-button:hover {
+    border-color: var(--dashboard-accent);
+    color: var(--dashboard-accent);
+    transform: translateY(-1px);
+  }
+
+  .dashboard-welcome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+    padding: 28px 30px;
+    margin-bottom: 28px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 18px;
+    background:
+      linear-gradient(
+        135deg,
+        var(--dashboard-card),
+        var(--dashboard-accent-soft)
+      );
+    box-shadow: var(--dashboard-shadow);
+  }
+
+  .dashboard-welcome-content {
+    min-width: 0;
+  }
+
+  .dashboard-role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--dashboard-accent-soft);
+    color: var(--dashboard-accent);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .dashboard-welcome h2 {
+    margin: 13px 0 7px;
+    color: var(--dashboard-text);
+    font-size: clamp(21px, 2vw, 28px);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .dashboard-welcome p {
+    max-width: 700px;
+    margin: 0;
+    color: var(--dashboard-muted);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .dashboard-user-summary {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-width: 190px;
+    padding-left: 20px;
+    border-left: 1px solid var(--dashboard-border);
+  }
+
+  .dashboard-avatar {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
+    border-radius: 15px;
+    background: var(--dashboard-accent);
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .dashboard-user-summary div:last-child {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .dashboard-user-summary strong {
+    overflow: hidden;
+    color: var(--dashboard-text);
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-user-summary span {
+    margin-top: 3px;
+    color: var(--dashboard-muted);
+    font-size: 12px;
+  }
+
+  .dashboard-section-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 30px 0 14px;
+  }
+
+  .dashboard-section-header h2 {
+    margin: 0;
+    color: var(--dashboard-text);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+  }
+
+  .dashboard-section-header p {
+    margin: 5px 0 0;
+    color: var(--dashboard-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .dashboard-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .dashboard-kpi {
+    min-width: 0;
+    padding: 19px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 15px;
+    background: var(--dashboard-card);
+    box-shadow: var(--dashboard-shadow);
+  }
+
+  .dashboard-kpi-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .dashboard-kpi-heading span {
+    color: var(--dashboard-muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .dashboard-kpi-heading b {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--dashboard-accent-soft);
+    color: var(--dashboard-accent);
+    font-size: 10px;
+    letter-spacing: 0.03em;
+  }
+
+  .dashboard-kpi > strong {
+    display: block;
+    margin-top: 17px;
+    color: var(--dashboard-text);
+    font-size: 30px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .dashboard-kpi > small {
+    display: block;
+    margin-top: 10px;
+    color: var(--dashboard-muted);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .dashboard-two-column {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .dashboard-panel,
+  .dashboard-profile-card {
+    min-width: 0;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 15px;
+    background: var(--dashboard-card);
+    box-shadow: var(--dashboard-shadow);
+  }
+
+  .dashboard-panel {
+    padding: 21px;
+  }
+
+  .dashboard-panel-heading {
+    margin-bottom: 20px;
+  }
+
+  .dashboard-panel-heading h2 {
+    margin: 0;
+    color: var(--dashboard-text);
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .dashboard-panel-heading p {
+    margin: 5px 0 0;
+    color: var(--dashboard-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .dashboard-workforce {
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr);
+    align-items: center;
+    gap: 28px;
+  }
+
+  .dashboard-donut {
+    position: relative;
+    width: 176px;
+    height: 176px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background:
+      conic-gradient(
+        var(--dashboard-accent) 0deg,
+        var(--dashboard-accent) var(--active-angle),
+        var(--dashboard-track) var(--active-angle),
+        var(--dashboard-track) 360deg
+      );
+  }
+
+  .dashboard-donut::after {
+    position: absolute;
+    content: "";
+    inset: 22px;
+    border-radius: 50%;
+    background: var(--dashboard-card);
+  }
+
+  .dashboard-donut-center {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  .dashboard-donut-center strong {
+    color: var(--dashboard-text);
+    font-size: 27px;
+    line-height: 1;
+    font-weight: 800;
+  }
+
+  .dashboard-donut-center span {
+    margin-top: 6px;
+    color: var(--dashboard-muted);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .dashboard-status-list,
+  .dashboard-role-list {
+    display: flex;
+    flex-direction: column;
+    gap: 17px;
+  }
+
+  .dashboard-status-top,
+  .dashboard-role-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 7px;
+  }
+
+  .dashboard-status-top span,
+  .dashboard-role-top span {
+    color: var(--dashboard-text);
+    font-size: 12px;
+    font-weight: 650;
+  }
+
+  .dashboard-status-top strong,
+  .dashboard-role-top strong {
+    color: var(--dashboard-text);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .dashboard-status-track,
+  .dashboard-role-track {
+    height: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--dashboard-track);
+  }
+
+  .dashboard-status-progress,
+  .dashboard-role-progress {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--dashboard-accent);
+    transition: width 0.3s ease;
+  }
+
+  .dashboard-profile-card {
+    padding: 20px;
+  }
+
+  .dashboard-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .dashboard-info-card {
+    min-width: 0;
+    padding: 15px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 12px;
+    background: var(--dashboard-surface);
+  }
+
+  .dashboard-info-card span {
+    display: block;
+    color: var(--dashboard-muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .dashboard-info-card strong {
+    display: block;
+    margin-top: 8px;
+    overflow: hidden;
+    color: var(--dashboard-text);
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1.45;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-info-card strong.muted {
+    color: var(--dashboard-muted);
+    font-weight: 600;
+  }
+
+  .dashboard-quick-list {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .dashboard-action-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .dashboard-quick-action {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 11px;
+    background: var(--dashboard-surface);
+    color: var(--dashboard-text);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      border-color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .dashboard-quick-action:hover {
+    border-color: var(--dashboard-accent);
+    background: var(--dashboard-accent-soft);
+    transform: translateY(-1px);
+  }
+
+  .dashboard-quick-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .dashboard-quick-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border-radius: 9px;
+    background: var(--dashboard-card);
+    color: var(--dashboard-accent);
+    font-size: 9px;
+    font-weight: 800;
+    border: 1px solid var(--dashboard-border);
+  }
+
+  .dashboard-quick-copy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .dashboard-quick-copy strong {
+    overflow: hidden;
+    color: var(--dashboard-text);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-quick-copy small {
+    margin-top: 3px;
+    color: var(--dashboard-muted);
+    font-size: 10px;
+  }
+
+  .dashboard-quick-arrow {
+    flex: 0 0 auto;
+    color: var(--dashboard-accent);
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .dashboard-module-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .dashboard-module {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+    min-height: 184px;
+    padding: 18px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 14px;
+    background: var(--dashboard-card);
+    color: var(--dashboard-text);
+    text-align: left;
+    box-shadow: var(--dashboard-shadow);
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .dashboard-module:hover {
+    border-color: var(--dashboard-accent);
+    box-shadow: var(--dashboard-shadow-hover);
+    transform: translateY(-2px);
+  }
+
+  .dashboard-module-icon {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    background: var(--dashboard-accent-soft);
+    color: var(--dashboard-accent);
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .dashboard-module strong {
+    margin-top: 16px;
+    color: var(--dashboard-text);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .dashboard-module p {
+    min-height: 48px;
+    margin: 7px 0 14px;
+    color: var(--dashboard-muted);
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .dashboard-module-link {
+    margin-top: auto;
+    color: var(--dashboard-accent);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .dashboard-empty-text {
+    margin: 0;
+    color: var(--dashboard-muted);
+    font-size: 13px;
+  }
+
+  .dashboard-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 34px;
+    padding: 18px 0 4px;
+    border-top: 1px solid var(--dashboard-border);
+    color: var(--dashboard-muted);
+    font-size: 11px;
+  }
+
+  .dashboard-footer span:first-child {
+    color: var(--dashboard-text);
+    font-weight: 700;
+  }
+
+  .dashboard-state {
+    min-height: 65vh;
+    display: grid;
+    place-items: center;
+    padding: 30px;
+  }
+
+  .dashboard-state-card {
+    width: min(430px, 100%);
+    padding: 32px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 16px;
+    background: var(--dashboard-card);
+    box-shadow: var(--dashboard-shadow);
+    text-align: center;
+  }
+
+  .dashboard-state-card h2 {
+    margin: 18px 0 8px;
+    color: var(--dashboard-text);
+    font-size: 20px;
+  }
+
+  .dashboard-state-card p {
+    margin: 0 0 20px;
+    color: var(--dashboard-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .dashboard-spinner {
+    width: 34px;
+    height: 34px;
+    margin: 0 auto;
+    border: 3px solid var(--dashboard-track);
+    border-top-color: var(--dashboard-accent);
+    border-radius: 50%;
+    animation: dashboard-spin 0.8s linear infinite;
+  }
+
+  @keyframes dashboard-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (max-width: 1180px) {
+    .dashboard-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-module-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .dashboard-profile-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 900px) {
+    .dashboard-topbar {
+      align-items: flex-start;
+    }
+
+    .dashboard-two-column {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-module-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-action-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-user-summary {
+      display: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .dashboard-page {
+      border-radius: 12px;
+    }
+
+    .dashboard-shell {
+      padding: 0 0 20px;
+    }
+
+    .dashboard-topbar {
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .dashboard-refresh {
+      width: 100%;
+    }
+
+    .dashboard-welcome {
+      padding: 21px;
+    }
+
+    .dashboard-kpi-grid,
+    .dashboard-module-grid,
+    .dashboard-profile-grid,
+    .dashboard-action-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-workforce {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-donut {
+      width: 155px;
+      height: 155px;
+    }
+
+    .dashboard-panel,
+    .dashboard-profile-card {
+      padding: 16px;
+    }
+
+    .dashboard-section-header {
+      margin-top: 24px;
+    }
+  }
+`
 
 export default Dashboard
