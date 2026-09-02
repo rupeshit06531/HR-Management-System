@@ -315,3 +315,150 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+.dashboard-page.dashboard-compact .dashboard-today-attendance {
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+  padding: 10px !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-today-attendance .dashboard-panel-heading {
+  margin-bottom: 8px !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-today-attendance .dashboard-panel-heading h2 {
+  margin: 0 !important;
+  font-size: 15px !important;
+  line-height: 1.2 !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-today-attendance .dashboard-panel-heading p {
+  margin: 2px 0 0 !important;
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-today-attendance .dashboard-role-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 24px !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-attendance-summary {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+  margin: 0 0 8px !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-attendance-summary > div {
+  min-width: 0 !important;
+  padding: 7px 8px !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 6px !important;
+  background: var(--card-bg) !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-attendance-summary span {
+  display: block !important;
+  margin-bottom: 2px !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  color: var(--muted-text) !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-attendance-summary strong {
+  display: block !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-attendance-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  flex-wrap: wrap !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-selfie-input {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 30px !important;
+  max-width: 240px !important;
+  padding: 0 9px !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 6px !important;
+  background: var(--card-bg) !important;
+  cursor: pointer !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-selfie-input span {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-selfie-input input {
+  display: none !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-attendance-button {
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-attendance-button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-state-error,
+.dashboard-page.dashboard-compact .dashboard-state-success {
+  margin: 7px 0 0 !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+
+.dashboard-page.dashboard-compact .dashboard-today-attendance > p {
+  margin: 5px 0 !important;
+  font-size: 11px !important;
+}
+
+@media (max-width: 700px) {
+  .dashboard-page.dashboard-compact .dashboard-attendance-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .dashboard-page.dashboard-compact .dashboard-attendance-summary {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dashboard-page.dashboard-compact .dashboard-attendance-actions {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .dashboard-page.dashboard-compact .dashboard-selfie-input,
+  .dashboard-page.dashboard-compact .dashboard-attendance-button {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}

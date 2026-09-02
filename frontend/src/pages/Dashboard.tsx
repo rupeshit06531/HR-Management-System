@@ -7,8 +7,12 @@ import {
 } from "react"
 import { useNavigate } from "react-router-dom"
 
-import "../dashboard-compact.css"
-
+import {
+  getAttendance,
+  punchInAttendance,
+  punchOutAttendance,
+  type Attendance,
+} from "../api/attendance"
 import { getDashboard } from "../api/dashboard"
 import { getAnnouncements, type AnnouncementRecord } from "../api/announcements"
 import { getHolidays, type Holiday } from "../api/holidays"
@@ -573,16 +577,624 @@ function EmployeeDashboard({
         </div>
       </div>
 
+      <EmployeeTodayAttendance />
+
       <SectionHeader
         title="My HR Workspace"
         description="Quick access to your personal HR services."
       />
 
       <ModuleGrid
-        modules={visibleModules}
+        modules={visibleModules.filter((module) =>
+          [
+            "Attendance",
+            "Leave",
+            "Payroll",
+            "Performance",
+            "Documents",
+            "Holidays",
+          ].includes(module.label),
+        )}
         navigate={navigate}
       />
     </>
+  )
+}
+
+function EmployeeTodayAttendance() {
+  const [attendance, setAttendance] =
+    useState<Attendance | null>(null)
+
+  const [isLoading, setIsLoading] =
+    useState(true)
+
+  const [isPunchingIn, setIsPunchingIn] =
+    useState(false)
+
+  const [isPunchingOut, setIsPunchingOut] =
+    useState(false)
+
+  const [selfieFile, setSelfieFile] =
+    useState<File | null>(null)
+
+  const [error, setError] =
+    useState<string | null>(null)
+
+  const [success, setSuccess] =
+    useState<string | null>(null)
+
+  const getTodayDate = () => {
+    const now = new Date()
+
+    const year = now.getFullYear()
+    const month = String(
+      now.getMonth() + 1,
+    ).padStart(2, "0")
+    const day = String(
+      now.getDate(),
+    ).padStart(2, "0")
+
+    return `${year}-${month}-${day}`
+  }
+
+  const formatTime = (
+    value: string | null,
+  ) => {
+    if (!value) {
+      return "--"
+    }
+
+    const parts = value.split(":")
+
+    if (parts.length < 2) {
+      return value
+    }
+
+    const hours = Number(parts[0])
+    const minutes = Number(parts[1])
+
+    if (
+      !Number.isFinite(hours) ||
+      !Number.isFinite(minutes)
+    ) {
+      return value
+    }
+
+    const period =
+      hours >= 12 ? "PM" : "AM"
+
+    const displayHours =
+      hours % 12 || 12
+
+    return `${displayHours}:${String(
+      minutes,
+    ).padStart(2, "0")} ${period}`
+  }
+
+  const loadTodayAttendance =
+    async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        const response =
+          await getAttendance()
+
+        const today =
+          getTodayDate()
+
+        const todayRecord =
+          response.results.find(
+            (record) =>
+              record.date === today,
+          ) ?? null
+
+        setAttendance(todayRecord)
+      } catch (requestError) {
+        console.error(
+          "Failed to load today's attendance:",
+          requestError,
+        )
+
+        setError(
+          "Unable to load today's attendance.",
+        )
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+  useEffect(() => {
+    void loadTodayAttendance()
+  }, [])
+
+  const getCurrentLocation =
+    async () => {
+      if (!navigator.geolocation) {
+        throw new Error(
+          "Geolocation is not supported by this browser.",
+        )
+      }
+
+      return new Promise<GeolocationPosition>(
+        (resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            resolve,
+            reject,
+            {
+              enableHighAccuracy: true,
+              timeout: 15000,
+              maximumAge: 0,
+            },
+          )
+        },
+      )
+    }
+
+  const handlePunchIn = async () => {
+    setError(null)
+    setSuccess(null)
+
+    if (!selfieFile) {
+      setError(
+        "Please capture a selfie before punching in.",
+      )
+      return
+    }
+
+    try {
+      setIsPunchingIn(true)
+
+      const position =
+        await getCurrentLocation()
+
+      const latitude = Number(
+        position.coords.latitude.toFixed(6),
+      )
+
+      const longitude = Number(
+        position.coords.longitude.toFixed(6),
+      )
+
+      const accuracy =
+        Number.isFinite(
+          position.coords.accuracy,
+        )
+          ? Number(
+              Math.max(
+                0,
+                position.coords.accuracy,
+              ).toFixed(2),
+            )
+          : null
+
+      const response =
+        await punchInAttendance({
+          latitude,
+          longitude,
+          accuracy,
+          selfie: selfieFile,
+        })
+
+      setAttendance(
+        response.attendance,
+      )
+
+      setSelfieFile(null)
+
+      setSuccess(
+        response.message ||
+          "Punch-in successful.",
+      )
+    } catch (punchError) {
+      console.error(
+        "Dashboard punch-in error:",
+        punchError,
+      )
+
+      if (
+        punchError instanceof
+        GeolocationPositionError
+      ) {
+        if (
+          punchError.code ===
+          GeolocationPositionError.PERMISSION_DENIED
+        ) {
+          setError(
+            "Location permission was denied. Please allow location access and try again.",
+          )
+        } else if (
+          punchError.code ===
+          GeolocationPositionError.POSITION_UNAVAILABLE
+        ) {
+          setError(
+            "Unable to determine your current location.",
+          )
+        } else {
+          setError(
+            "Location request timed out. Please try again.",
+          )
+        }
+
+        return
+      }
+
+      const axiosError =
+        punchError as {
+          response?: {
+            data?: unknown
+          }
+        }
+
+      const responseData =
+        axiosError.response?.data
+
+      if (
+        responseData &&
+        typeof responseData === "object"
+      ) {
+        const data =
+          responseData as Record<
+            string,
+            unknown
+          >
+
+        if (
+          typeof data.detail ===
+          "string"
+        ) {
+          setError(data.detail)
+          return
+        }
+
+        const messages =
+          Object.entries(data).flatMap(
+            ([field, value]) => {
+              if (Array.isArray(value)) {
+                return value.map(
+                  (message) =>
+                    `${field}: ${String(message)}`,
+                )
+              }
+
+              if (
+                typeof value === "string"
+              ) {
+                return [
+                  `${field}: ${value}`,
+                ]
+              }
+
+              return []
+            },
+          )
+
+        if (messages.length > 0) {
+          setError(
+            messages.join(" | "),
+          )
+          return
+        }
+      }
+
+      setError(
+        "Unable to punch in attendance. Please try again.",
+      )
+    } finally {
+      setIsPunchingIn(false)
+    }
+  }
+
+  const handlePunchOut = async () => {
+    setError(null)
+    setSuccess(null)
+
+    if (!attendance?.check_in) {
+      setError(
+        "Please punch in before punching out.",
+      )
+      return
+    }
+
+    if (!selfieFile) {
+      setError(
+        "Please capture a selfie before punching out.",
+      )
+      return
+    }
+
+    try {
+      setIsPunchingOut(true)
+
+      const position =
+        await getCurrentLocation()
+
+      const latitude = Number(
+        position.coords.latitude.toFixed(6),
+      )
+
+      const longitude = Number(
+        position.coords.longitude.toFixed(6),
+      )
+
+      const accuracy =
+        Number.isFinite(
+          position.coords.accuracy,
+        )
+          ? Number(
+              Math.max(
+                0,
+                position.coords.accuracy,
+              ).toFixed(2),
+            )
+          : null
+
+      const response =
+        await punchOutAttendance({
+          latitude,
+          longitude,
+          accuracy,
+          selfie: selfieFile,
+        })
+
+      setAttendance(
+        response.attendance,
+      )
+
+      setSelfieFile(null)
+
+      setSuccess(
+        response.message ||
+          "Punch-out successful.",
+      )
+    } catch (punchError) {
+      console.error(
+        "Dashboard punch-out error:",
+        punchError,
+      )
+
+      if (
+        punchError instanceof
+        GeolocationPositionError
+      ) {
+        if (
+          punchError.code ===
+          GeolocationPositionError.PERMISSION_DENIED
+        ) {
+          setError(
+            "Location permission was denied. Please allow location access and try again.",
+          )
+        } else if (
+          punchError.code ===
+          GeolocationPositionError.POSITION_UNAVAILABLE
+        ) {
+          setError(
+            "Unable to determine your current location.",
+          )
+        } else {
+          setError(
+            "Location request timed out. Please try again.",
+          )
+        }
+
+        return
+      }
+
+      const axiosError =
+        punchError as {
+          response?: {
+            data?: unknown
+          }
+        }
+
+      const responseData =
+        axiosError.response?.data
+
+      if (
+        responseData &&
+        typeof responseData === "object"
+      ) {
+        const data =
+          responseData as Record<
+            string,
+            unknown
+          >
+
+        if (
+          typeof data.detail ===
+          "string"
+        ) {
+          setError(data.detail)
+          return
+        }
+
+        const messages =
+          Object.entries(data).flatMap(
+            ([field, value]) => {
+              if (Array.isArray(value)) {
+                return value.map(
+                  (message) =>
+                    `${field}: ${String(message)}`,
+                )
+              }
+
+              if (
+                typeof value === "string"
+              ) {
+                return [
+                  `${field}: ${value}`,
+                ]
+              }
+
+              return []
+            },
+          )
+
+        if (messages.length > 0) {
+          setError(
+            messages.join(" | "),
+          )
+          return
+        }
+      }
+
+      setError(
+        "Unable to punch out attendance. Please try again.",
+      )
+    } finally {
+      setIsPunchingOut(false)
+    }
+  }
+
+  const handleSelfieChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file =
+      event.target.files?.[0] ?? null
+
+    setSelfieFile(file)
+    setError(null)
+    setSuccess(null)
+  }
+
+  return (
+    <section className="dashboard-panel dashboard-today-attendance">
+      <div className="dashboard-panel-heading">
+        <div>
+          <h2>Today's Attendance</h2>
+          <p>
+            Your attendance status for today.
+          </p>
+        </div>
+
+        <span className="dashboard-role-badge">
+          {attendance?.check_out
+            ? "Completed"
+            : attendance?.check_in
+              ? "Working"
+              : "Not Punched"}
+        </span>
+      </div>
+
+      {isLoading ? (
+        <p>Loading attendance...</p>
+      ) : (
+        <>
+          <div className="dashboard-attendance-summary">
+            <div>
+              <span>Date</span>
+              <strong>
+                {getTodayDate()}
+              </strong>
+            </div>
+
+            <div>
+              <span>Punch In</span>
+              <strong>
+                {formatTime(
+                  attendance?.check_in ??
+                    null,
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>Punch Out</span>
+              <strong>
+                {formatTime(
+                  attendance?.check_out ??
+                    null,
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>Status</span>
+              <strong>
+                {attendance?.status
+                  ? attendance.status
+                      .replace(
+                        /_/g,
+                        " ",
+                      )
+                      .replace(
+                        /\b\w/g,
+                        (character) =>
+                          character.toUpperCase(),
+                      )
+                  : "Not punched"}
+              </strong>
+            </div>
+          </div>
+
+          {!attendance?.check_out && (
+            <div className="dashboard-attendance-actions">
+              <label className="dashboard-selfie-input">
+                <span>
+                  {selfieFile
+                    ? selfieFile.name
+                    : "Capture Selfie"}
+                </span>
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  onChange={
+                    handleSelfieChange
+                  }
+                />
+              </label>
+
+              {!attendance?.check_in && (
+                <button
+                  type="button"
+                  className="dashboard-attendance-button"
+                  onClick={() =>
+                    void handlePunchIn()
+                  }
+                  disabled={isPunchingIn}
+                >
+                  {isPunchingIn
+                    ? "Punching In..."
+                    : "Punch In"}
+                </button>
+              )}
+
+              {attendance?.check_in &&
+                !attendance?.check_out && (
+                  <button
+                    type="button"
+                    className="dashboard-attendance-button"
+                    onClick={() =>
+                      void handlePunchOut()
+                    }
+                    disabled={
+                      isPunchingOut
+                    }
+                  >
+                    {isPunchingOut
+                      ? "Punching Out..."
+                      : "Punch Out"}
+                  </button>
+                )}
+            </div>
+          )}
+
+          {error && (
+            <p className="dashboard-state-error">
+              {error}
+            </p>
+          )}
+
+          {success && (
+            <p className="dashboard-state-success">
+              {success}
+            </p>
+          )}
+        </>
+      )}
+    </section>
   )
 }
 
