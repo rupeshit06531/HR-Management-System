@@ -26,24 +26,26 @@ export interface HolidayPayload {
   is_active: boolean
 }
 
-export const getHolidays =
-  async (): Promise<HolidayListResponse> => {
-    const response =
-      await apiClient.get<HolidayListResponse>(
-        "/holidays/",
-      )
+export const getHolidays = async (
+  params?: Record<string, string | number | boolean>,
+): Promise<HolidayListResponse> => {
+  const response = await apiClient.get<HolidayListResponse>(
+    "/holidays/",
+    {
+      params,
+    },
+  )
 
-    return response.data
-  }
+  return response.data
+}
 
 export const createHoliday = async (
   data: HolidayPayload,
 ): Promise<Holiday> => {
-  const response =
-    await apiClient.post<Holiday>(
-      "/holidays/",
-      data,
-    )
+  const response = await apiClient.post<Holiday>(
+    "/holidays/",
+    data,
+  )
 
   return response.data
 }
@@ -52,11 +54,10 @@ export const updateHoliday = async (
   id: number,
   data: HolidayPayload,
 ): Promise<Holiday> => {
-  const response =
-    await apiClient.put<Holiday>(
-      `/holidays/${id}/`,
-      data,
-    )
+  const response = await apiClient.put<Holiday>(
+    `/holidays/${id}/`,
+    data,
+  )
 
   return response.data
 }
