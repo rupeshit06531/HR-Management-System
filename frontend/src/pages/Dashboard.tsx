@@ -8,6 +8,8 @@ import {
 import { useNavigate } from "react-router-dom"
 
 import { getDashboard } from "../api/dashboard"
+import { getAnnouncements, type AnnouncementRecord } from "../api/announcements"
+import { getHolidays, type Holiday } from "../api/holidays"
 import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
 
@@ -159,6 +161,10 @@ function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
 
+  const [announcements, setAnnouncements] = useState<AnnouncementRecord[]>([])
+  const [holidays, setHolidays] = useState<Holiday[]>([])
+  const [contentError, setContentError] = useState("")
+
   async function loadDashboard() {
     try {
       setIsLoading(true)
@@ -173,8 +179,39 @@ function Dashboard() {
     }
   }
 
+  async function loadDashboardContent() {
+    try {
+      setContentError("")
+
+      const [announcementResponse, holidayResponse] =
+        await Promise.all([
+          getAnnouncements({
+            is_active: true,
+          }),
+          getHolidays({
+            is_active: true,
+          }),
+        ])
+
+      setAnnouncements(
+        announcementResponse.results.filter(
+          (announcement) => announcement.is_published,
+        ),
+      )
+
+      setHolidays(
+        holidayResponse.results,
+      )
+    } catch {
+      setContentError(
+        "Unable to load announcements and holidays.",
+      )
+    }
+  }
+
   useEffect(() => {
     void loadDashboard()
+    void loadDashboardContent()
   }, [])
 
   const role = user?.role ?? ""
@@ -448,6 +485,9 @@ function Dashboard() {
             quickActions={quickActions}
             visibleModules={visibleModules}
             navigate={navigate}
+            announcements={announcements}
+            holidays={holidays}
+            contentError={contentError}
           />
         )}
 
@@ -643,6 +683,9 @@ function AdminHrDashboard({
   quickActions,
   visibleModules,
   navigate,
+  announcements,
+  holidays,
+  contentError,
 }: {
   role: string
   totalEmployees: number
@@ -656,6 +699,9 @@ function AdminHrDashboard({
   quickActions: ModuleItem[]
   visibleModules: ModuleItem[]
   navigate: ReturnType<typeof useNavigate>
+  announcements: AnnouncementRecord[]
+  holidays: Holiday[]
+  contentError: string
 }) {
   const isSuperAdmin = role === "SUPER_ADMIN"
 
@@ -759,7 +805,11 @@ function AdminHrDashboard({
         navigate={navigate}
       />
 
-      <DashboardBottomPanels />
+      <DashboardBottomPanels
+        announcements={announcements}
+        holidays={holidays}
+        contentError={contentError}
+      />
     </>
   )
 }
@@ -1109,7 +1159,15 @@ function ModuleGrid({
   )
 }
 
-function DashboardBottomPanels() {
+function DashboardBottomPanels({
+  announcements,
+  holidays,
+  contentError,
+}: {
+  announcements: AnnouncementRecord[]
+  holidays: Holiday[]
+  contentError: string
+}) {
   return (
     <div className="dashboard-bottom-grid">
       <div className="dashboard-list-panel">
@@ -1118,19 +1176,28 @@ function DashboardBottomPanels() {
           description="Latest organization announcements."
         />
 
-        <div className="dashboard-list">
-          <ListRow
-            title="Office Holiday on 15th August"
-            subtitle="Independence Day celebrations"
-            date="Aug 10, 2026"
-          />
-
-          <ListRow
-            title="Team Outing – Next Weekend"
-            subtitle="Team building activity for all employees"
-            date="Aug 08, 2026"
-          />
-        </div>
+        {contentError ? (
+          <div className="dashboard-empty-state">
+            {contentError}
+          </div>
+        ) : announcements.length === 0 ? (
+          <div className="dashboard-empty-state">
+            No announcements available.
+          </div>
+        ) : (
+          <div className="dashboard-list">
+            {announcements.slice(0, 4).map((announcement) => (
+              <ListRow
+                key={announcement.id}
+                title={announcement.title}
+                subtitle={announcement.message}
+                date={formatDashboardDate(
+                  announcement.publish_date,
+                )}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="dashboard-list-panel">
@@ -1139,19 +1206,38 @@ function DashboardBottomPanels() {
           description="Upcoming organization holidays."
         />
 
-        <div className="dashboard-list">
-          <HolidayRow
-            title="Independence Day"
-            date="Aug 15, 2026"
-            day="Friday"
-          />
-
-          <HolidayRow
-            title="Janmashtami"
-            date="Aug 26, 2026"
-            day="Wednesday"
-          />
-        </div>
+        {contentError ? (
+          <div className="dashboard-empty-state">
+            {contentError}
+          </div>
+        ) : holidays.length === 0 ? (
+          <div className="dashboard-empty-state">
+            No upcoming holidays available.
+          </div>
+        ) : (
+          <div className="dashboard-list">
+            {holidays
+              .filter(
+                (holiday) =>
+                  new Date(holiday.date).getTime() >=
+                  new Date().setHours(0, 0, 0, 0),
+              )
+              .sort(
+                (first, second) =>
+                  new Date(first.date).getTime() -
+                  new Date(second.date).getTime(),
+              )
+              .slice(0, 4)
+              .map((holiday) => (
+                <HolidayRow
+                  key={holiday.id}
+                  title={holiday.name}
+                  date={formatDashboardDate(holiday.date)}
+                  day={formatDashboardDay(holiday.date)}
+                />
+              ))}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -1179,6 +1265,32 @@ function ListRow({
       </div>
     </div>
   )
+}
+
+function formatDashboardDate(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+function formatDashboardDay(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return ""
+  }
+
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+  })
 }
 
 function HolidayRow({
