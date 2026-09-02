@@ -7,6 +7,8 @@ import {
 } from "react"
 import { useNavigate } from "react-router-dom"
 
+import "../dashboard-compact.css"
+
 import { getDashboard } from "../api/dashboard"
 import { getAnnouncements, type AnnouncementRecord } from "../api/announcements"
 import { getHolidays, type Holiday } from "../api/holidays"
