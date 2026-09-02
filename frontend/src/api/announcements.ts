@@ -6,7 +6,7 @@ export interface AnnouncementRecord {
   message: string
   created_by: number | null
   created_by_name: string | null
-  target_audience: "ALL" | "MANAGERS" | "DEPARTMENT"
+  target_audience: string
   department: number | null
   department_name: string | null
   publish_date: string
@@ -22,7 +22,7 @@ export type Announcement = AnnouncementRecord
 export interface CreateAnnouncementRequest {
   title: string
   message: string
-  target_audience: "ALL" | "MANAGERS" | "DEPARTMENT"
+  target_audience: string
   department?: number | null
   publish_date: string
   expiry_date?: string | null
