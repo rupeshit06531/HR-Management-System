@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ChangeEvent,
   type CSSProperties,
   type ReactNode,
 } from "react"
@@ -404,54 +405,58 @@ function Dashboard() {
   return (
     <DashboardLayout isDarkMode={isDarkMode}>
       <div className="dashboard-shell">
-        <header className="dashboard-page-header">
-          <div>
-            <p className="dashboard-eyebrow">HR MANAGEMENT SYSTEM</p>
-            <h1>Dashboard</h1>
-            <p>
-              Welcome back, {displayName}. Here is your workspace
-              overview.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            className="dashboard-refresh"
-            onClick={() => void loadDashboard()}
-          >
-            Refresh Data
-          </button>
-        </header>
-
-        <section className="dashboard-welcome">
-          <div className="dashboard-welcome-copy">
-            <span className="dashboard-role-badge">
-              {currentRole}
-            </span>
-
-            <h2>Welcome back, {displayName}</h2>
-
-            <p>{roleDescription}</p>
-          </div>
-
-          <div className="dashboard-welcome-visual">
-            <div className="dashboard-visual-window">
-              <span />
-              <span />
-              <span />
-              <span />
+        {role !== "EMPLOYEE" && (
+          <header className="dashboard-page-header">
+            <div>
+              <p className="dashboard-eyebrow">HR MANAGEMENT SYSTEM</p>
+              <h1>Dashboard</h1>
+              <p>
+                Welcome back, {displayName}. Here is your workspace
+                overview.
+              </p>
             </div>
 
-            <div className="dashboard-visual-chart">
-              <i />
-              <i />
-              <i />
-              <i />
+            <button
+              type="button"
+              className="dashboard-refresh"
+              onClick={() => void loadDashboard()}
+            >
+              Refresh Data
+            </button>
+          </header>
+        )}
+
+        {role !== "EMPLOYEE" && (
+          <section className="dashboard-welcome">
+            <div className="dashboard-welcome-copy">
+              <span className="dashboard-role-badge">
+                {currentRole}
+              </span>
+
+              <h2>Welcome back, {displayName}</h2>
+
+              <p>{roleDescription}</p>
             </div>
 
-            <div className="dashboard-visual-block" />
-          </div>
-        </section>
+            <div className="dashboard-welcome-visual">
+              <div className="dashboard-visual-window">
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+
+              <div className="dashboard-visual-chart">
+                <i />
+                <i />
+                <i />
+                <i />
+              </div>
+
+              <div className="dashboard-visual-block" />
+            </div>
+          </section>
+        )}
 
         {role === "EMPLOYEE" && (
           <EmployeeDashboard
@@ -542,30 +547,42 @@ function EmployeeDashboard({
   visibleModules: ModuleItem[]
   navigate: ReturnType<typeof useNavigate>
 }) {
+  const employeeQuickModules = visibleModules.filter((module) =>
+    [
+      "Attendance",
+      "Leave",
+      "Payroll",
+      "Performance",
+      "Documents",
+      "Holidays",
+    ].includes(module.label),
+  )
+
   return (
-    <>
+    <div className="dashboard-employee-content">
       <SectionHeader
         title="My Employment Profile"
         description="Your current employment information."
       />
 
-      <div className="dashboard-profile-layout">
-        <div className="dashboard-person-card">
+      <div className="dashboard-employee-profile-layout">
+        <div className="dashboard-person-card dashboard-employee-person-card">
           <div className="dashboard-large-avatar">
             {personalInitials}
           </div>
 
-          <h3>{personalName}</h3>
-
-          <p>Employee Workspace</p>
+          <div className="dashboard-employee-person-copy">
+            <h3>{personalName}</h3>
+            <p>Employee Workspace</p>
+          </div>
 
           <div className="dashboard-person-status">
             Active Employee
           </div>
         </div>
 
-        <div className="dashboard-profile-card">
-          <div className="dashboard-profile-grid">
+        <div className="dashboard-profile-card dashboard-employee-profile-card">
+          <div className="dashboard-profile-grid dashboard-employee-profile-grid">
             {personalProfileCards.map((card) => (
               <InfoCard
                 key={card.label}
@@ -580,24 +597,15 @@ function EmployeeDashboard({
       <EmployeeTodayAttendance />
 
       <SectionHeader
-        title="My HR Workspace"
+        title="Quick Access"
         description="Quick access to your personal HR services."
       />
 
       <ModuleGrid
-        modules={visibleModules.filter((module) =>
-          [
-            "Attendance",
-            "Leave",
-            "Payroll",
-            "Performance",
-            "Documents",
-            "Holidays",
-          ].includes(module.label),
-        )}
+        modules={employeeQuickModules}
         navigate={navigate}
       />
-    </>
+    </div>
   )
 }
 
@@ -616,6 +624,9 @@ function EmployeeTodayAttendance() {
 
   const [selfieFile, setSelfieFile] =
     useState<File | null>(null)
+
+  const [selfiePreview, setSelfiePreview] =
+    useState<string | null>(null)
 
   const [error, setError] =
     useState<string | null>(null)
@@ -1047,14 +1058,43 @@ function EmployeeTodayAttendance() {
   }
 
   const handleSelfieChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
+    event: ChangeEvent<HTMLInputElement>,
   ) => {
     const file =
       event.target.files?.[0] ?? null
 
-    setSelfieFile(file)
     setError(null)
     setSuccess(null)
+
+    if (!file) {
+      setSelfieFile(null)
+      setSelfiePreview(null)
+      return
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setSelfieFile(null)
+      setSelfiePreview(null)
+      setError(
+        "Please select a valid image file for the selfie.",
+      )
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setSelfieFile(null)
+      setSelfiePreview(null)
+      setError(
+        "Selfie image must be smaller than 10 MB.",
+      )
+      return
+    }
+
+    const previewUrl =
+      URL.createObjectURL(file)
+
+    setSelfieFile(file)
+    setSelfiePreview(previewUrl)
   }
 
   return (
@@ -1129,22 +1169,43 @@ function EmployeeTodayAttendance() {
 
           {!attendance?.check_out && (
             <div className="dashboard-attendance-actions">
-              <label className="dashboard-selfie-input">
-                <span>
-                  {selfieFile
-                    ? selfieFile.name
-                    : "Capture Selfie"}
-                </span>
+              <div className="dashboard-selfie-box">
+                <label className="dashboard-selfie-input">
+                  <span>
+                    {selfieFile
+                      ? "Selfie Selected"
+                      : "Capture Selfie"}
+                  </span>
 
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="user"
-                  onChange={
-                    handleSelfieChange
-                  }
-                />
-              </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    onChange={handleSelfieChange}
+                  />
+                </label>
+
+                {selfiePreview && (
+                  <div className="dashboard-selfie-preview">
+                    <img
+                      src={selfiePreview}
+                      alt="Selected selfie preview"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelfieFile(null)
+                        setSelfiePreview(null)
+                        setError(null)
+                        setSuccess(null)
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {!attendance?.check_in && (
                 <button
@@ -2920,6 +2981,472 @@ const dashboardStyles = `
 
     .dashboard-holiday-date {
       gap: 10px;
+    }
+  }
+
+  /* Employee dashboard top-level spacing */
+
+  .dashboard-page.dashboard-compact
+    .dashboard-shell
+    > .dashboard-employee-content {
+    margin-top: 0 !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-shell
+    > .dashboard-employee-content
+    > .dashboard-section-header:first-child {
+    margin-top: 8px !important;
+    margin-bottom: 7px !important;
+  }
+
+  /* Employee selfie upload */
+
+  .dashboard-page.dashboard-compact
+    .dashboard-selfie-box {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-selfie-input {
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 150px !important;
+    min-height: 38px !important;
+    padding: 8px 12px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 9px !important;
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    font-size: 10px !important;
+    font-weight: 750 !important;
+    cursor: pointer !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-selfie-input:hover {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-selfie-input span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-selfie-input input {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0 !important;
+    cursor: pointer !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-selfie-preview {
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-selfie-preview img {
+    display: block !important;
+    width: 42px !important;
+    height: 42px !important;
+    object-fit: cover !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-selfie-preview button {
+    border: 1px solid var(--border) !important;
+    border-radius: 7px !important;
+    padding: 6px 8px !important;
+    background: var(--card) !important;
+    color: var(--muted) !important;
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-selfie-preview button:hover {
+    border-color: var(--danger) !important;
+    color: var(--danger) !important;
+  }
+
+  @media (max-width: 700px) {
+    .dashboard-page.dashboard-compact
+      .dashboard-selfie-box {
+      align-items: stretch !important;
+      flex-direction: column !important;
+    }
+
+    .dashboard-page.dashboard-compact
+      .dashboard-selfie-input {
+      width: 100% !important;
+    }
+  }
+
+  /* Employee dashboard section spacing */
+
+.dashboard-page.dashboard-compact
+  .dashboard-employee-content
+  > .dashboard-section-header {
+  margin-top: 8px !important;
+  margin-bottom: 7px !important;
+}
+
+.dashboard-page.dashboard-compact
+  .dashboard-employee-content
+  .dashboard-employee-profile-layout {
+  margin-bottom: 8px !important;
+}
+
+.dashboard-page.dashboard-compact
+  .dashboard-employee-content
+  .dashboard-today-attendance {
+  margin-bottom: 8px !important;
+}
+
+.dashboard-page.dashboard-compact
+  .dashboard-employee-content
+  .dashboard-module-grid {
+  margin-top: 0 !important;
+  gap: 7px !important;
+}
+
+.dashboard-page.dashboard-compact
+  .dashboard-employee-content
+  .dashboard-module-card {
+  min-height: 0 !important;
+}
+
+@media (max-width: 700px) {
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-content
+    .dashboard-employee-profile-layout {
+    margin-bottom: 7px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-content
+    .dashboard-today-attendance {
+    margin-bottom: 7px !important;
+  }
+}
+
+  /* Employee attendance compact polish */
+
+.dashboard-page.dashboard-compact
+  .dashboard-today-attendance {
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 10px !important;
+  box-sizing: border-box !important;
+}
+
+.dashboard-page.dashboard-compact
+  .dashboard-today-attendance
+  .dashboard-section-header {
+  margin: 0 0 7px !important;
+}
+
+.dashboard-page.dashboard-compact
+  .dashboard-today-attendance
+  .dashboard-section-title {
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+}
+
+.dashboard-page.dashboard-compact
+  .dashboard-today-attendance
+  .dashboard-section-subtitle {
+  font-size: 9px !important;
+  line-height: 1.3 !important;
+}
+
+.dashboard-page.dashboard-compact
+  .dashboard-today-attendance
+  .dashboard-attendance-summary {
+  gap: 6px !important;
+  margin: 0 0 8px !important;
+}
+
+.dashboard-page.dashboard-compact
+  .dashboard-today-attendance
+  .dashboard-attendance-summary > * {
+  min-width: 0 !important;
+}
+
+.dashboard-page.dashboard-compact
+  .dashboard-today-attendance
+  .dashboard-attendance-actions {
+  gap: 7px !important;
+  margin-top: 8px !important;
+}
+
+.dashboard-page.dashboard-compact
+  .dashboard-today-attendance
+  .dashboard-attendance-actions button {
+  min-height: 36px !important;
+  padding: 7px 11px !important;
+  font-size: 10px !important;
+}
+
+@media (max-width: 700px) {
+  .dashboard-page.dashboard-compact
+    .dashboard-today-attendance {
+    padding: 9px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-today-attendance
+    .dashboard-attendance-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+  /* Employee dashboard stabilization */
+
+  .dashboard-page.dashboard-compact .dashboard-employee-content {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-profile-layout {
+    display: grid !important;
+    grid-template-columns: 220px minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    gap: 8px !important;
+    margin: 0 !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-person-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 190px !important;
+    box-sizing: border-box !important;
+    padding: 16px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-person-card
+    .dashboard-large-avatar {
+    width: 58px !important;
+    height: 58px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-person-copy {
+    width: 100% !important;
+    min-width: 0 !important;
+    text-align: center !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-person-card
+    h3 {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    margin: 9px 0 2px !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-person-card
+    p {
+    margin: 0 !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-person-card
+    .dashboard-person-status {
+    margin-top: 9px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-profile-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 10px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-profile-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    gap: 6px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-profile-grid
+    .dashboard-info-card {
+    min-width: 0 !important;
+    width: 100% !important;
+    min-height: 70px !important;
+    box-sizing: border-box !important;
+    padding: 10px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-profile-grid
+    .dashboard-info-card
+    strong {
+    max-width: 100% !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-content
+    .dashboard-section-header {
+    margin-top: 14px !important;
+    margin-bottom: 7px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-content
+    .dashboard-section-header:first-child {
+    margin-top: 14px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-content
+    .dashboard-module-grid {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-content
+    .dashboard-module {
+    min-width: 0 !important;
+    width: 100% !important;
+    min-height: 112px !important;
+    box-sizing: border-box !important;
+    padding: 11px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-content
+    .dashboard-module-icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-content
+    .dashboard-module
+    strong {
+    margin-top: 8px !important;
+  }
+
+  .dashboard-page.dashboard-compact
+    .dashboard-employee-content
+    .dashboard-module
+    p {
+    min-height: 26px !important;
+    margin: 4px 0 7px !important;
+  }
+
+  @media (max-width: 1180px) {
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-profile-layout {
+      grid-template-columns: 200px minmax(0, 1fr) !important;
+    }
+
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-profile-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-content
+      .dashboard-module-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-profile-layout {
+      grid-template-columns: 170px minmax(0, 1fr) !important;
+    }
+
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-profile-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-content
+      .dashboard-module-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-profile-layout {
+      grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-person-card {
+      min-height: 150px !important;
+    }
+
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-profile-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-content
+      .dashboard-module-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+  }
+
+  @media (max-width: 430px) {
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-profile-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-page.dashboard-compact
+      .dashboard-employee-content
+      .dashboard-module-grid {
+      grid-template-columns: 1fr !important;
     }
   }
 `
