@@ -12,6 +12,7 @@ import {
   deleteAttendance,
   getAttendance,
   punchInAttendance,
+  punchOutAttendance,
   updateAttendance,
   type Attendance as AttendanceRecord,
   type AttendancePayload,
@@ -79,6 +80,9 @@ function Attendance() {
     useState<number | null>(null)
 
   const [isPunchingIn, setIsPunchingIn] =
+    useState(false)
+
+  const [isPunchingOut, setIsPunchingOut] =
     useState(false)
 
   const [selfieFile, setSelfieFile] =
@@ -181,6 +185,27 @@ function Attendance() {
       halfDay,
     }
   }, [records])
+
+    const todayAttendance = useMemo(() => {
+    const today =
+      new Date()
+        .toISOString()
+        .split("T")[0]
+
+    return records.find(
+      (record) => record.date === today,
+    ) ?? null
+  }, [records])
+
+  const hasPunchedIn =
+    Boolean(
+      todayAttendance?.check_in,
+    )
+
+  const hasPunchedOut =
+    Boolean(
+      todayAttendance?.check_out,
+    )
 
   const handleInputChange = (
     event: ChangeEvent<
@@ -586,6 +611,211 @@ function Attendance() {
     }
   }
 
+  const handlePunchOut = async () => {
+    setError(null)
+    setSuccess(null)
+
+    if (!selfieFile) {
+      setError(
+        "Please capture or select a selfie before punching out.",
+      )
+      return
+    }
+
+    if (!navigator.geolocation) {
+      setError(
+        "Geolocation is not supported by this browser.",
+      )
+      return
+    }
+
+    try {
+      setIsPunchingOut(true)
+
+      const position =
+        await new Promise<GeolocationPosition>(
+          (resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+              resolve,
+              reject,
+              {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0,
+              },
+            )
+          },
+        )
+
+      const latitude = Number(
+        position.coords.latitude.toFixed(6),
+      )
+
+      const longitude = Number(
+        position.coords.longitude.toFixed(6),
+      )
+
+      const accuracy =
+        Number.isFinite(
+          position.coords.accuracy,
+        )
+          ? Number(
+              Math.max(
+                0,
+                position.coords.accuracy,
+              ).toFixed(2),
+            )
+          : null
+
+      if (
+        !Number.isFinite(latitude) ||
+        latitude < -90 ||
+        latitude > 90
+      ) {
+        setError(
+          "Invalid GPS latitude received. Please try again.",
+        )
+        return
+      }
+
+      if (
+        !Number.isFinite(longitude) ||
+        longitude < -180 ||
+        longitude > 180
+      ) {
+        setError(
+          "Invalid GPS longitude received. Please try again.",
+        )
+        return
+      }
+
+      const response =
+        await punchOutAttendance({
+          latitude,
+          longitude,
+          accuracy,
+          selfie: selfieFile,
+        })
+
+      setRecords((current) => [
+        response.attendance,
+        ...current.filter(
+          (record) =>
+            record.id !==
+            response.attendance.id,
+        ),
+      ])
+
+      setSelfieFile(null)
+
+      setSuccess(
+        response.message ||
+          "Punch-out successful.",
+      )
+    } catch (punchError) {
+      console.error(
+        "Attendance punch-out error:",
+        punchError,
+      )
+
+      if (
+        punchError instanceof
+        GeolocationPositionError
+      ) {
+        if (
+          punchError.code ===
+          GeolocationPositionError.PERMISSION_DENIED
+        ) {
+          setError(
+            "Location permission was denied. Please allow location access and try again.",
+          )
+        } else if (
+          punchError.code ===
+          GeolocationPositionError.POSITION_UNAVAILABLE
+        ) {
+          setError(
+            "Unable to determine your current location.",
+          )
+        } else {
+          setError(
+            "Location request timed out. Please try again.",
+          )
+        }
+
+        return
+      }
+
+      const axiosError =
+        punchError as {
+          response?: {
+            data?: unknown
+            status?: number
+          }
+        }
+
+      const responseData =
+        axiosError.response?.data
+
+      if (
+        responseData &&
+        typeof responseData === "object"
+      ) {
+        const data =
+          responseData as Record<
+            string,
+            unknown
+          >
+
+        if (
+          typeof data.detail ===
+          "string"
+        ) {
+          setError(data.detail)
+          return
+        }
+
+        const validationMessages =
+          Object.entries(data).flatMap(
+            ([field, value]) => {
+              if (Array.isArray(value)) {
+                return value.map(
+                  (message) =>
+                    `${field}: ${String(message)}`,
+                )
+              }
+
+              if (
+                typeof value === "string"
+              ) {
+                return [
+                  `${field}: ${value}`,
+                ]
+              }
+
+              return []
+            },
+          )
+
+        if (
+          validationMessages.length > 0
+        ) {
+          setError(
+            validationMessages.join(
+              " | ",
+            ),
+          )
+          return
+        }
+      }
+
+      setError(
+        "Unable to punch out attendance. Please try again.",
+      )
+    } finally {
+      setIsPunchingOut(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <main
@@ -761,7 +991,12 @@ function Attendance() {
                     onChange={
                       handleSelfieChange
                     }
-                    disabled={isPunchingIn}
+                    disabled={
+                      isPunchingIn ||
+                      isPunchingOut ||
+                      !selfieFile ||
+                      hasPunchedIn
+                    }
                     style={{
                       display: "none",
                     }}
@@ -796,7 +1031,9 @@ function Attendance() {
                     borderRadius: "9px",
                     background:
                       isPunchingIn ||
-                      !selfieFile
+                      isPunchingOut ||
+                      !selfieFile ||
+                      hasPunchedIn
                         ? "#cbd5e1"
                         : "linear-gradient(135deg, #f97316, #ea580c)",
                     color: "#ffffff",
@@ -804,7 +1041,9 @@ function Attendance() {
                     fontWeight: 700,
                     cursor:
                       isPunchingIn ||
-                      !selfieFile
+                      isPunchingOut ||
+                      !selfieFile ||
+                      hasPunchedIn
                         ? "not-allowed"
                         : "pointer",
                     boxShadow:
@@ -816,7 +1055,60 @@ function Attendance() {
                 >
                   {isPunchingIn
                     ? "Punching In..."
-                    : "Punch In"}
+                    : hasPunchedIn
+                      ? "Punched In"
+                      : "Punch In"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void handlePunchOut()
+                  }
+                  disabled={
+                    isPunchingOut ||
+                    isPunchingIn ||
+                    !selfieFile ||
+                    !hasPunchedIn ||
+                    hasPunchedOut
+                  }
+                  style={{
+                    minHeight: "42px",
+                    padding: "0 17px",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "9px",
+                    backgroundColor:
+                      isPunchingOut ||
+                      isPunchingIn ||
+                      !selfieFile ||
+                      !hasPunchedIn ||
+                      hasPunchedOut
+                        ? "#f1f5f9"
+                        : "#ffffff",
+                    color:
+                      isPunchingOut ||
+                      isPunchingIn ||
+                      !selfieFile ||
+                      !hasPunchedIn ||
+                      hasPunchedOut
+                        ? "#94a3b8"
+                        : "#334155",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    cursor:
+                      isPunchingOut ||
+                      isPunchingIn ||
+                      !selfieFile ||
+                      !hasPunchedIn ||
+                      hasPunchedOut
+                        ? "not-allowed"
+                        : "pointer",
+                  }}
+                >
+                  {isPunchingOut
+                    ? "Punching Out..."
+                    : hasPunchedOut
+                      ? "Punched Out"
+                      : "Punch Out"}
                 </button>
               </>
             )}
