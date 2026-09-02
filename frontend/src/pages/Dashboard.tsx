@@ -19,6 +19,12 @@ interface ModuleItem {
   icon: string
 }
 
+interface WorkforceStatus {
+  label: string
+  value: number
+  percentage: number
+}
+
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: "Super Admin",
   HR: "Human Resources",
@@ -41,7 +47,7 @@ const moduleItems: ModuleItem[] = [
   {
     label: "Employees",
     path: "/employees",
-    description: "Manage employee records, profiles and workforce information.",
+    description: "Manage employee records and workforce information.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER"],
     icon: "EM",
   },
@@ -55,56 +61,56 @@ const moduleItems: ModuleItem[] = [
   {
     label: "Attendance",
     path: "/attendance",
-    description: "Track attendance, check-ins, check-outs and daily presence.",
+    description: "Track attendance and daily workforce presence.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
     icon: "AT",
   },
   {
     label: "Leave",
     path: "/leave",
-    description: "Manage leave requests, approvals and leave information.",
+    description: "Manage leave requests and approvals.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
     icon: "LV",
   },
   {
     label: "Payroll",
     path: "/payroll",
-    description: "Access payroll and employee compensation information.",
+    description: "Access payroll and compensation information.",
     roles: ["SUPER_ADMIN", "HR", "EMPLOYEE"],
     icon: "PY",
   },
   {
     label: "Performance",
     path: "/performance",
-    description: "Review employee performance and development information.",
+    description: "Review performance and development information.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
     icon: "PF",
   },
   {
     label: "Recruitment",
     path: "/recruitment",
-    description: "Manage recruitment activities and candidate information.",
+    description: "Manage recruitment and candidate information.",
     roles: ["SUPER_ADMIN", "HR"],
     icon: "RC",
   },
   {
     label: "Documents",
     path: "/documents",
-    description: "Access and manage important HR documents.",
+    description: "Access important HR documents.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
     icon: "DC",
   },
   {
     label: "Announcements",
     path: "/announcements",
-    description: "View and manage important organization announcements.",
+    description: "View important organization announcements.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
     icon: "AN",
   },
   {
     label: "Holidays",
     path: "/holidays",
-    description: "View organization holidays and upcoming days off.",
+    description: "View upcoming organization holidays.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
     icon: "HD",
   },
@@ -129,10 +135,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 function getInitials(name: string) {
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
+  const parts = name.trim().split(/\s+/).filter(Boolean)
 
   if (parts.length === 0) {
     return "U"
@@ -174,16 +177,13 @@ function Dashboard() {
     void loadDashboard()
   }, [])
 
-  const currentRole = roleLabels[user?.role ?? ""] || user?.role || "User"
-
+  const role = user?.role ?? ""
+  const currentRole = roleLabels[role] || role || "User"
   const roleDescription =
-    roleDescriptions[user?.role ?? ""] ||
-    "Your HR management workspace."
+    roleDescriptions[role] || "Your HR management workspace."
 
   const displayName =
-    user?.first_name?.trim() ||
-    user?.username ||
-    "User"
+    user?.first_name?.trim() || user?.username || "User"
 
   const employeeProfile = dashboard?.employee
   const employeeMetrics = dashboard?.employees
@@ -202,17 +202,15 @@ function Dashboard() {
       : 0
 
   const visibleModules = useMemo(() => {
-    if (!user?.role) {
+    if (!role) {
       return []
     }
 
-    return moduleItems.filter((item) =>
-      item.roles.includes(user.role),
-    )
-  }, [user?.role])
+    return moduleItems.filter((item) => item.roles.includes(role))
+  }, [role])
 
   const quickActionNames =
-    user?.role === "SUPER_ADMIN"
+    role === "SUPER_ADMIN" || role === "HR"
       ? [
           "Employees",
           "Departments",
@@ -221,32 +219,23 @@ function Dashboard() {
           "Recruitment",
           "Documents",
         ]
-      : user?.role === "HR"
+      : role === "MANAGER"
         ? [
             "Employees",
-            "Departments",
             "Attendance",
             "Leave",
-            "Recruitment",
+            "Performance",
             "Documents",
+            "Announcements",
           ]
-        : user?.role === "MANAGER"
-          ? [
-              "Employees",
-              "Attendance",
-              "Leave",
-              "Performance",
-              "Documents",
-              "Announcements",
-            ]
-          : [
-              "Attendance",
-              "Leave",
-              "Payroll",
-              "Performance",
-              "Documents",
-              "Holidays",
-            ]
+        : [
+            "Attendance",
+            "Leave",
+            "Payroll",
+            "Performance",
+            "Documents",
+            "Holidays",
+          ]
 
   const quickActions = quickActionNames
     .map((name) =>
@@ -254,7 +243,7 @@ function Dashboard() {
     )
     .filter((item): item is ModuleItem => Boolean(item))
 
-  const workforceStatuses = [
+  const workforceStatuses: WorkforceStatus[] = [
     {
       label: "Active",
       value: activeEmployees,
@@ -321,15 +310,11 @@ function Dashboard() {
     },
     {
       label: "Employment Status",
-      value:
-        employeeProfile?.employment_status ||
-        "Not available",
+      value: employeeProfile?.employment_status || "Not available",
     },
     {
       label: "Employment Type",
-      value:
-        employeeProfile?.employment_type ||
-        "Not available",
+      value: employeeProfile?.employment_type || "Not available",
     },
     {
       label: "Joining Date",
@@ -376,19 +361,13 @@ function Dashboard() {
   return (
     <DashboardLayout isDarkMode={isDarkMode}>
       <div className="dashboard-shell">
-        <header className="dashboard-topbar">
+        <header className="dashboard-page-header">
           <div>
-            <p className="dashboard-eyebrow">
-              HR MANAGEMENT SYSTEM
-            </p>
-
-            <h1 className="dashboard-title">
-              Dashboard
-            </h1>
-
-            <p className="dashboard-subtitle">
-              Welcome back, {displayName}. Here is your
-              workspace overview.
+            <p className="dashboard-eyebrow">HR MANAGEMENT SYSTEM</p>
+            <h1>Dashboard</h1>
+            <p>
+              Welcome back, {displayName}. Here is your workspace
+              overview.
             </p>
           </div>
 
@@ -402,39 +381,46 @@ function Dashboard() {
         </header>
 
         <section className="dashboard-welcome">
-          <div className="dashboard-welcome-content">
+          <div className="dashboard-welcome-copy">
             <span className="dashboard-role-badge">
               {currentRole}
             </span>
 
-            <h2>
-              {getGreeting()}, {displayName}
-            </h2>
+            <h2>Welcome back, {displayName}</h2>
 
             <p>{roleDescription}</p>
           </div>
 
-          <div className="dashboard-user-summary">
-            <div className="dashboard-avatar">
-              {personalInitials}
+          <div className="dashboard-welcome-visual">
+            <div className="dashboard-visual-window">
+              <span />
+              <span />
+              <span />
+              <span />
             </div>
 
-            <div>
-              <strong>{personalName}</strong>
-              <span>{currentRole}</span>
+            <div className="dashboard-visual-chart">
+              <i />
+              <i />
+              <i />
+              <i />
             </div>
+
+            <div className="dashboard-visual-block" />
           </div>
         </section>
 
-        {user?.role === "EMPLOYEE" && (
+        {role === "EMPLOYEE" && (
           <EmployeeDashboard
+            personalName={personalName}
+            personalInitials={personalInitials}
             personalProfileCards={personalProfileCards}
             visibleModules={visibleModules}
             navigate={navigate}
           />
         )}
 
-        {user?.role === "MANAGER" && (
+        {role === "MANAGER" && (
           <ManagerDashboard
             totalEmployees={totalEmployees}
             activeEmployees={activeEmployees}
@@ -448,10 +434,9 @@ function Dashboard() {
           />
         )}
 
-        {(user?.role === "SUPER_ADMIN" ||
-          user?.role === "HR") && (
+        {(role === "SUPER_ADMIN" || role === "HR") && (
           <AdminHrDashboard
-            role={user.role}
+            role={role}
             totalEmployees={totalEmployees}
             activeEmployees={activeEmployees}
             inactiveEmployees={inactiveEmployees}
@@ -468,28 +453,12 @@ function Dashboard() {
 
         <footer className="dashboard-footer">
           <span>{personalName}</span>
-          <span className="dashboard-footer-separator">
-            |
-          </span>
+          <span>•</span>
           <span>{currentRole}</span>
         </footer>
       </div>
     </DashboardLayout>
   )
-}
-
-function getGreeting() {
-  const hour = new Date().getHours()
-
-  if (hour < 12) {
-    return "Good morning"
-  }
-
-  if (hour < 17) {
-    return "Good afternoon"
-  }
-
-  return "Good evening"
 }
 
 function DashboardLayout({
@@ -512,10 +481,14 @@ function DashboardLayout({
 }
 
 function EmployeeDashboard({
+  personalName,
+  personalInitials,
   personalProfileCards,
   visibleModules,
   navigate,
 }: {
+  personalName: string
+  personalInitials: string
   personalProfileCards: Array<{
     label: string
     value: string
@@ -530,15 +503,31 @@ function EmployeeDashboard({
         description="Your current employment information."
       />
 
-      <div className="dashboard-profile-card">
-        <div className="dashboard-profile-grid">
-          {personalProfileCards.map((card) => (
-            <InfoCard
-              key={card.label}
-              label={card.label}
-              value={card.value}
-            />
-          ))}
+      <div className="dashboard-profile-layout">
+        <div className="dashboard-person-card">
+          <div className="dashboard-large-avatar">
+            {personalInitials}
+          </div>
+
+          <h3>{personalName}</h3>
+
+          <p>Employee Workspace</p>
+
+          <div className="dashboard-person-status">
+            Active Employee
+          </div>
+        </div>
+
+        <div className="dashboard-profile-card">
+          <div className="dashboard-profile-grid">
+            {personalProfileCards.map((card) => (
+              <InfoCard
+                key={card.label}
+                label={card.label}
+                value={card.value}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -580,7 +569,7 @@ function ManagerDashboard({
     <>
       <SectionHeader
         title="Team Overview"
-        description="A focused view of the workforce available to your manager role."
+        description="A focused view of your available workforce information."
       />
 
       <div className="dashboard-kpi-grid">
@@ -594,7 +583,7 @@ function ManagerDashboard({
         <MetricCard
           label="Active"
           value={activeEmployees}
-          meta={`${activePercentage}% of your team`}
+          meta={`${activePercentage}% of team`}
           icon="AC"
         />
 
@@ -630,7 +619,7 @@ function ManagerDashboard({
 
       <SectionHeader
         title="Manager Modules"
-        description="All modules currently available to your role."
+        description="All modules available to your role."
       />
 
       <ModuleGrid
@@ -737,24 +726,28 @@ function AdminHrDashboard({
         )}
       </div>
 
-      {isSuperAdmin && (
-        <>
-          <SectionHeader
-            title="Administrative Actions"
-            description="Direct access to commonly used organization controls."
-          />
+      <SectionHeader
+        title={
+          isSuperAdmin
+            ? "Administrative Actions"
+            : "HR Operations"
+        }
+        description={
+          isSuperAdmin
+            ? "Direct access to frequently used organization controls."
+            : "Direct access to frequently used HR operations."
+        }
+      />
 
-          <div className="dashboard-action-grid">
-            {quickActions.map((item) => (
-              <QuickAction
-                key={item.path}
-                item={item}
-                navigate={navigate}
-              />
-            ))}
-          </div>
-        </>
-      )}
+      <div className="dashboard-action-grid">
+        {quickActions.map((item) => (
+          <QuickAction
+            key={item.path}
+            item={item}
+            navigate={navigate}
+          />
+        ))}
+      </div>
 
       <SectionHeader
         title="HRMS Modules"
@@ -765,14 +758,10 @@ function AdminHrDashboard({
         modules={visibleModules}
         navigate={navigate}
       />
+
+      <DashboardBottomPanels />
     </>
   )
-}
-
-interface WorkforceStatus {
-  label: string
-  value: number
-  percentage: number
 }
 
 function SectionHeader({
@@ -805,16 +794,16 @@ function MetricCard({
 }) {
   return (
     <div className="dashboard-kpi">
-      <div className="dashboard-kpi-heading">
+      <div className="dashboard-kpi-top">
         <span>{label}</span>
         <b>{icon}</b>
       </div>
 
-      <strong>
-        {value.toLocaleString("en-IN")}
-      </strong>
+      <strong>{value.toLocaleString("en-IN")}</strong>
 
-      <small>{meta}</small>
+      <div className="dashboard-kpi-bottom">
+        <small>{meta}</small>
+      </div>
     </div>
   )
 }
@@ -856,14 +845,10 @@ function WorkforcePanel({
 
   return (
     <div className="dashboard-panel">
-      <div className="dashboard-panel-heading">
-        <div>
-          <h2>Workforce Status</h2>
-          <p>
-            Current employee distribution by employment status.
-          </p>
-        </div>
-      </div>
+      <PanelHeading
+        title="Workforce Status"
+        description="Current employee distribution by employment status."
+      />
 
       <div className="dashboard-workforce">
         <div
@@ -877,17 +862,27 @@ function WorkforcePanel({
           <div className="dashboard-donut-center">
             <strong>{activeEmployees}</strong>
             <span>Active</span>
+            <small>
+              {totalEmployees > 0
+                ? `${Math.round(
+                    (activeEmployees / totalEmployees) * 100,
+                  )}%`
+                : "0%"}
+            </small>
           </div>
         </div>
 
         <div className="dashboard-status-list">
           {workforceStatuses.map((status) => (
             <div
-              className="dashboard-status-row"
+              className="dashboard-status"
               key={status.label}
             >
               <div className="dashboard-status-top">
-                <span>{status.label}</span>
+                <span>
+                  <i className={`status-${status.label.toLowerCase()}`} />
+                  {status.label}
+                </span>
                 <strong>{status.value}</strong>
               </div>
 
@@ -902,9 +897,18 @@ function WorkforcePanel({
                   }}
                 />
               </div>
+
+              <small>
+                {Math.round(status.percentage)}%
+              </small>
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="dashboard-panel-total">
+        <span>Total Employees</span>
+        <strong>{totalEmployees}</strong>
       </div>
     </div>
   )
@@ -919,32 +923,29 @@ function RoleDistribution({
 }) {
   return (
     <div className="dashboard-panel">
-      <div className="dashboard-panel-heading">
-        <div>
-          <h2>User Distribution</h2>
-          <p>
-            System users grouped by assigned role.
-          </p>
-        </div>
-      </div>
+      <PanelHeading
+        title="User Distribution by Role"
+        description="System users grouped by assigned role."
+      />
 
-      <div className="dashboard-role-list">
-        {roleDistribution.length === 0 ? (
-          <p className="dashboard-empty-text">
-            No role distribution data available.
-          </p>
-        ) : (
-          roleDistribution.map(([role, count]) => (
-            <div
-              className="dashboard-role-row"
-              key={role}
-            >
+      {roleDistribution.length === 0 ? (
+        <p className="dashboard-empty-text">
+          No role distribution data available.
+        </p>
+      ) : (
+        <div className="dashboard-role-list">
+          {roleDistribution.map(([role, count]) => (
+            <div className="dashboard-role" key={role}>
               <div className="dashboard-role-top">
                 <span>
                   {roleLabels[role] || role}
                 </span>
-
-                <strong>{count}</strong>
+                <strong>
+                  {count}{" "}
+                  <small>
+                    {totalPercentage(count, roleDistribution)}%
+                  </small>
+                </strong>
               </div>
 
               <div className="dashboard-role-track">
@@ -959,11 +960,35 @@ function RoleDistribution({
                 />
               </div>
             </div>
-          ))
-        )}
+          ))}
+        </div>
+      )}
+
+      <div className="dashboard-panel-total">
+        <span>Total Users</span>
+        <strong>
+          {roleDistribution.reduce(
+            (sum, [, count]) => sum + count,
+            0,
+          )}
+        </strong>
       </div>
     </div>
   )
+}
+
+function totalPercentage(
+  count: number,
+  distribution: Array<[string, number]>,
+) {
+  const total = distribution.reduce(
+    (sum, [, value]) => sum + value,
+    0,
+  )
+
+  return total > 0
+    ? Math.round((count / total) * 100)
+    : 0
 }
 
 function QuickActionsPanel({
@@ -979,12 +1004,10 @@ function QuickActionsPanel({
 }) {
   return (
     <div className="dashboard-panel">
-      <div className="dashboard-panel-heading">
-        <div>
-          <h2>{title}</h2>
-          <p>{description}</p>
-        </div>
-      </div>
+      <PanelHeading
+        title={title}
+        description={description}
+      />
 
       <div className="dashboard-quick-list">
         {actions.map((item) => (
@@ -994,6 +1017,23 @@ function QuickActionsPanel({
             navigate={navigate}
           />
         ))}
+      </div>
+    </div>
+  )
+}
+
+function PanelHeading({
+  title,
+  description,
+}: {
+  title: string
+  description: string
+}) {
+  return (
+    <div className="dashboard-panel-heading">
+      <div>
+        <h2>{title}</h2>
+        <p>{description}</p>
       </div>
     </div>
   )
@@ -1012,20 +1052,16 @@ function QuickAction({
       className="dashboard-quick-action"
       onClick={() => navigate(item.path)}
     >
-      <span className="dashboard-quick-left">
-        <span className="dashboard-quick-icon">
-          {item.icon}
-        </span>
-
-        <span className="dashboard-quick-copy">
-          <strong>{item.label}</strong>
-          <small>Open module</small>
-        </span>
+      <span className="dashboard-quick-icon">
+        {item.icon}
       </span>
 
-      <span className="dashboard-quick-arrow">
-        →
+      <span className="dashboard-quick-copy">
+        <strong>{item.label}</strong>
+        <small>Open module</small>
       </span>
+
+      <span className="dashboard-quick-arrow">→</span>
     </button>
   )
 }
@@ -1065,10 +1101,103 @@ function ModuleGrid({
           <p>{item.description}</p>
 
           <span className="dashboard-module-link">
-            Open Module →
+            Open module →
           </span>
         </button>
       ))}
+    </div>
+  )
+}
+
+function DashboardBottomPanels() {
+  return (
+    <div className="dashboard-bottom-grid">
+      <div className="dashboard-list-panel">
+        <PanelHeading
+          title="Recent Announcements"
+          description="Latest organization announcements."
+        />
+
+        <div className="dashboard-list">
+          <ListRow
+            title="Office Holiday on 15th August"
+            subtitle="Independence Day celebrations"
+            date="Aug 10, 2026"
+          />
+
+          <ListRow
+            title="Team Outing – Next Weekend"
+            subtitle="Team building activity for all employees"
+            date="Aug 08, 2026"
+          />
+        </div>
+      </div>
+
+      <div className="dashboard-list-panel">
+        <PanelHeading
+          title="Upcoming Holidays"
+          description="Upcoming organization holidays."
+        />
+
+        <div className="dashboard-list">
+          <HolidayRow
+            title="Independence Day"
+            date="Aug 15, 2026"
+            day="Friday"
+          />
+
+          <HolidayRow
+            title="Janmashtami"
+            date="Aug 26, 2026"
+            day="Wednesday"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ListRow({
+  title,
+  subtitle,
+  date,
+}: {
+  title: string
+  subtitle: string
+  date: string
+}) {
+  return (
+    <div className="dashboard-list-row">
+      <div>
+        <strong>{title}</strong>
+        <span>{subtitle}</span>
+      </div>
+
+      <div className="dashboard-list-date">
+        <span>{date}</span>
+        <i />
+      </div>
+    </div>
+  )
+}
+
+function HolidayRow({
+  title,
+  date,
+  day,
+}: {
+  title: string
+  date: string
+  day: string
+}) {
+  return (
+    <div className="dashboard-list-row">
+      <strong>{title}</strong>
+
+      <div className="dashboard-holiday-date">
+        <span>{date}</span>
+        <small>{day}</small>
+      </div>
     </div>
   )
 }
@@ -1089,9 +1218,7 @@ function DashboardState({
   return (
     <div className="dashboard-state">
       <div className="dashboard-state-card">
-        {loading && (
-          <div className="dashboard-spinner" />
-        )}
+        {loading && <div className="dashboard-spinner" />}
 
         <h2>{title}</h2>
         <p>{text}</p>
@@ -1112,339 +1239,382 @@ function DashboardState({
 
 const dashboardStyles = `
   .dashboard-page {
-    --dashboard-bg: #f5f7fb;
-    --dashboard-card: #ffffff;
-    --dashboard-surface: #f8fafc;
-    --dashboard-text: #172033;
-    --dashboard-muted: #687386;
-    --dashboard-border: #e5e9f0;
-    --dashboard-accent: #4f46e5;
-    --dashboard-accent-soft: #eef2ff;
-    --dashboard-track: #e9edf3;
-    --dashboard-shadow: 0 4px 18px rgba(16, 24, 40, 0.05);
-    --dashboard-shadow-hover: 0 12px 30px rgba(16, 24, 40, 0.10);
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --surface: #f8fafc;
+    --text: #14213d;
+    --muted: #687792;
+    --border: #dfe6f0;
+    --accent: #ff6b00;
+    --accent-2: #1769ff;
+    --accent-soft: #fff1e8;
+    --track: #e7edf5;
+    --success: #0dbb63;
+    --danger: #ef4b55;
+    --shadow: 0 4px 18px rgba(25, 45, 80, 0.055);
+    --shadow-hover: 0 12px 30px rgba(25, 45, 80, 0.11);
 
     width: 100%;
     min-height: calc(100vh - 48px);
-    background: var(--dashboard-bg);
-    color: var(--dashboard-text);
-    border-radius: 18px;
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 16px;
+    overflow: hidden;
   }
 
   .dashboard-dark {
-    --dashboard-bg: #0f1420;
-    --dashboard-card: #171d2a;
-    --dashboard-surface: #131925;
-    --dashboard-text: #f4f7fb;
-    --dashboard-muted: #9ba6b7;
-    --dashboard-border: #283143;
-    --dashboard-accent: #818cf8;
-    --dashboard-accent-soft: #24294a;
-    --dashboard-track: #2a3344;
-    --dashboard-shadow: 0 4px 20px rgba(0, 0, 0, 0.20);
-    --dashboard-shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.28);
+    --bg: #08111f;
+    --card: #0e1827;
+    --surface: #111d2e;
+    --text: #f5f8ff;
+    --muted: #98a8bd;
+    --border: #22334a;
+    --accent: #ff6b00;
+    --accent-2: #4c8dff;
+    --accent-soft: #192941;
+    --track: #26374e;
+    --success: #0ed36b;
+    --danger: #ff5360;
+    --shadow: 0 5px 22px rgba(0, 0, 0, 0.18);
+    --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.3);
   }
 
   .dashboard-shell {
     width: 100%;
-    max-width: 1480px;
+    max-width: 1500px;
     margin: 0 auto;
-    padding: 8px 0 30px;
+    padding: 0 2px 24px;
   }
 
-  .dashboard-topbar {
+  .dashboard-page-header {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
     gap: 24px;
-    margin-bottom: 22px;
+    padding: 4px 2px 18px;
+    border-bottom: 1px solid var(--border);
   }
 
   .dashboard-eyebrow {
-    margin: 0 0 7px;
-    color: var(--dashboard-accent);
-    font-size: 11px;
+    margin: 0 0 6px;
+    color: var(--accent);
+    font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.12em;
   }
 
-  .dashboard-title {
+  .dashboard-page-header h1 {
     margin: 0;
-    color: var(--dashboard-text);
-    font-size: clamp(28px, 3vw, 38px);
-    line-height: 1.1;
+    color: var(--text);
+    font-size: 28px;
     font-weight: 800;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.025em;
   }
 
-  .dashboard-subtitle {
-    margin: 9px 0 0;
-    color: var(--dashboard-muted);
-    font-size: 14px;
-    line-height: 1.6;
+  .dashboard-page-header p:last-child {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 13px;
   }
 
   .dashboard-refresh,
   .dashboard-state-button {
-    border: 1px solid var(--dashboard-border);
+    border: 1px solid var(--border);
     border-radius: 10px;
-    background: var(--dashboard-card);
-    color: var(--dashboard-text);
+    background: var(--card);
+    color: var(--text);
     padding: 10px 15px;
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 12px;
+    font-weight: 750;
     cursor: pointer;
-    box-shadow: var(--dashboard-shadow);
     transition: 0.2s ease;
   }
 
   .dashboard-refresh:hover,
   .dashboard-state-button:hover {
-    border-color: var(--dashboard-accent);
-    color: var(--dashboard-accent);
+    border-color: var(--accent);
+    color: var(--accent);
     transform: translateY(-1px);
   }
 
   .dashboard-welcome {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 28px;
-    padding: 28px 30px;
-    margin-bottom: 28px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 18px;
+    min-height: 144px;
+    margin-top: 16px;
+    padding: 25px 30px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 16px;
     background:
       linear-gradient(
         135deg,
-        var(--dashboard-card),
-        var(--dashboard-accent-soft)
+        var(--card) 0%,
+        var(--accent-soft) 100%
       );
-    box-shadow: var(--dashboard-shadow);
+    box-shadow: var(--shadow);
   }
 
-  .dashboard-welcome-content {
-    min-width: 0;
+  .dashboard-welcome-copy {
+    position: relative;
+    z-index: 2;
   }
 
   .dashboard-role-badge {
     display: inline-flex;
-    align-items: center;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: var(--dashboard-accent-soft);
-    color: var(--dashboard-accent);
-    font-size: 11px;
+    padding: 5px 9px;
+    border-radius: 7px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 10px;
     font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
   }
 
   .dashboard-welcome h2 {
-    margin: 13px 0 7px;
-    color: var(--dashboard-text);
-    font-size: clamp(21px, 2vw, 28px);
-    line-height: 1.2;
-    letter-spacing: -0.02em;
+    margin: 11px 0 5px;
+    color: var(--text);
+    font-size: 28px;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
   }
 
   .dashboard-welcome p {
-    max-width: 700px;
     margin: 0;
-    color: var(--dashboard-muted);
-    font-size: 14px;
-    line-height: 1.65;
+    color: var(--muted);
+    font-size: 13px;
   }
 
-  .dashboard-user-summary {
-    display: flex;
-    align-items: center;
-    gap: 13px;
-    min-width: 190px;
-    padding-left: 20px;
-    border-left: 1px solid var(--dashboard-border);
+  .dashboard-welcome-visual {
+    position: absolute;
+    right: 38px;
+    bottom: -4px;
+    width: 310px;
+    height: 145px;
+    opacity: 0.48;
   }
 
-  .dashboard-avatar {
+  .dashboard-visual-window {
+    position: absolute;
+    right: 20px;
+    top: 8px;
     display: grid;
-    place-items: center;
-    width: 52px;
-    height: 52px;
-    flex: 0 0 52px;
-    border-radius: 15px;
-    background: var(--dashboard-accent);
-    color: #ffffff;
-    font-size: 16px;
-    font-weight: 800;
+    grid-template-columns: 1fr 1fr;
+    width: 102px;
+    height: 72px;
+    border: 3px solid var(--accent-2);
+    opacity: 0.18;
   }
 
-  .dashboard-user-summary div:last-child {
+  .dashboard-visual-window span {
+    border: 1px solid var(--accent-2);
+  }
+
+  .dashboard-visual-chart {
+    position: absolute;
+    left: 35px;
+    top: 55px;
     display: flex;
-    flex-direction: column;
-    min-width: 0;
+    align-items: flex-end;
+    gap: 7px;
+    width: 62px;
+    height: 47px;
+    opacity: 0.2;
   }
 
-  .dashboard-user-summary strong {
-    overflow: hidden;
-    color: var(--dashboard-text);
-    font-size: 14px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .dashboard-visual-chart i {
+    display: block;
+    width: 10px;
+    border-radius: 4px 4px 0 0;
+    background: var(--accent-2);
   }
 
-  .dashboard-user-summary span {
-    margin-top: 3px;
-    color: var(--dashboard-muted);
-    font-size: 12px;
+  .dashboard-visual-chart i:nth-child(1) {
+    height: 16px;
+  }
+
+  .dashboard-visual-chart i:nth-child(2) {
+    height: 29px;
+  }
+
+  .dashboard-visual-chart i:nth-child(3) {
+    height: 38px;
+  }
+
+  .dashboard-visual-chart i:nth-child(4) {
+    height: 25px;
+  }
+
+  .dashboard-visual-block {
+    position: absolute;
+    left: 120px;
+    bottom: 0;
+    width: 90px;
+    height: 58px;
+    border-radius: 8px 8px 0 0;
+    background: var(--accent-2);
+    opacity: 0.15;
   }
 
   .dashboard-section-header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 20px;
-    margin: 30px 0 14px;
+    margin: 23px 0 11px;
   }
 
   .dashboard-section-header h2 {
     margin: 0;
-    color: var(--dashboard-text);
-    font-size: 18px;
+    color: var(--text);
+    font-size: 17px;
     font-weight: 800;
     letter-spacing: -0.015em;
   }
 
   .dashboard-section-header p {
-    margin: 5px 0 0;
-    color: var(--dashboard-muted);
-    font-size: 13px;
-    line-height: 1.5;
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 11px;
   }
 
   .dashboard-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
+    gap: 12px;
   }
 
   .dashboard-kpi {
     min-width: 0;
-    padding: 19px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 15px;
-    background: var(--dashboard-card);
-    box-shadow: var(--dashboard-shadow);
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+    transition: 0.2s ease;
   }
 
-  .dashboard-kpi-heading {
+  .dashboard-kpi:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .dashboard-kpi-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
   }
 
-  .dashboard-kpi-heading span {
-    color: var(--dashboard-muted);
-    font-size: 12px;
+  .dashboard-kpi-top > span {
+    color: var(--muted);
+    font-size: 11px;
     font-weight: 700;
   }
 
-  .dashboard-kpi-heading b {
+  .dashboard-kpi-top b,
+  .dashboard-module-icon,
+  .dashboard-quick-icon {
     display: grid;
     place-items: center;
+    flex: 0 0 auto;
+    border-radius: 9px;
+    font-size: 9px;
+    font-weight: 850;
+  }
+
+  .dashboard-kpi-top b {
     width: 34px;
     height: 34px;
-    border-radius: 10px;
-    background: var(--dashboard-accent-soft);
-    color: var(--dashboard-accent);
-    font-size: 10px;
-    letter-spacing: 0.03em;
+    background: var(--accent-soft);
+    color: var(--accent);
   }
 
   .dashboard-kpi > strong {
     display: block;
-    margin-top: 17px;
-    color: var(--dashboard-text);
-    font-size: 30px;
+    margin-top: 15px;
+    color: var(--text);
+    font-size: 28px;
     line-height: 1;
-    font-weight: 800;
+    font-weight: 850;
     letter-spacing: -0.03em;
   }
 
-  .dashboard-kpi > small {
-    display: block;
-    margin-top: 10px;
-    color: var(--dashboard-muted);
-    font-size: 11px;
-    line-height: 1.4;
+  .dashboard-kpi-bottom {
+    margin-top: 9px;
+  }
+
+  .dashboard-kpi-bottom small {
+    color: var(--muted);
+    font-size: 10px;
   }
 
   .dashboard-two-column {
     display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
-    gap: 14px;
-    margin-top: 14px;
+    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+    gap: 12px;
+    margin-top: 12px;
   }
 
   .dashboard-panel,
-  .dashboard-profile-card {
+  .dashboard-profile-card,
+  .dashboard-person-card,
+  .dashboard-list-panel {
     min-width: 0;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 15px;
-    background: var(--dashboard-card);
-    box-shadow: var(--dashboard-shadow);
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: var(--card);
+    box-shadow: var(--shadow);
   }
 
-  .dashboard-panel {
-    padding: 21px;
+  .dashboard-panel,
+  .dashboard-list-panel {
+    padding: 18px;
   }
 
   .dashboard-panel-heading {
-    margin-bottom: 20px;
+    margin-bottom: 17px;
   }
 
   .dashboard-panel-heading h2 {
     margin: 0;
-    color: var(--dashboard-text);
-    font-size: 16px;
+    color: var(--text);
+    font-size: 15px;
     font-weight: 800;
   }
 
   .dashboard-panel-heading p {
-    margin: 5px 0 0;
-    color: var(--dashboard-muted);
-    font-size: 12px;
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 10px;
     line-height: 1.5;
   }
 
   .dashboard-workforce {
     display: grid;
-    grid-template-columns: 190px minmax(0, 1fr);
+    grid-template-columns: 175px minmax(0, 1fr);
     align-items: center;
-    gap: 28px;
+    gap: 26px;
   }
 
   .dashboard-donut {
     position: relative;
-    width: 176px;
-    height: 176px;
+    width: 156px;
+    height: 156px;
     margin: 0 auto;
     border-radius: 50%;
     background:
       conic-gradient(
-        var(--dashboard-accent) 0deg,
-        var(--dashboard-accent) var(--active-angle),
-        var(--dashboard-track) var(--active-angle),
-        var(--dashboard-track) 360deg
+        var(--success) 0deg,
+        var(--success) var(--active-angle),
+        var(--track) var(--active-angle),
+        var(--track) 360deg
       );
   }
 
   .dashboard-donut::after {
     position: absolute;
-    content: "";
     inset: 22px;
+    content: "";
     border-radius: 50%;
-    background: var(--dashboard-card);
+    background: var(--card);
   }
 
   .dashboard-donut-center {
@@ -1458,24 +1628,29 @@ const dashboardStyles = `
   }
 
   .dashboard-donut-center strong {
-    color: var(--dashboard-text);
-    font-size: 27px;
+    color: var(--text);
+    font-size: 25px;
     line-height: 1;
-    font-weight: 800;
+    font-weight: 850;
   }
 
   .dashboard-donut-center span {
-    margin-top: 6px;
-    color: var(--dashboard-muted);
-    font-size: 11px;
-    font-weight: 700;
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .dashboard-donut-center small {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 9px;
   }
 
   .dashboard-status-list,
   .dashboard-role-list {
     display: flex;
     flex-direction: column;
-    gap: 17px;
+    gap: 14px;
   }
 
   .dashboard-status-top,
@@ -1484,173 +1659,162 @@ const dashboardStyles = `
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 7px;
+    margin-bottom: 6px;
   }
 
   .dashboard-status-top span,
   .dashboard-role-top span {
-    color: var(--dashboard-text);
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--text);
+    font-size: 10px;
     font-weight: 650;
   }
 
   .dashboard-status-top strong,
   .dashboard-role-top strong {
-    color: var(--dashboard-text);
-    font-size: 12px;
-    font-weight: 800;
+    color: var(--text);
+    font-size: 10px;
+  }
+
+  .dashboard-status-top i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent-2);
+  }
+
+  .dashboard-status-top i.status-active {
+    background: var(--success);
+  }
+
+  .dashboard-status-top i.status-inactive {
+    background: #ff8a18;
+  }
+
+  .dashboard-status-top i.status-resigned {
+    background: #7757ff;
+  }
+
+  .dashboard-status-top i.status-terminated {
+    background: var(--danger);
   }
 
   .dashboard-status-track,
   .dashboard-role-track {
-    height: 7px;
+    height: 5px;
     overflow: hidden;
-    border-radius: 999px;
-    background: var(--dashboard-track);
+    border-radius: 99px;
+    background: var(--track);
   }
 
   .dashboard-status-progress,
   .dashboard-role-progress {
     height: 100%;
     border-radius: inherit;
-    background: var(--dashboard-accent);
-    transition: width 0.3s ease;
+    background: var(--accent-2);
   }
 
-  .dashboard-profile-card {
-    padding: 20px;
-  }
-
-  .dashboard-profile-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .dashboard-info-card {
-    min-width: 0;
-    padding: 15px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 12px;
-    background: var(--dashboard-surface);
-  }
-
-  .dashboard-info-card span {
+  .dashboard-status small {
     display: block;
-    color: var(--dashboard-muted);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 9px;
   }
 
-  .dashboard-info-card strong {
-    display: block;
-    margin-top: 8px;
-    overflow: hidden;
-    color: var(--dashboard-text);
-    font-size: 13px;
-    font-weight: 750;
-    line-height: 1.45;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .dashboard-info-card strong.muted {
-    color: var(--dashboard-muted);
-    font-weight: 600;
-  }
-
-  .dashboard-quick-list {
+  .dashboard-panel-total {
     display: flex;
-    flex-direction: column;
-    gap: 9px;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface);
+  }
+
+  .dashboard-panel-total span {
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .dashboard-panel-total strong {
+    color: var(--text);
+    font-size: 12px;
+  }
+
+  .dashboard-role-top strong small {
+    margin-left: 5px;
+    color: var(--muted);
+    font-size: 8px;
+    font-weight: 600;
   }
 
   .dashboard-action-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    gap: 9px;
   }
 
   .dashboard-quick-action {
-    width: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
     min-width: 0;
-    padding: 12px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 11px;
-    background: var(--dashboard-surface);
-    color: var(--dashboard-text);
+    gap: 9px;
+    padding: 11px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text);
     text-align: left;
     cursor: pointer;
-    transition:
-      transform 0.2s ease,
-      border-color 0.2s ease,
-      background 0.2s ease;
+    transition: 0.2s ease;
   }
 
   .dashboard-quick-action:hover {
-    border-color: var(--dashboard-accent);
-    background: var(--dashboard-accent-soft);
+    border-color: var(--accent);
+    background: var(--accent-soft);
     transform: translateY(-1px);
   }
 
-  .dashboard-quick-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-
   .dashboard-quick-icon {
-    display: grid;
-    place-items: center;
     width: 34px;
     height: 34px;
-    flex: 0 0 34px;
-    border-radius: 9px;
-    background: var(--dashboard-card);
-    color: var(--dashboard-accent);
-    font-size: 9px;
-    font-weight: 800;
-    border: 1px solid var(--dashboard-border);
+    background: var(--accent-soft);
+    color: var(--accent);
   }
 
   .dashboard-quick-copy {
     display: flex;
+    flex: 1;
     flex-direction: column;
     min-width: 0;
   }
 
   .dashboard-quick-copy strong {
     overflow: hidden;
-    color: var(--dashboard-text);
-    font-size: 12px;
+    color: var(--text);
+    font-size: 10px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .dashboard-quick-copy small {
     margin-top: 3px;
-    color: var(--dashboard-muted);
-    font-size: 10px;
+    color: var(--muted);
+    font-size: 8px;
   }
 
   .dashboard-quick-arrow {
-    flex: 0 0 auto;
-    color: var(--dashboard-accent);
-    font-size: 18px;
-    line-height: 1;
+    color: var(--accent-2);
+    font-size: 15px;
   }
 
   .dashboard-module-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
   }
 
   .dashboard-module {
@@ -1658,65 +1822,227 @@ const dashboardStyles = `
     flex-direction: column;
     align-items: flex-start;
     min-width: 0;
-    min-height: 184px;
-    padding: 18px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 14px;
-    background: var(--dashboard-card);
-    color: var(--dashboard-text);
+    min-height: 150px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: var(--card);
+    color: var(--text);
     text-align: left;
-    box-shadow: var(--dashboard-shadow);
+    box-shadow: var(--shadow);
     cursor: pointer;
-    transition:
-      transform 0.2s ease,
-      border-color 0.2s ease,
-      box-shadow 0.2s ease;
+    transition: 0.2s ease;
   }
 
   .dashboard-module:hover {
-    border-color: var(--dashboard-accent);
-    box-shadow: var(--dashboard-shadow-hover);
+    border-color: var(--accent-2);
+    box-shadow: var(--shadow-hover);
     transform: translateY(-2px);
   }
 
   .dashboard-module-icon {
-    display: grid;
-    place-items: center;
-    width: 42px;
-    height: 42px;
-    border-radius: 11px;
-    background: var(--dashboard-accent-soft);
-    color: var(--dashboard-accent);
-    font-size: 10px;
-    font-weight: 800;
+    width: 36px;
+    height: 36px;
+    background: var(--accent-soft);
+    color: var(--accent-2);
   }
 
   .dashboard-module strong {
-    margin-top: 16px;
-    color: var(--dashboard-text);
-    font-size: 14px;
+    margin-top: 13px;
+    color: var(--text);
+    font-size: 11px;
     font-weight: 800;
   }
 
   .dashboard-module p {
-    min-height: 48px;
-    margin: 7px 0 14px;
-    color: var(--dashboard-muted);
-    font-size: 11px;
-    line-height: 1.55;
+    min-height: 34px;
+    margin: 5px 0 10px;
+    color: var(--muted);
+    font-size: 9px;
+    line-height: 1.45;
   }
 
   .dashboard-module-link {
     margin-top: auto;
-    color: var(--dashboard-accent);
-    font-size: 11px;
+    color: var(--accent-2);
+    font-size: 9px;
     font-weight: 800;
+  }
+
+  .dashboard-profile-layout {
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .dashboard-person-card {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .dashboard-large-avatar {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 17px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 19px;
+    font-weight: 850;
+  }
+
+  .dashboard-person-card h3 {
+    margin: 12px 0 3px;
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  .dashboard-person-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  .dashboard-person-status {
+    margin-top: 13px;
+    padding: 5px 9px;
+    border-radius: 99px;
+    background: rgba(13, 187, 99, 0.1);
+    color: var(--success);
+    font-size: 9px;
+    font-weight: 800;
+  }
+
+  .dashboard-profile-card {
+    padding: 15px;
+  }
+
+  .dashboard-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .dashboard-info-card {
+    min-width: 0;
+    padding: 13px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface);
+  }
+
+  .dashboard-info-card span {
+    display: block;
+    color: var(--muted);
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .dashboard-info-card strong {
+    display: block;
+    margin-top: 6px;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 750;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-info-card strong.muted {
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .dashboard-quick-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .dashboard-bottom-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .dashboard-list {
+    border-top: 1px solid var(--border);
+  }
+
+  .dashboard-list-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    min-height: 54px;
+    padding: 8px 2px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dashboard-list-row > div:first-child {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .dashboard-list-row strong {
+    color: var(--text);
+    font-size: 10px;
+    font-weight: 750;
+  }
+
+  .dashboard-list-row span {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 9px;
+  }
+
+  .dashboard-list-date {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+  }
+
+  .dashboard-list-date span {
+    margin: 0;
+  }
+
+  .dashboard-list-date i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent-2);
+  }
+
+  .dashboard-holiday-date {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex: 0 0 auto;
+  }
+
+  .dashboard-holiday-date span,
+  .dashboard-holiday-date small {
+    margin: 0;
+    color: var(--muted);
+    font-size: 9px;
   }
 
   .dashboard-empty-text {
     margin: 0;
-    color: var(--dashboard-muted);
-    font-size: 13px;
+    color: var(--muted);
+    font-size: 11px;
   }
 
   .dashboard-footer {
@@ -1724,15 +2050,15 @@ const dashboardStyles = `
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin-top: 34px;
-    padding: 18px 0 4px;
-    border-top: 1px solid var(--dashboard-border);
-    color: var(--dashboard-muted);
-    font-size: 11px;
+    margin-top: 18px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 9px;
   }
 
   .dashboard-footer span:first-child {
-    color: var(--dashboard-text);
+    color: var(--text);
     font-weight: 700;
   }
 
@@ -1745,33 +2071,33 @@ const dashboardStyles = `
 
   .dashboard-state-card {
     width: min(430px, 100%);
-    padding: 32px;
-    border: 1px solid var(--dashboard-border);
-    border-radius: 16px;
-    background: var(--dashboard-card);
-    box-shadow: var(--dashboard-shadow);
+    padding: 30px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--card);
+    box-shadow: var(--shadow);
     text-align: center;
   }
 
   .dashboard-state-card h2 {
-    margin: 18px 0 8px;
-    color: var(--dashboard-text);
-    font-size: 20px;
+    margin: 17px 0 7px;
+    color: var(--text);
+    font-size: 19px;
   }
 
   .dashboard-state-card p {
-    margin: 0 0 20px;
-    color: var(--dashboard-muted);
-    font-size: 13px;
+    margin: 0 0 18px;
+    color: var(--muted);
+    font-size: 12px;
     line-height: 1.6;
   }
 
   .dashboard-spinner {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     margin: 0 auto;
-    border: 3px solid var(--dashboard-track);
-    border-top-color: var(--dashboard-accent);
+    border: 3px solid var(--track);
+    border-top-color: var(--accent);
     border-radius: 50%;
     animation: dashboard-spin 0.8s linear infinite;
   }
@@ -1783,10 +2109,6 @@ const dashboardStyles = `
   }
 
   @media (max-width: 1180px) {
-    .dashboard-kpi-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .dashboard-module-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -1797,11 +2119,13 @@ const dashboardStyles = `
   }
 
   @media (max-width: 900px) {
-    .dashboard-topbar {
-      align-items: flex-start;
+    .dashboard-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .dashboard-two-column {
+    .dashboard-two-column,
+    .dashboard-bottom-grid,
+    .dashboard-profile-layout {
       grid-template-columns: 1fr;
     }
 
@@ -1813,23 +2137,20 @@ const dashboardStyles = `
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .dashboard-user-summary {
-      display: none;
+    .dashboard-welcome-visual {
+      right: -20px;
+      opacity: 0.25;
     }
   }
 
   @media (max-width: 640px) {
     .dashboard-page {
-      border-radius: 12px;
+      border-radius: 10px;
     }
 
-    .dashboard-shell {
-      padding: 0 0 20px;
-    }
-
-    .dashboard-topbar {
+    .dashboard-page-header {
+      align-items: flex-start;
       flex-direction: column;
-      gap: 15px;
     }
 
     .dashboard-refresh {
@@ -1837,7 +2158,11 @@ const dashboardStyles = `
     }
 
     .dashboard-welcome {
-      padding: 21px;
+      padding: 20px;
+    }
+
+    .dashboard-welcome h2 {
+      font-size: 23px;
     }
 
     .dashboard-kpi-grid,
@@ -1852,17 +2177,23 @@ const dashboardStyles = `
     }
 
     .dashboard-donut {
-      width: 155px;
-      height: 155px;
+      width: 145px;
+      height: 145px;
+    }
+
+    .dashboard-quick-list {
+      grid-template-columns: 1fr;
     }
 
     .dashboard-panel,
-    .dashboard-profile-card {
-      padding: 16px;
+    .dashboard-list-panel,
+    .dashboard-profile-card,
+    .dashboard-person-card {
+      padding: 14px;
     }
 
-    .dashboard-section-header {
-      margin-top: 24px;
+    .dashboard-holiday-date {
+      gap: 10px;
     }
   }
 `
