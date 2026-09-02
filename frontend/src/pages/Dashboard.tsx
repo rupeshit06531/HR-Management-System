@@ -510,7 +510,7 @@ function DashboardLayout({
 }) {
   return (
     <div
-      className={`dashboard-page ${
+      className={`dashboard-page dashboard-compact ${
         isDarkMode ? "dashboard-dark" : ""
       }`}
     >
