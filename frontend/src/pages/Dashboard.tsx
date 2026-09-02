@@ -13,6 +13,7 @@ interface ModuleItem {
   label: string
   path: string
   roles: string[]
+  description: string
   icon: string
 }
 
@@ -21,95 +22,71 @@ const moduleItems: ModuleItem[] = [
     label: "Employees",
     path: "/employees",
     roles: ["SUPER_ADMIN", "HR", "MANAGER"],
-    icon: "EMP",
+    description: "Manage employee records and workforce information",
+    icon: "EM",
   },
   {
     label: "Departments",
     path: "/departments",
     roles: ["SUPER_ADMIN", "HR"],
-    icon: "DEP",
+    description: "Manage departments and designations",
+    icon: "DP",
   },
   {
     label: "Attendance",
     path: "/attendance",
-    roles: [
-      "SUPER_ADMIN",
-      "HR",
-      "MANAGER",
-      "EMPLOYEE",
-    ],
-    icon: "ATT",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    description: "Track attendance and daily check-ins",
+    icon: "AT",
   },
   {
     label: "Leave",
     path: "/leave",
-    roles: [
-      "SUPER_ADMIN",
-      "HR",
-      "MANAGER",
-      "EMPLOYEE",
-    ],
-    icon: "LEV",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    description: "Manage leave requests and approvals",
+    icon: "LV",
   },
   {
     label: "Payroll",
     path: "/payroll",
-    roles: [
-      "SUPER_ADMIN",
-      "HR",
-      "EMPLOYEE",
-    ],
-    icon: "PAY",
+    roles: ["SUPER_ADMIN", "HR", "EMPLOYEE"],
+    description: "View and manage payroll information",
+    icon: "PR",
   },
   {
     label: "Performance",
     path: "/performance",
-    roles: [
-      "SUPER_ADMIN",
-      "HR",
-      "MANAGER",
-      "EMPLOYEE",
-    ],
-    icon: "PER",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    description: "Review employee performance",
+    icon: "PF",
   },
   {
     label: "Recruitment",
     path: "/recruitment",
     roles: ["SUPER_ADMIN", "HR"],
-    icon: "REC",
+    description: "Manage recruitment and hiring activities",
+    icon: "RC",
   },
   {
     label: "Documents",
     path: "/documents",
-    roles: [
-      "SUPER_ADMIN",
-      "HR",
-      "MANAGER",
-      "EMPLOYEE",
-    ],
-    icon: "DOC",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    description: "Access employee and HR documents",
+    icon: "DC",
   },
   {
     label: "Announcements",
     path: "/announcements",
-    roles: [
-      "SUPER_ADMIN",
-      "HR",
-      "MANAGER",
-      "EMPLOYEE",
-    ],
-    icon: "ANN",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    description: "View company announcements",
+    icon: "AN",
   },
   {
     label: "Holidays",
     path: "/holidays",
-    roles: [
-      "SUPER_ADMIN",
-      "HR",
-      "MANAGER",
-      "EMPLOYEE",
-    ],
-    icon: "HOL",
+    roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
+    description: "View company holidays",
+    icon: "HD",
   },
 ]
 
@@ -120,2775 +97,1666 @@ const roleLabels: Record<string, string> = {
   EMPLOYEE: "Employee",
 }
 
-function Dashboard() {
-  const navigate = useNavigate()
+const roleDescriptions: Record<string, string> = {
+  SUPER_ADMIN:
+    "Organization-wide visibility and administrative control",
+  HR:
+    "Human resources operations and workforce management",
+  MANAGER:
+    "Team management, employee oversight and daily operations",
+  EMPLOYEE:
+    "Your personal HR workspace and employment information",
+}
 
-  const {
-    user,
-    isLoading: authLoading,
-  } = useAuth()
-
-  const { isDarkMode, toggleDarkMode } =
-    useTheme()
-
-  // Premium color scheme with enhanced contrast and hierarchy
-  const colors = {
-    bg: isDarkMode 
-      ? "linear-gradient(135deg, #0a0e14 0%, #0f1419 100%)" 
-      : "linear-gradient(135deg, #f5f7fa 0%, #f0f2f5 100%)",
-    surface: isDarkMode ? "#111827" : "#ffffff",
-    surfaceSoft: isDarkMode ? "#172033" : "#f8fafc",
-    text: isDarkMode ? "#f8fafc" : "#0f172a",
-    textSecondary: isDarkMode ? "#cbd5e1" : "#334155",
-    textMuted: isDarkMode ? "#94a3b8" : "#475569",
-    border: isDarkMode ? "rgba(148,163,184,0.12)" : "#e2e8f0",
-    borderStrong: isDarkMode ? "#374151" : "#cbd5e1",
-    primary: "var(--app-primary)",
-    primarySoft: isDarkMode ? "#3d2817" : "#fff7ed",
-    accentBlue: "#0f7ce3",
-    accentGreen: "#10b981",
-    accentOrange: "var(--app-primary)",
-    accentPurple: "#7c3aed",
+const styles = `
+  .dashboard-page {
+    min-height: 100vh;
+    padding: 28px;
+    background: var(--dashboard-bg);
+    color: var(--dashboard-text);
+    box-sizing: border-box;
   }
 
-  const [dashboard, setDashboard] =
-    useState<Awaited<
-      ReturnType<typeof getDashboard>
-    > | null>(null)
+  .dashboard-shell {
+    width: min(1480px, 100%);
+    margin: 0 auto;
+  }
 
-  const [isLoading, setIsLoading] =
-    useState(true)
+  .dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 26px;
+  }
 
-  const [error, setError] =
-    useState<string | null>(null)
+  .dashboard-heading {
+    min-width: 0;
+  }
 
-  const loadDashboard = async () => {
+  .dashboard-eyebrow {
+    margin: 0 0 7px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dashboard-muted);
+  }
+
+  .dashboard-title {
+    margin: 0;
+    font-size: clamp(26px, 3vw, 34px);
+    line-height: 1.15;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .dashboard-subtitle {
+    margin: 8px 0 0;
+    color: var(--dashboard-muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .dashboard-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .dashboard-action {
+    min-height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 10px;
+    background: var(--dashboard-card);
+    color: var(--dashboard-text);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 160ms ease;
+  }
+
+  .dashboard-action:hover {
+    border-color: var(--dashboard-accent);
+    transform: translateY(-1px);
+  }
+
+  .dashboard-action.primary {
+    border-color: var(--dashboard-accent);
+    background: var(--dashboard-accent);
+    color: #ffffff;
+  }
+
+  .dashboard-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 24px;
+    padding: 28px;
+    margin-bottom: 22px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 18px;
+    background:
+      linear-gradient(
+        135deg,
+        var(--dashboard-hero-start),
+        var(--dashboard-hero-end)
+      );
+    box-shadow: var(--dashboard-shadow);
+  }
+
+  .dashboard-hero-content {
+    min-width: 0;
+  }
+
+  .dashboard-role-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--dashboard-badge-bg);
+    color: var(--dashboard-accent);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .dashboard-hero-title {
+    margin: 13px 0 7px;
+    font-size: clamp(24px, 3vw, 32px);
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .dashboard-hero-text {
+    max-width: 720px;
+    margin: 0;
+    color: var(--dashboard-muted);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .dashboard-profile-summary {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-width: 230px;
+    align-self: center;
+  }
+
+  .dashboard-avatar {
+    display: grid;
+    place-items: center;
+    width: 58px;
+    height: 58px;
+    flex-shrink: 0;
+    border-radius: 16px;
+    background: var(--dashboard-accent-soft);
+    color: var(--dashboard-accent);
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .dashboard-profile-name {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .dashboard-profile-role {
+    margin: 4px 0 0;
+    color: var(--dashboard-muted);
+    font-size: 12px;
+  }
+
+  .dashboard-section {
+    margin-top: 24px;
+  }
+
+  .dashboard-section-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 13px;
+  }
+
+  .dashboard-section-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 800;
+  }
+
+  .dashboard-section-description {
+    margin: 4px 0 0;
+    color: var(--dashboard-muted);
+    font-size: 12px;
+  }
+
+  .dashboard-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .dashboard-kpi {
+    padding: 19px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 15px;
+    background: var(--dashboard-card);
+    box-shadow: var(--dashboard-shadow);
+  }
+
+  .dashboard-kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .dashboard-kpi-label {
+    color: var(--dashboard-muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .dashboard-kpi-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--dashboard-accent-soft);
+    color: var(--dashboard-accent);
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .dashboard-kpi-value {
+    margin: 13px 0 0;
+    font-size: 27px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  .dashboard-kpi-meta {
+    margin: 5px 0 0;
+    color: var(--dashboard-muted);
+    font-size: 11px;
+  }
+
+  .dashboard-content-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+    gap: 18px;
+  }
+
+  .dashboard-panel {
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 15px;
+    background: var(--dashboard-card);
+    box-shadow: var(--dashboard-shadow);
+  }
+
+  .dashboard-panel-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .dashboard-panel-subtitle {
+    margin: 5px 0 18px;
+    color: var(--dashboard-muted);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .dashboard-workforce {
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr);
+    align-items: center;
+    gap: 25px;
+  }
+
+  .dashboard-donut {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 170px;
+    height: 170px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background:
+      conic-gradient(
+        var(--dashboard-accent) 0deg,
+        var(--dashboard-accent) var(--active-angle),
+        var(--dashboard-track) var(--active-angle),
+        var(--dashboard-track) 360deg
+      );
+  }
+
+  .dashboard-donut::after {
+    content: "";
+    position: absolute;
+    inset: 20px;
+    border-radius: 50%;
+    background: var(--dashboard-card);
+  }
+
+  .dashboard-donut-center {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+  }
+
+  .dashboard-donut-value {
+    display: block;
+    font-size: 28px;
+    font-weight: 800;
+  }
+
+  .dashboard-donut-label {
+    display: block;
+    margin-top: 2px;
+    color: var(--dashboard-muted);
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .dashboard-status-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .dashboard-status-row {
+    display: grid;
+    grid-template-columns: minmax(110px, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .dashboard-status-name {
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .dashboard-status-value {
+    color: var(--dashboard-muted);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .dashboard-status-track {
+    grid-column: 1 / -1;
+    height: 6px;
+    overflow: hidden;
+    margin-top: -7px;
+    border-radius: 999px;
+    background: var(--dashboard-track);
+  }
+
+  .dashboard-status-progress {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--dashboard-accent);
+  }
+
+  .dashboard-role-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .dashboard-role-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .dashboard-role-name {
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .dashboard-role-count {
+    color: var(--dashboard-muted);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .dashboard-role-track {
+    grid-column: 1 / -1;
+    height: 6px;
+    overflow: hidden;
+    margin-top: -5px;
+    border-radius: 999px;
+    background: var(--dashboard-track);
+  }
+
+  .dashboard-role-progress {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--dashboard-accent);
+  }
+
+  .dashboard-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .dashboard-info-card {
+    min-width: 0;
+    padding: 15px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 12px;
+    background: var(--dashboard-surface);
+  }
+
+  .dashboard-info-label {
+    margin: 0 0 6px;
+    color: var(--dashboard-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .dashboard-info-value {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .dashboard-info-value.muted {
+    color: var(--dashboard-muted);
+  }
+
+  .dashboard-module-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 13px;
+  }
+
+  .dashboard-module {
+    display: flex;
+    flex-direction: column;
+    min-height: 142px;
+    padding: 17px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 14px;
+    background: var(--dashboard-card);
+    color: var(--dashboard-text);
+    text-align: left;
+    cursor: pointer;
+    box-shadow: var(--dashboard-shadow);
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .dashboard-module:hover {
+    transform: translateY(-2px);
+    border-color: var(--dashboard-accent);
+    box-shadow: var(--dashboard-shadow-hover);
+  }
+
+  .dashboard-module-icon {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    margin-bottom: 16px;
+    border-radius: 10px;
+    background: var(--dashboard-accent-soft);
+    color: var(--dashboard-accent);
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .dashboard-module-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .dashboard-module-description {
+    margin: 6px 0 0;
+    color: var(--dashboard-muted);
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .dashboard-module-arrow {
+    margin-top: auto;
+    padding-top: 14px;
+    color: var(--dashboard-accent);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .dashboard-quick-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .dashboard-quick-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    min-height: 64px;
+    padding: 12px 15px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 12px;
+    background: var(--dashboard-card);
+    color: var(--dashboard-text);
+    text-align: left;
+    cursor: pointer;
+    transition: 160ms ease;
+  }
+
+  .dashboard-quick-action:hover {
+    border-color: var(--dashboard-accent);
+    transform: translateY(-1px);
+  }
+
+  .dashboard-quick-left {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+  }
+
+  .dashboard-quick-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 9px;
+    background: var(--dashboard-accent-soft);
+    color: var(--dashboard-accent);
+    font-size: 9px;
+    font-weight: 800;
+  }
+
+  .dashboard-quick-title {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .dashboard-quick-text {
+    margin: 3px 0 0;
+    overflow: hidden;
+    color: var(--dashboard-muted);
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-quick-arrow {
+    color: var(--dashboard-muted);
+    font-size: 15px;
+  }
+
+  .dashboard-footer {
+    margin-top: 25px;
+    padding: 14px 2px 2px;
+    color: var(--dashboard-muted);
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .dashboard-state {
+    display: grid;
+    min-height: 420px;
+    place-items: center;
+    padding: 30px;
+    text-align: center;
+  }
+
+  .dashboard-state-card {
+    width: min(420px, 100%);
+    padding: 28px;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 16px;
+    background: var(--dashboard-card);
+    box-shadow: var(--dashboard-shadow);
+  }
+
+  .dashboard-state-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .dashboard-state-text {
+    margin: 8px 0 20px;
+    color: var(--dashboard-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .dashboard-spinner {
+    width: 30px;
+    height: 30px;
+    margin: 0 auto 15px;
+    border: 3px solid var(--dashboard-track);
+    border-top-color: var(--dashboard-accent);
+    border-radius: 50%;
+    animation: dashboard-spin 700ms linear infinite;
+  }
+
+  @keyframes dashboard-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (max-width: 1150px) {
+    .dashboard-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-module-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .dashboard-content-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 800px) {
+    .dashboard-page {
+      padding: 18px;
+    }
+
+    .dashboard-header {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .dashboard-header-actions {
+      width: 100%;
+    }
+
+    .dashboard-header-actions .dashboard-action {
+      flex: 1;
+    }
+
+    .dashboard-hero {
+      grid-template-columns: 1fr;
+      padding: 21px;
+    }
+
+    .dashboard-profile-summary {
+      min-width: 0;
+    }
+
+    .dashboard-workforce {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-module-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-quick-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .dashboard-page {
+      padding: 14px;
+    }
+
+    .dashboard-kpi-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-module-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-profile-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-panel {
+      padding: 16px;
+    }
+
+    .dashboard-donut {
+      width: 150px;
+      height: 150px;
+    }
+
+    .dashboard-donut::after {
+      inset: 18px;
+    }
+  }
+`
+
+function formatDate(value: string | null | undefined) {
+  if (!value) {
+    return "Not available"
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })
+}
+
+function getInitials(name: string) {
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  if (parts.length === 0) {
+    return "U"
+  }
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase()
+  }
+
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+}
+
+function Dashboard() {
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+  const { isDarkMode, toggleTheme } = useTheme()
+
+  const [dashboard, setDashboard] = useState<
+    Awaited<ReturnType<typeof getDashboard>> | null
+  >(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  async function loadDashboard() {
     try {
       setIsLoading(true)
-      setError(null)
+      setError("")
 
       const data = await getDashboard()
-
       setDashboard(data)
-    } catch (requestError) {
-      console.error(
-        "Failed to load dashboard:",
-        requestError,
-      )
-
-      setError(
-        "Unable to load dashboard data. Please refresh the page.",
-      )
+    } catch {
+      setError("Unable to load dashboard information.")
     } finally {
       setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    if (!authLoading && user) {
-      void loadDashboard()
-    }
-  }, [authLoading, user])
+    void loadDashboard()
+  }, [])
 
-  const visibleModules = useMemo(() => {
-    if (!user) {
-      return []
-    }
-
-    return moduleItems.filter((item) =>
-      item.roles.includes(user.role),
-    )
-  }, [user])
-
-  if (authLoading || isLoading) {
-    return (
-      <div
-        style={{
-          minHeight: "70vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: colors.bg,
-          color: colors.textMuted,
-          fontFamily:
-            '"Inter", "Segoe UI", Arial, sans-serif',
-        }}
-      >
-        <div
-          style={{
-            textAlign: "center",
-          }}
-        >
-          <div
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "50%",
-              border: "3px solid #dbeafe",
-              borderTopColor: "#2563eb",
-              margin: "0 auto 12px",
-              animation:
-                "dashboardSpin 0.8s linear infinite",
-            }}
-          />
-
-          <div
-            style={{
-              fontSize: "13px",
-              fontWeight: 600,
-            }}
-          >
-            Loading dashboard...
-          </div>
-        </div>
-
-        <style>
-          {`
-            @keyframes dashboardSpin {
-              to {
-                transform: rotate(360deg);
-              }
-            }
-          `}
-        </style>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return null
-  }
+  const currentRole = roleLabels[user?.role ?? ""] || user?.role || "User"
+  const roleDescription =
+    roleDescriptions[user?.role ?? ""] ||
+    "Your HR management workspace"
 
   const displayName =
-    user.first_name?.trim() ||
-    user.username
+    user?.first_name?.trim() ||
+    user?.username ||
+    "User"
 
-  const currentRole =
-    roleLabels[user.role] ||
-    user.role
+  const employeeProfile = dashboard?.employee
+  const employeeMetrics = dashboard?.employees
+  const userMetrics = dashboard?.users
 
-  const employeeMetrics =
-    dashboard?.employees
-
-  const userMetrics =
-    dashboard?.users
-
-  const employeeProfile =
-    dashboard?.employee
-
-  const totalEmployees =
-    employeeMetrics?.total ?? 0
-
-  const activeEmployees =
-    employeeMetrics?.active ?? 0
-
-  const inactiveEmployees =
-    employeeMetrics?.inactive ?? 0
-
-  const resignedEmployees =
-    employeeMetrics?.resigned ?? 0
-
-  const terminatedEmployees =
-    employeeMetrics?.terminated ?? 0
-
-  const totalUsers =
-    userMetrics?.total ?? 0
+  const totalEmployees = employeeMetrics?.total ?? 0
+  const activeEmployees = employeeMetrics?.active ?? 0
+  const inactiveEmployees = employeeMetrics?.inactive ?? 0
+  const resignedEmployees = employeeMetrics?.resigned ?? 0
+  const terminatedEmployees = employeeMetrics?.terminated ?? 0
+  const totalUsers = userMetrics?.total ?? 0
 
   const activePercentage =
     totalEmployees > 0
-      ? Math.round(
-          (activeEmployees /
-            totalEmployees) *
-            100,
-        )
+      ? Math.round((activeEmployees / totalEmployees) * 100)
       : 0
 
-  const inactivePercentage =
-    totalEmployees > 0
-      ? Math.round(
-          (inactiveEmployees /
-            totalEmployees) *
-            100,
-        )
-      : 0
+  const visibleModules = useMemo(() => {
+    const role = user?.role
 
-  const resignedPercentage =
-    totalEmployees > 0
-      ? Math.round(
-          (resignedEmployees /
-            totalEmployees) *
-            100,
-        )
-      : 0
+    if (!role) {
+      return []
+    }
 
-  const terminatedPercentage =
-    totalEmployees > 0
-      ? Math.round(
-          (terminatedEmployees /
-            totalEmployees) *
-            100,
-        )
-      : 0
+    return moduleItems.filter((item) => item.roles.includes(role))
+  }, [user?.role])
 
-  const roleDistribution = Object.entries(
-    userMetrics?.roles ?? {},
-  )
+  const quickActionNames =
+    user?.role === "SUPER_ADMIN"
+      ? ["Employees", "Departments", "Attendance", "Leave", "Recruitment", "Documents"]
+      : user?.role === "HR"
+        ? ["Employees", "Departments", "Attendance", "Leave", "Recruitment", "Documents"]
+        : user?.role === "MANAGER"
+          ? ["Employees", "Attendance", "Leave", "Performance", "Documents", "Announcements"]
+          : ["Attendance", "Leave", "Payroll", "Performance", "Documents", "Holidays"]
 
-  const getRoleLabel = (role: string) =>
-    roleLabels[role] || role
-
-  const getRolePercentage = (count: number) =>
-    totalUsers > 0
-      ? Math.round(
-          (count / totalUsers) * 100,
-        )
-      : 0
-
-  const quickActionLabels = [
-    "Employees",
-    "Departments",
-    "Attendance",
-    "Leave",
-    "Payroll",
-    "Recruitment",
-  ]
-
-  const quickActions = visibleModules.filter(
-    (item) =>
-      quickActionLabels.includes(item.label),
-  )
+  const quickActions = quickActionNames
+    .map((name) => visibleModules.find((item) => item.label === name))
+    .filter((item): item is ModuleItem => Boolean(item))
 
   const workforceStatuses = [
     {
       label: "Active",
       value: activeEmployees,
-      percentage: activePercentage,
-      short: "ACT",
-      background: "#eff6ff",
-      color: "#2563eb",
+      percentage:
+        totalEmployees > 0
+          ? (activeEmployees / totalEmployees) * 100
+          : 0,
     },
     {
       label: "Inactive",
       value: inactiveEmployees,
-      percentage: inactivePercentage,
-      short: "INA",
-      background: "#fffbeb",
-      color: "#d97706",
+      percentage:
+        totalEmployees > 0
+          ? (inactiveEmployees / totalEmployees) * 100
+          : 0,
     },
     {
       label: "Resigned",
       value: resignedEmployees,
-      percentage: resignedPercentage,
-      short: "RES",
-      background: "#f5f3ff",
-      color: "#7c3aed",
+      percentage:
+        totalEmployees > 0
+          ? (resignedEmployees / totalEmployees) * 100
+          : 0,
     },
     {
       label: "Terminated",
       value: terminatedEmployees,
-      percentage: terminatedPercentage,
-      short: "TER",
-      background: "#fff1f2",
-      color: "#e11d48",
+      percentage:
+        totalEmployees > 0
+          ? (terminatedEmployees / totalEmployees) * 100
+          : 0,
     },
   ]
 
-  if (
-    user.role === "EMPLOYEE" ||
-    user.role === "MANAGER"
-  ) {
-    const isEmployee = user.role === "EMPLOYEE"
+  const roleDistribution = Object.entries(userMetrics?.roles ?? {}).sort(
+    ([, first], [, second]) => second - first,
+  )
 
-    const personalName =
-      employeeProfile?.full_name?.trim() ||
-      displayName
+  const maxRoleCount = Math.max(
+    ...roleDistribution.map(([, count]) => count),
+    1,
+  )
 
-    const initials =
-      personalName
-        .split(" ")
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) =>
-          part.charAt(0).toUpperCase(),
-        )
-        .join("") ||
-      "U"
+  const personalName =
+    employeeProfile?.full_name?.trim() || displayName
 
-    const personalModules =
-      visibleModules.filter((item) =>
-        [
-          "Attendance",
-          "Leave",
-          "Payroll",
-          "Performance",
-          "Documents",
-          "Announcements",
-          "Holidays",
-        ].includes(item.label),
-      )
+  const personalInitials = getInitials(personalName)
 
-    const personalCards = [
-      {
-        label: "Employee ID",
-        value:
-          employeeProfile?.employee_id ||
-          "Not available",
-        short: "ID",
-        background: "#eff6ff",
-        color: "#2563eb",
-      },
-      {
-        label: "Department",
-        value:
-          employeeProfile?.department ||
-          "Not assigned",
-        short: "DEP",
-        background: "#f0fdf4",
-        color: "#16a34a",
-      },
-      {
-        label: "Designation",
-        value:
-          employeeProfile?.designation ||
-          "Not assigned",
-        short: "DES",
-        background: "#f5f3ff",
-        color: "#7c3aed",
-      },
-      {
-        label: "Employment Status",
-        value:
-          employeeProfile?.employment_status ||
-          "Not available",
-        short: "STS",
-        background: "#fff7ed",
-        color: "#ea580c",
-      },
-    ]
+  const personalProfileCards = [
+    {
+      label: "Employee ID",
+      value: employeeProfile?.employee_id || user?.employee_id || "Not available",
+    },
+    {
+      label: "Department",
+      value: employeeProfile?.department || "Not assigned",
+    },
+    {
+      label: "Designation",
+      value: employeeProfile?.designation || "Not assigned",
+    },
+    {
+      label: "Employment Status",
+      value: employeeProfile?.employment_status || "Not available",
+    },
+    {
+      label: "Employment Type",
+      value: employeeProfile?.employment_type || "Not available",
+    },
+    {
+      label: "Joining Date",
+      value: formatDate(employeeProfile?.joining_date),
+    },
+    {
+      label: "Manager",
+      value: employeeProfile?.manager || "Not assigned",
+    },
+    {
+      label: "Email",
+      value: employeeProfile?.email || user?.email || "Not available",
+    },
+  ]
 
+  if (isLoading) {
     return (
-      <div
-        style={{
-          minHeight: "100%",
-          background: isDarkMode
-            ? "linear-gradient(135deg, #0a0e14 0%, #0f1419 100%)"
-            : "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-          padding: "32px",
-          fontFamily: '"Inter", "Segoe UI", -apple-system, sans-serif',
-          color: colors.text,
-          boxSizing: "border-box",
-          borderRadius: "20px",
-        }}
+      <DashboardLayout
+        isDarkMode={isDarkMode}
+        toggleTheme={toggleTheme}
+        logout={logout}
       >
-        <header
-          style={{
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "space-between",
-            gap: "24px",
-            marginBottom: "32px",
-            flexWrap: "wrap",
-            padding: "24px",
-            borderRadius: "18px",
-            background: isDarkMode
-              ? "linear-gradient(135deg, rgba(17,24,39,0.85), rgba(15,23,42,0.72))"
-              : "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.92))",
-            border: isDarkMode
-              ? "1px solid rgba(148,163,184,0.1)"
-              : "1px solid rgba(226,232,240,0.8)",
-            boxShadow: isDarkMode
-              ? "0 20px 40px rgba(0,0,0,0.25)"
-              : "0 15px 35px rgba(15,23,42,0.08)",
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "7px",
-                marginBottom: "9px",
-                fontSize: "10px",
-                fontWeight: 700,
-                color: colors.textMuted,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-              }}
+        <div className="dashboard-state">
+          <div className="dashboard-state-card">
+            <div className="dashboard-spinner" />
+            <h2 className="dashboard-state-title">
+              Loading dashboard
+            </h2>
+            <p className="dashboard-state-text">
+              Preparing your HR management workspace.
+            </p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout
+        isDarkMode={isDarkMode}
+        toggleTheme={toggleTheme}
+        logout={logout}
+      >
+        <div className="dashboard-state">
+          <div className="dashboard-state-card">
+            <h2 className="dashboard-state-title">
+              Dashboard unavailable
+            </h2>
+            <p className="dashboard-state-text">
+              {error}
+            </p>
+            <button
+              type="button"
+              className="dashboard-action primary"
+              onClick={() => void loadDashboard()}
             >
-              <span
-                style={{
-                  color: colors.primary,
-                }}
-              >
-                {isEmployee
-                  ? "Employee"
-                  : "Manager"}
-              </span>
+              Try Again
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
-              <span
-                style={{
-                  color: colors.border,
-                }}
-              >
-                /
-              </span>
-
-              <span>
-                Dashboard
-              </span>
-            </div>
-
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "32px",
-                lineHeight: 1.15,
-                fontWeight: 800,
-                letterSpacing: "-0.03em",
-                color: colors.text,
-                background: isDarkMode
-                  ? "linear-gradient(135deg, #f8fafc, #cbd5e1)"
-                  : "linear-gradient(135deg, #0f172a, #1e293b)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: isDarkMode ? "transparent" : "inherit",
-                backgroundClip: "text",
-              }}
-            >
-              Welcome back, {personalName}
+  return (
+    <DashboardLayout
+      isDarkMode={isDarkMode}
+      toggleTheme={toggleTheme}
+      logout={logout}
+    >
+      <div className="dashboard-shell">
+        <header className="dashboard-header">
+          <div className="dashboard-heading">
+            <p className="dashboard-eyebrow">
+              HR Management System
+            </p>
+            <h1 className="dashboard-title">
+              Dashboard
             </h1>
-
-            <p
-              style={{
-                margin: "10px 0 0",
-                fontSize: "13px",
-                lineHeight: 1.6,
-                color: colors.textMuted,
-                fontWeight: 500,
-              }}
-            >
-              {isEmployee
-                ? "Here's your personal HR workspace."
-                : "Here's an overview of your team and HR workspace."}
+            <p className="dashboard-subtitle">
+              Manage your HR operations from one professional workspace.
             </p>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-            }}
-          >
+          <div className="dashboard-header-actions">
             <button
               type="button"
-              onClick={() => toggleDarkMode()}
-              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "10px 16px",
-                border: isDarkMode
-                  ? `2px solid var(--app-primary)`
-                  : `2px solid #e5eaf1`,
-                background: isDarkMode
-                  ? "rgba(234, 88, 12, 0.1)"
-                  : "#ffffff",
-                color: isDarkMode
-                  ? "var(--app-primary)"
-                  : "#64748b",
-                borderRadius: "10px",
-                fontSize: "12px",
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-                boxShadow: isDarkMode
-                  ? "0 4px 12px rgba(234, 88, 12, 0.15)"
-                  : "none",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform =
-                  "translateY(-2px)"
-                e.currentTarget.style.boxShadow =
-                  isDarkMode
-                    ? "0 6px 16px rgba(234, 88, 12, 0.2)"
-                    : "0 4px 12px rgba(0,0,0,0.08)"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform =
-                  "translateY(0)"
-                e.currentTarget.style.boxShadow =
-                  isDarkMode
-                    ? "0 4px 12px rgba(234, 88, 12, 0.15)"
-                    : "none"
-              }}
-            >
-              <span>{isDarkMode ? "☀️" : "🌙"}</span>
-              <span>{isDarkMode ? "Light" : "Dark"}</span>
-            </button>
-
-            <button
-              type="button"
+              className="dashboard-action"
               onClick={() => void loadDashboard()}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "10px 16px",
-                border: `1px solid ${colors.border}`,
-                background: colors.surface,
-                color: colors.textSecondary,
-                borderRadius: "10px",
-                fontSize: "12px",
-                fontWeight: 700,
-                cursor: "pointer",
-                transition: "all 0.3s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background =
-                  colors.surfaceSoft
-                e.currentTarget.style.transform =
-                  "translateY(-2px)"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background =
-                  colors.surface
-                e.currentTarget.style.transform =
-                  "translateY(0)"
-              }}
             >
-              <span>↻</span>
-              <span>Refresh</span>
+              Refresh
             </button>
 
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                minWidth: "190px",
-                padding: "9px 12px",
-                background: colors.surface,
-                border: `1px solid ${colors.border}`,
-                borderRadius: "9px",
-                boxSizing: "border-box",
-              }}
+            <button
+              type="button"
+              className="dashboard-action"
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
             >
-              <div
-                style={{
-                  width: "34px",
-                  height: "34px",
-                  borderRadius: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  background: "#eff6ff",
-                  color: "#2563eb",
-                  fontSize: "12px",
-                  fontWeight: 800,
-                }}
-              >
-                {initials}
-              </div>
-
-              <div
-                style={{
-                  minWidth: 0,
-                }}
-              >
-                <div
-                  style={{
-                    marginBottom: "2px",
-                    fontSize: "9px",
-                    color: "#94a3b8",
-                  }}
-                >
-                  Current role
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    color: "#334155",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {currentRole}
-                </div>
-              </div>
-
-              <span
-                title="System operational"
-                style={{
-                  width: "7px",
-                  height: "7px",
-                  marginLeft: "auto",
-                  borderRadius: "50%",
-                  background: "#22c55e",
-                  flexShrink: 0,
-                }}
-              />
-            </div>
+              {isDarkMode ? "Light Mode" : "Dark Mode"}
+            </button>
           </div>
         </header>
 
-        {error && (
-          <section
-            style={{
-              marginBottom: "18px",
-              padding: "11px 14px",
-              border: "1px solid #fecaca",
-              borderRadius: "8px",
-              background: "#fff5f5",
-              color: "#b91c1c",
-              fontSize: "12px",
-              fontWeight: 600,
-            }}
-          >
-            {error}
-          </section>
-        )}
+        <section className="dashboard-hero">
+          <div className="dashboard-hero-content">
+            <span className="dashboard-role-badge">
+              {currentRole}
+            </span>
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "16px",
-            marginBottom: "24px",
-            padding: "20px",
-            background: isDarkMode
-              ? "linear-gradient(135deg, rgba(17,24,39,0.8), rgba(15,23,42,0.72))"
-              : "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.9))",
-            border: isDarkMode
-              ? "1px solid rgba(148,163,184,0.1)"
-              : "1px solid rgba(226,232,240,0.8)",
-            borderRadius: "18px",
-            boxSizing: "border-box",
-            boxShadow: isDarkMode
-              ? "0 16px 32px rgba(0,0,0,0.2)"
-              : "0 12px 28px rgba(15,23,42,0.06)",
-          }}
-        >
-          {personalCards.map((card) => (
-            <article
-              key={card.label}
-              style={{
-                position: "relative",
-                minHeight: "136px",
-                padding: "20px",
-                background: isDarkMode
-                  ? "linear-gradient(135deg, rgba(17,24,39,0.95), rgba(15,23,42,0.85))"
-                  : "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96))",
-                border: isDarkMode
-                  ? "1px solid rgba(148,163,184,0.1)"
-                  : "1px solid rgba(226,232,240,0.7)",
-                borderRadius: "14px",
-                boxSizing: "border-box",
-                overflow: "hidden",
-                boxShadow: isDarkMode
-                  ? "0 12px 24px rgba(0,0,0,0.15)"
-                  : "0 10px 22px rgba(15,23,42,0.06)",
-                transition: "all 0.3s ease",
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-4px)";
-                e.currentTarget.style.boxShadow = isDarkMode
-                  ? "0 16px 32px rgba(0,0,0,0.2)"
-                  : "0 14px 28px rgba(15,23,42,0.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = isDarkMode
-                  ? "0 12px 24px rgba(0,0,0,0.15)"
-                  : "0 10px 22px rgba(15,23,42,0.06)";
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: "3px",
-                  background: card.color,
-                }}
-              />
+            <h2 className="dashboard-hero-title">
+              Welcome back, {displayName}
+            </h2>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  gap: "12px",
-                }}
-              >
-                <div
-                  style={{
-                    minWidth: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      marginBottom: "10px",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      color: colors.textMuted,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.06em",
-                    }}
-                  >
-                    {card.label}
-                  </div>
+            <p className="dashboard-hero-text">
+              {roleDescription}
+            </p>
+          </div>
 
-                  <div
-                    style={{
-                      fontSize: "19px",
-                      lineHeight: 1.25,
-                      fontWeight: 800,
-                      letterSpacing: "-0.02em",
-                      color: colors.text,
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {card.value}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    width: "38px",
-                    height: "38px",
-                    borderRadius: "9px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    background: card.background,
-                    color: card.color,
-                    fontSize: "9px",
-                    fontWeight: 800,
-                  }}
-                >
-                  {card.short}
-                </div>
-              </div>
-            </article>
-          ))}
-        </section>
-
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "minmax(0, 1.15fr) minmax(300px, 0.85fr)",
-            gap: "16px",
-            marginBottom: "18px",
-            padding: "16px",
-            background:
-              "linear-gradient(180deg, rgba(17,24,39,0.9), rgba(15,23,42,0.8))",
-            border: "1px solid rgba(148,163,184,0.14)",
-            borderRadius: "16px",
-            boxSizing: "border-box",
-            boxShadow:
-              "0 14px 30px rgba(15,23,42,0.14)",
-          }}
-        >
-          <article
-            style={{
-              minWidth: 0,
-              padding: "20px",
-              background: "#ffffff",
-              border: "1px solid #e5eaf1",
-              borderRadius: "10px",
-              boxSizing: "border-box",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                marginBottom: "20px",
-              }}
-            >
-              <div
-                style={{
-                  width: "52px",
-                  height: "52px",
-                  borderRadius: "12px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#eff6ff",
-                  color: "#2563eb",
-                  fontSize: "17px",
-                  fontWeight: 800,
-                  flexShrink: 0,
-                }}
-              >
-                {initials}
-              </div>
-
-              <div>
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: "17px",
-                    fontWeight: 750,
-                    color: "#172033",
-                  }}
-                >
-                  {personalName}
-                </h2>
-
-                <p
-                  style={{
-                    margin: "5px 0 0",
-                    fontSize: "10px",
-                    color: "#8a94a6",
-                  }}
-                >
-                  {employeeProfile?.email ||
-                    user.username}
-                </p>
-              </div>
+          <div className="dashboard-profile-summary">
+            <div className="dashboard-avatar">
+              {personalInitials}
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(2, minmax(0, 1fr))",
-                gap: "10px",
-              }}
-            >
-              <div
-                style={{
-                  padding: "12px",
-                  borderRadius: "8px",
-                  background: "#fafbfc",
-                  border: "1px solid #edf0f5",
-                }}
-              >
-                <div
-                  style={{
-                    marginBottom: "5px",
-                    fontSize: "9px",
-                    color: "#94a3b8",
-                  }}
-                >
-                  Employment Type
-                </div>
-
-                <strong
-                  style={{
-                    fontSize: "11px",
-                    color: "#334155",
-                  }}
-                >
-                  {employeeProfile?.employment_type ||
-                    "Not available"}
-                </strong>
-              </div>
-
-              <div
-                style={{
-                  padding: "12px",
-                  borderRadius: "8px",
-                  background: "#fafbfc",
-                  border: "1px solid #edf0f5",
-                }}
-              >
-                <div
-                  style={{
-                    marginBottom: "5px",
-                    fontSize: "9px",
-                    color: "#94a3b8",
-                  }}
-                >
-                  Joining Date
-                </div>
-
-                <strong
-                  style={{
-                    fontSize: "11px",
-                    color: "#334155",
-                  }}
-                >
-                  {employeeProfile?.joining_date ||
-                    "Not available"}
-                </strong>
-              </div>
-
-              <div
-                style={{
-                  padding: "12px",
-                  borderRadius: "8px",
-                  background: "#fafbfc",
-                  border: "1px solid #edf0f5",
-                }}
-              >
-                <div
-                  style={{
-                    marginBottom: "5px",
-                    fontSize: "9px",
-                    color: "#94a3b8",
-                  }}
-                >
-                  Manager
-                </div>
-
-                <strong
-                  style={{
-                    fontSize: "11px",
-                    color: "#334155",
-                  }}
-                >
-                  {employeeProfile?.manager ||
-                    "Not assigned"}
-                </strong>
-              </div>
-
-              <div
-                style={{
-                  padding: "12px",
-                  borderRadius: "8px",
-                  background: "#fafbfc",
-                  border: "1px solid #edf0f5",
-                }}
-              >
-                <div
-                  style={{
-                    marginBottom: "5px",
-                    fontSize: "9px",
-                    color: "#94a3b8",
-                  }}
-                >
-                  Status
-                </div>
-
-                <strong
-                  style={{
-                    fontSize: "11px",
-                    color:
-                      employeeProfile?.employment_status ===
-                      "Active"
-                        ? "#16a34a"
-                        : "#d97706",
-                  }}
-                >
-                  {employeeProfile?.employment_status ||
-                    "Not available"}
-                </strong>
-              </div>
-            </div>
-          </article>
-
-          <article
-            style={{
-              minWidth: 0,
-              padding: "20px",
-              background: "#ffffff",
-              border: "1px solid #e5eaf1",
-              borderRadius: "10px",
-              boxSizing: "border-box",
-            }}
-          >
-            <div
-              style={{
-                marginBottom: "17px",
-              }}
-            >
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: "15px",
-                  fontWeight: 750,
-                  color: "#172033",
-                }}
-              >
-                {isEmployee
-                  ? "My HR Modules"
-                  : "Team HR Modules"}
-              </h2>
-
-              <p
-                style={{
-                  margin: "5px 0 0",
-                  fontSize: "10px",
-                  color: "#8a94a6",
-                }}
-              >
-                Quick access to available HR functions
+            <div>
+              <p className="dashboard-profile-name">
+                {personalName}
+              </p>
+              <p className="dashboard-profile-role">
+                {currentRole}
               </p>
             </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "repeat(2, minmax(0, 1fr))",
-                gap: "9px",
-              }}
-            >
-              {personalModules.map((item) => (
-                <button
-                  key={item.path}
-                  type="button"
-                  onClick={() =>
-                    navigate(item.path)
-                  }
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    minHeight: "52px",
-                    padding: "8px",
-                    border: "1px solid #e7ebf2",
-                    borderRadius: "8px",
-                    background: "#fafbfc",
-                    cursor: "pointer",
-                    textAlign: "left",
-                    boxSizing: "border-box",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "30px",
-                      height: "30px",
-                      borderRadius: "7px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      background: "#eff6ff",
-                      color: "#2563eb",
-                      fontSize: "7px",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {item.icon}
-                  </div>
-
-                  <div
-                    style={{
-                      minWidth: 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: "9px",
-                        fontWeight: 700,
-                        color: "#334155",
-                      }}
-                    >
-                      {item.label}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: "3px",
-                        fontSize: "7px",
-                        color: "#94a3b8",
-                      }}
-                    >
-                      Open module
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </article>
+          </div>
         </section>
 
-        {!isEmployee && (
-          <section
-            style={{
-              marginBottom: "18px",
-            }}
-          >
-            <article
-              style={{
-                padding: "20px",
-                background: "#ffffff",
-                border: "1px solid #e5eaf1",
-                borderRadius: "10px",
-                boxSizing: "border-box",
-              }}
-            >
-              <div
-                style={{
-                  marginBottom: "17px",
-                }}
-              >
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: "15px",
-                    fontWeight: 750,
-                    color: "#172033",
-                  }}
-                >
-                  Team Overview
-                </h2>
-
-                <p
-                  style={{
-                    margin: "5px 0 0",
-                    fontSize: "10px",
-                    color: "#8a94a6",
-                  }}
-                >
-                  Current employee status within your team
-                </p>
+        {user?.role === "EMPLOYEE" && (
+          <>
+            <section className="dashboard-section">
+              <div className="dashboard-section-header">
+                <div>
+                  <h2 className="dashboard-section-title">
+                    My Employment Profile
+                  </h2>
+                  <p className="dashboard-section-description">
+                    Your current employment information.
+                  </p>
+                </div>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(4, minmax(0, 1fr))",
-                  gap: "10px",
-                }}
-              >
-                {workforceStatuses.map(
-                  (status) => (
+              <div className="dashboard-panel">
+                <div className="dashboard-profile-grid">
+                  {personalProfileCards.map((card) => (
                     <div
-                      key={status.label}
-                      style={{
-                        padding: "13px",
-                        borderRadius: "8px",
-                        background:
-                          status.background,
-                        border: `1px solid ${status.background}`,
-                      }}
+                      className="dashboard-info-card"
+                      key={card.label}
                     >
-                      <div
-                        style={{
-                          fontSize: "8px",
-                          fontWeight: 800,
-                          color: status.color,
-                        }}
+                      <p className="dashboard-info-label">
+                        {card.label}
+                      </p>
+                      <p
+                        className={`dashboard-info-value ${
+                          card.value === "Not available" ||
+                          card.value === "Not assigned"
+                            ? "muted"
+                            : ""
+                        }`}
+                        title={card.value}
                       >
-                        {status.short}
-                      </div>
-
-                      <strong
-                        style={{
-                          display: "block",
-                          marginTop: "7px",
-                          fontSize: "22px",
-                          lineHeight: 1,
-                          color: "#172033",
-                        }}
-                      >
-                        {status.value}
-                      </strong>
-
-                      <div
-                        style={{
-                          marginTop: "6px",
-                          fontSize: "8px",
-                          color: "#64748b",
-                        }}
-                      >
-                        {status.label}
-                      </div>
+                        {card.value}
+                      </p>
                     </div>
-                  ),
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className="dashboard-section">
+              <div className="dashboard-section-header">
+                <div>
+                  <h2 className="dashboard-section-title">
+                    My HR Workspace
+                  </h2>
+                  <p className="dashboard-section-description">
+                    Access your personal HR services.
+                  </p>
+                </div>
+              </div>
+
+              <ModuleGrid
+                modules={visibleModules}
+                navigate={navigate}
+              />
+            </section>
+          </>
+        )}
+
+        {user?.role === "MANAGER" && (
+          <>
+            <section className="dashboard-section">
+              <div className="dashboard-section-header">
+                <div>
+                  <h2 className="dashboard-section-title">
+                    Team Overview
+                  </h2>
+                  <p className="dashboard-section-description">
+                    Workforce information available to your manager role.
+                  </p>
+                </div>
+              </div>
+
+              <div className="dashboard-kpi-grid">
+                <MetricCard
+                  label="Team Employees"
+                  value={totalEmployees}
+                  meta="Employees in your accessible team"
+                  icon="TM"
+                />
+
+                <MetricCard
+                  label="Active"
+                  value={activeEmployees}
+                  meta={`${activePercentage}% of accessible team`}
+                  icon="AC"
+                />
+
+                <MetricCard
+                  label="Inactive"
+                  value={inactiveEmployees}
+                  meta="Currently inactive"
+                  icon="IN"
+                />
+
+                <MetricCard
+                  label="Resigned"
+                  value={resignedEmployees}
+                  meta="Resigned employees"
+                  icon="RS"
+                />
+              </div>
+            </section>
+
+            <section className="dashboard-section">
+              <div className="dashboard-content-grid">
+                <WorkforcePanel
+                  totalEmployees={totalEmployees}
+                  activeEmployees={activeEmployees}
+                  workforceStatuses={workforceStatuses}
+                />
+
+                <div className="dashboard-panel">
+                  <h2 className="dashboard-panel-title">
+                    Team Actions
+                  </h2>
+                  <p className="dashboard-panel-subtitle">
+                    Frequently used manager operations.
+                  </p>
+
+                  <div className="dashboard-quick-grid">
+                    {quickActions.map((item) => (
+                      <QuickAction
+                        key={item.path}
+                        item={item}
+                        navigate={navigate}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="dashboard-section">
+              <div className="dashboard-section-header">
+                <div>
+                  <h2 className="dashboard-section-title">
+                    Manager Modules
+                  </h2>
+                  <p className="dashboard-section-description">
+                    Modules available to your role.
+                  </p>
+                </div>
+              </div>
+
+              <ModuleGrid
+                modules={visibleModules}
+                navigate={navigate}
+              />
+            </section>
+          </>
+        )}
+
+        {(user?.role === "SUPER_ADMIN" || user?.role === "HR") && (
+          <>
+            <section className="dashboard-section">
+              <div className="dashboard-section-header">
+                <div>
+                  <h2 className="dashboard-section-title">
+                    {user.role === "SUPER_ADMIN"
+                      ? "Organization Overview"
+                      : "HR Workforce Overview"}
+                  </h2>
+                  <p className="dashboard-section-description">
+                    {user.role === "SUPER_ADMIN"
+                      ? "High-level workforce and system visibility."
+                      : "Workforce information for HR operations."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="dashboard-kpi-grid">
+                <MetricCard
+                  label="Total Employees"
+                  value={totalEmployees}
+                  meta="Employees in the organization"
+                  icon="EM"
+                />
+
+                <MetricCard
+                  label="Active Employees"
+                  value={activeEmployees}
+                  meta={`${activePercentage}% of total workforce`}
+                  icon="AC"
+                />
+
+                <MetricCard
+                  label="Inactive Employees"
+                  value={inactiveEmployees}
+                  meta="Currently inactive"
+                  icon="IN"
+                />
+
+                <MetricCard
+                  label="Total Users"
+                  value={totalUsers}
+                  meta="Registered system users"
+                  icon="US"
+                />
+              </div>
+            </section>
+
+            <section className="dashboard-section">
+              <div className="dashboard-content-grid">
+                <WorkforcePanel
+                  totalEmployees={totalEmployees}
+                  activeEmployees={activeEmployees}
+                  workforceStatuses={workforceStatuses}
+                />
+
+                {user?.role === "SUPER_ADMIN" ? (
+                  <RoleDistribution
+                    roleDistribution={roleDistribution}
+                    maxRoleCount={maxRoleCount}
+                  />
+                ) : (
+                  <div className="dashboard-panel">
+                    <h2 className="dashboard-panel-title">
+                      HR Operations
+                    </h2>
+                    <p className="dashboard-panel-subtitle">
+                      Common HR activities available from this workspace.
+                    </p>
+
+                    <div className="dashboard-quick-grid">
+                      {quickActions.map((item) => (
+                        <QuickAction
+                          key={item.path}
+                          item={item}
+                          navigate={navigate}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
-            </article>
-          </section>
+            </section>
+
+            {user?.role === "SUPER_ADMIN" && (
+              <section className="dashboard-section">
+                <div className="dashboard-section-header">
+                  <div>
+                    <h2 className="dashboard-section-title">
+                      Administrative Actions
+                    </h2>
+                    <p className="dashboard-section-description">
+                      Direct access to commonly used organization controls.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="dashboard-quick-grid">
+                  {quickActions.map((item) => (
+                    <QuickAction
+                      key={item.path}
+                      item={item}
+                      navigate={navigate}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section className="dashboard-section">
+              <div className="dashboard-section-header">
+                <div>
+                  <h2 className="dashboard-section-title">
+                    HRMS Modules
+                  </h2>
+                  <p className="dashboard-section-description">
+                    Access the modules available to your role.
+                  </p>
+                </div>
+              </div>
+
+              <ModuleGrid
+                modules={visibleModules}
+                navigate={navigate}
+              />
+            </section>
+          </>
         )}
 
-        <section
+        <footer className="dashboard-footer">
+          Signed in as {personalName} · {currentRole}
+        </footer>
+      </div>
+    </DashboardLayout>
+  )
+}
+
+function DashboardLayout({
+  children,
+  isDarkMode,
+  toggleTheme,
+  logout,
+}: {
+  children: React.ReactNode
+  isDarkMode: boolean
+  toggleTheme: () => void
+  logout: () => void
+}) {
+  return (
+    <>
+      <style>{`
+        :root {
+          --dashboard-bg: #f5f7fb;
+          --dashboard-card: #ffffff;
+          --dashboard-surface: #f8fafc;
+          --dashboard-text: #172033;
+          --dashboard-muted: #687386;
+          --dashboard-border: #e5e9f0;
+          --dashboard-accent: #4f46e5;
+          --dashboard-accent-soft: #eef2ff;
+          --dashboard-badge-bg: #eef2ff;
+          --dashboard-track: #e9edf3;
+          --dashboard-hero-start: #ffffff;
+          --dashboard-hero-end: #f4f6ff;
+          --dashboard-shadow: 0 4px 18px rgba(16, 24, 40, 0.045);
+          --dashboard-shadow-hover: 0 10px 26px rgba(16, 24, 40, 0.09);
+        }
+
+        [data-theme="dark"] {
+          --dashboard-bg: #0f1420;
+          --dashboard-card: #171d2a;
+          --dashboard-surface: #131925;
+          --dashboard-text: #f4f7fb;
+          --dashboard-muted: #9ba6b7;
+          --dashboard-border: #283143;
+          --dashboard-accent: #818cf8;
+          --dashboard-accent-soft: #24294a;
+          --dashboard-badge-bg: #24294a;
+          --dashboard-track: #2a3344;
+          --dashboard-hero-start: #171d2a;
+          --dashboard-hero-end: #1a2033;
+          --dashboard-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+          --dashboard-shadow-hover: 0 10px 28px rgba(0, 0, 0, 0.28);
+        }
+
+        body {
+          margin: 0;
+          background: var(--dashboard-bg);
+        }
+      `}</style>
+
+      <div className="dashboard-page">
+        <div
           style={{
-            padding: "20px",
-            background: "#ffffff",
-            border: "1px solid #e5eaf1",
-            borderRadius: "10px",
-            boxSizing: "border-box",
+            position: "fixed",
+            top: 18,
+            right: 28,
+            zIndex: 10,
+            display: "flex",
+            gap: 8,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: "15px",
-              marginBottom: "18px",
-              flexWrap: "wrap",
-            }}
+          <button
+            type="button"
+            className="dashboard-action"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
           >
-            <div>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: "15px",
-                  fontWeight: 750,
-                  color: "#172033",
-                }}
-              >
-                Available Modules
-              </h2>
+            {isDarkMode ? "Light" : "Dark"}
+          </button>
 
-              <p
-                style={{
-                  margin: "5px 0 0",
-                  fontSize: "10px",
-                  color: "#8a94a6",
-                }}
-              >
-                Modules available for your current role
-              </p>
-            </div>
+          <button
+            type="button"
+            className="dashboard-action"
+            onClick={logout}
+          >
+            Logout
+          </button>
+        </div>
 
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "6px 10px",
-                borderRadius: "6px",
-                background: "#eff6ff",
-                color: "#2563eb",
-                fontSize: "9px",
-                fontWeight: 700,
-              }}
-            >
-              {visibleModules.length} Available
+        {children}
+      </div>
+    </>
+  )
+}
+
+function MetricCard({
+  label,
+  value,
+  meta,
+  icon,
+}: {
+  label: string
+  value: number
+  meta: string
+  icon: string
+}) {
+  return (
+    <div className="dashboard-kpi">
+      <div className="dashboard-kpi-top">
+        <span className="dashboard-kpi-label">
+          {label}
+        </span>
+
+        <span className="dashboard-kpi-icon">
+          {icon}
+        </span>
+      </div>
+
+      <p className="dashboard-kpi-value">
+        {value.toLocaleString("en-IN")}
+      </p>
+
+      <p className="dashboard-kpi-meta">
+        {meta}
+      </p>
+    </div>
+  )
+}
+
+function WorkforcePanel({
+  totalEmployees,
+  activeEmployees,
+  workforceStatuses,
+}: {
+  totalEmployees: number
+  activeEmployees: number
+  workforceStatuses: Array<{
+    label: string
+    value: number
+    percentage: number
+  }>
+}) {
+  const activeAngle =
+    totalEmployees > 0
+      ? (activeEmployees / totalEmployees) * 360
+      : 0
+
+  return (
+    <div className="dashboard-panel">
+      <h2 className="dashboard-panel-title">
+        Workforce Status
+      </h2>
+
+      <p className="dashboard-panel-subtitle">
+        Current employee distribution by employment status.
+      </p>
+
+      <div className="dashboard-workforce">
+        <div
+          className="dashboard-donut"
+          style={
+            {
+              "--active-angle": `${activeAngle}deg`,
+            } as React.CSSProperties
+          }
+        >
+          <div className="dashboard-donut-center">
+            <span className="dashboard-donut-value">
+              {activeEmployees}
+            </span>
+            <span className="dashboard-donut-label">
+              Active
             </span>
           </div>
+        </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fill, minmax(185px, 1fr))",
-              gap: "10px",
-            }}
-          >
-            {visibleModules.map((item) => (
-              <button
-                key={item.path}
-                type="button"
-                onClick={() =>
-                  navigate(item.path)
-                }
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "11px",
-                  width: "100%",
-                  minHeight: "63px",
-                  padding: "10px 12px",
-                  border: "1px solid #e7ebf2",
-                  borderRadius: "8px",
-                  background: "#ffffff",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  boxSizing: "border-box",
-                }}
-                onMouseEnter={(event) => {
-                  event.currentTarget.style.transform =
-                    "translateY(-2px)"
-                  event.currentTarget.style.borderColor =
-                    "#bfdbfe"
-                  event.currentTarget.style.background =
-                    "#f8fbff"
-                  event.currentTarget.style.boxShadow =
-                    "0 5px 14px rgba(15, 23, 42, 0.06)"
-                }}
-                onMouseLeave={(event) => {
-                  event.currentTarget.style.transform =
-                    "translateY(0)"
-                  event.currentTarget.style.borderColor =
-                    "#e7ebf2"
-                  event.currentTarget.style.background =
-                    "#ffffff"
-                  event.currentTarget.style.boxShadow =
-                    "none"
-                }}
-              >
-                <div
-                  style={{
-                    width: "35px",
-                    height: "35px",
-                    borderRadius: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    background: "#f1f5f9",
-                    color: "#475569",
-                    fontSize: "8px",
-                    fontWeight: 800,
-                  }}
-                >
-                  {item.icon}
-                </div>
-
-                <div
-                  style={{
-                    minWidth: 0,
-                    flex: 1,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "7px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        minWidth: 0,
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        color: "#334155",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {item.label}
-                    </span>
-
-                    <span
-                      style={{
-                        color: "#94a3b8",
-                        fontSize: "13px",
-                        lineHeight: 1,
-                        flexShrink: 0,
-                      }}
-                    >
-                      →
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: "4px",
-                      fontSize: "8px",
-                      color: "#94a3b8",
-                    }}
-                  >
-                    Open module
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "15px",
-            marginTop: "16px",
-            padding: "12px 15px",
-            background: "#ffffff",
-            border: "1px solid #e5eaf1",
-            borderRadius: "9px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "10px",
-              color: "#7c8798",
-            }}
-          >
-            Signed in as{" "}
-            <strong
-              style={{
-                color: "#334155",
-              }}
+        <div className="dashboard-status-list">
+          {workforceStatuses.map((status) => (
+            <div
+              className="dashboard-status-row"
+              key={status.label}
             >
-              {personalName}
-            </strong>
-          </div>
+              <span className="dashboard-status-name">
+                {status.label}
+              </span>
 
-          <div
-            style={{
-              padding: "5px 9px",
-              borderRadius: "6px",
-              background: "#f1f5f9",
-              color: "#475569",
-              fontSize: "9px",
-              fontWeight: 700,
-            }}
-          >
-            {currentRole}
-          </div>
-        </section>
+              <span className="dashboard-status-value">
+                {status.value}
+              </span>
+
+              <div className="dashboard-status-track">
+                <div
+                  className="dashboard-status-progress"
+                  style={{
+                    width: `${Math.min(status.percentage, 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RoleDistribution({
+  roleDistribution,
+  maxRoleCount,
+}: {
+  roleDistribution: Array<[string, number]>
+  maxRoleCount: number
+}) {
+  return (
+    <div className="dashboard-panel">
+      <h2 className="dashboard-panel-title">
+        User Distribution
+      </h2>
+
+      <p className="dashboard-panel-subtitle">
+        System users grouped by assigned role.
+      </p>
+
+      <div className="dashboard-role-list">
+        {roleDistribution.length === 0 ? (
+          <p className="dashboard-panel-subtitle">
+            No role distribution data available.
+          </p>
+        ) : (
+          roleDistribution.map(([role, count]) => (
+            <div
+              className="dashboard-role-row"
+              key={role}
+            >
+              <span className="dashboard-role-name">
+                {roleLabels[role] || role}
+              </span>
+
+              <span className="dashboard-role-count">
+                {count}
+              </span>
+
+              <div className="dashboard-role-track">
+                <div
+                  className="dashboard-role-progress"
+                  style={{
+                    width: `${Math.min(
+                      (count / maxRoleCount) * 100,
+                      100,
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+function QuickAction({
+  item,
+  navigate,
+}: {
+  item: ModuleItem
+  navigate: ReturnType<typeof useNavigate>
+}) {
+  return (
+    <button
+      type="button"
+      className="dashboard-quick-action"
+      onClick={() => navigate(item.path)}
+    >
+      <span className="dashboard-quick-left">
+        <span className="dashboard-quick-icon">
+          {item.icon}
+        </span>
+
+        <span>
+          <span className="dashboard-quick-title">
+            {item.label}
+          </span>
+
+          <span className="dashboard-quick-text">
+            Open module
+          </span>
+        </span>
+      </span>
+
+      <span className="dashboard-quick-arrow">
+        →
+      </span>
+    </button>
+  )
+}
+
+function ModuleGrid({
+  modules,
+  navigate,
+}: {
+  modules: ModuleItem[]
+  navigate: ReturnType<typeof useNavigate>
+}) {
+  if (modules.length === 0) {
+    return (
+      <div className="dashboard-panel">
+        <p className="dashboard-panel-subtitle">
+          No modules are currently available for this role.
+        </p>
       </div>
     )
   }
 
-  const kpiCards = [
-    {
-      label: "Total Employees",
-      value: totalEmployees,
-      description: "All employee records",
-      short: "EMP",
-      color: "#2563eb",
-      background: "#eff6ff",
-      border: "#dbeafe",
-      trend: "Workforce",
-    },
-    {
-      label: "Active Employees",
-      value: activeEmployees,
-      description: `${activePercentage}% of total workforce`,
-      short: "ACT",
-      color: "#16a34a",
-      background: "#f0fdf4",
-      border: "#dcfce7",
-      trend: "Active",
-    },
-    {
-      label: "Inactive Employees",
-      value: inactiveEmployees,
-      description: `${inactivePercentage}% of total workforce`,
-      short: "INA",
-      color: "#d97706",
-      background: "#fffbeb",
-      border: "#fef3c7",
-      trend: "Inactive",
-    },
-    {
-      label: "Total Users",
-      value: totalUsers,
-      description: "Registered system users",
-      short: "USR",
-      color: "#7c3aed",
-      background: "#f5f3ff",
-      border: "#ede9fe",
-      trend: "System",
-    },
-  ]
-
   return (
-    <div
-      style={{
-        minHeight: "100%",
-        background: isDarkMode
-          ? "linear-gradient(135deg, #0a0e14 0%, #0f1419 100%)"
-          : "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-        padding: "32px",
-        fontFamily: '"Inter", "Segoe UI", -apple-system, sans-serif',
-        color: colors.text,
-        boxSizing: "border-box",
-        borderRadius: "20px",
-      }}
-    >
-      <header
-        style={{
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          gap: "24px",
-          marginBottom: "32px",
-          flexWrap: "wrap",
-          padding: "24px",
-          borderRadius: "18px",
-          background: isDarkMode
-            ? "linear-gradient(135deg, rgba(17,24,39,0.85), rgba(15,23,42,0.72))"
-            : "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.92))",
-          border: isDarkMode
-            ? "1px solid rgba(148,163,184,0.1)"
-            : "1px solid rgba(226,232,240,0.8)",
-          boxShadow: isDarkMode
-            ? "0 20px 40px rgba(0,0,0,0.25)"
-            : "0 15px 35px rgba(15,23,42,0.08)",
-        }}
-      >
-        <div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "7px",
-              marginBottom: "9px",
-              fontSize: "10px",
-              fontWeight: 700,
-              color: colors.textMuted,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-            }}
-          >
-            <span
-              style={{
-                color: colors.primary,
-              }}
-            >
-              Admin
-            </span>
-
-            <span
-              style={{
-                color: colors.border,
-              }}
-            >
-              /
-            </span>
-
-            <span>
-              Dashboard
-            </span>
-          </div>
-
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "32px",
-              lineHeight: 1.15,
-              fontWeight: 800,
-              letterSpacing: "-0.03em",
-              color: colors.text,
-              background: isDarkMode
-                ? "linear-gradient(135deg, #f8fafc, #cbd5e1)"
-                : "linear-gradient(135deg, #0f172a, #1e293b)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: isDarkMode ? "transparent" : "inherit",
-              backgroundClip: "text",
-            }}
-          >
-            Welcome back, {displayName}
-          </h1>
-
-          <p
-            style={{
-              margin: "7px 0 0",
-              fontSize: "12px",
-              lineHeight: 1.5,
-              color: colors.textMuted,
-            }}
-          >
-            Here's an overview of your HR management system.
-          </p>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-          }}
+    <div className="dashboard-module-grid">
+      {modules.map((item) => (
+        <button
+          type="button"
+          className="dashboard-module"
+          key={item.path}
+          onClick={() => navigate(item.path)}
         >
-          <button
-            type="button"
-            onClick={() => toggleDarkMode()}
-            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "10px 16px",
-              border: isDarkMode
-                ? `2px solid var(--app-primary)`
-                : `2px solid #e5eaf1`,
-              background: isDarkMode
-                ? "rgba(234, 88, 12, 0.1)"
-                : "#ffffff",
-              color: isDarkMode
-                ? "var(--app-primary)"
-                : "#64748b",
-              borderRadius: "10px",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              boxShadow: isDarkMode
-                ? "0 4px 12px rgba(234, 88, 12, 0.15)"
-                : "none",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform =
-                "translateY(-2px)"
-              e.currentTarget.style.boxShadow =
-                isDarkMode
-                  ? "0 6px 16px rgba(234, 88, 12, 0.2)"
-                  : "0 4px 12px rgba(0,0,0,0.08)"
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform =
-                "translateY(0)"
-              e.currentTarget.style.boxShadow =
-                isDarkMode
-                  ? "0 4px 12px rgba(234, 88, 12, 0.15)"
-                  : "none"
-            }}
-          >
-            <span>{isDarkMode ? "☀️" : "🌙"}</span>
-            <span>{isDarkMode ? "Light" : "Dark"}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => void loadDashboard()}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "10px 16px",
-              border: `1px solid ${colors.border}`,
-              background: colors.surface,
-              color: colors.textSecondary,
-              borderRadius: "10px",
-              fontSize: "12px",
-              fontWeight: 700,
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background =
-                colors.surfaceSoft
-              e.currentTarget.style.transform =
-                "translateY(-2px)"
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background =
-                colors.surface
-              e.currentTarget.style.transform =
-                "translateY(0)"
-            }}
-          >
-            <span>↻</span>
-            <span>Refresh</span>
-          </button>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              minWidth: "190px",
-              padding: "9px 12px",
-              background: colors.surface,
-              border: `1px solid ${colors.border}`,
-              borderRadius: "9px",
-              boxSizing: "border-box",
-            }}
-          >
-            <div
-              style={{
-                width: "34px",
-                height: "34px",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                background: "#eff6ff",
-                color: "#2563eb",
-                fontSize: "12px",
-                fontWeight: 800,
-              }}
-            >
-              {displayName
-                .slice(0, 1)
-                .toUpperCase()}
-            </div>
-
-            <div
-              style={{
-                minWidth: 0,
-              }}
-            >
-              <div
-                style={{
-                  marginBottom: "2px",
-                  fontSize: "9px",
-                  color: "#94a3b8",
-                }}
-              >
-                Current role
-              </div>
-
-              <div
-                style={{
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  color: "#334155",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {currentRole}
-              </div>
-            </div>
-
-            <span
-              title="System operational"
-              style={{
-                width: "7px",
-                height: "7px",
-                marginLeft: "auto",
-                borderRadius: "50%",
-                background: "#22c55e",
-                flexShrink: 0,
-              }}
-            />
-          </div>
-        </div>
-      </header>
-
-      {error && (
-        <section
-          style={{
-            marginBottom: "18px",
-            padding: "11px 14px",
-            border: isDarkMode
-              ? "1px solid #7c4444"
-              : "1px solid #fecaca",
-            borderRadius: "8px",
-            background: isDarkMode
-              ? "#3d2323"
-              : "#fff5f5",
-            color: isDarkMode ? "#fca5a5" : "#b91c1c",
-            fontSize: "12px",
-            fontWeight: 600,
-          }}
-        >
-          {error}
-        </section>
-      )}
-
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
-          marginBottom: "24px",
-          padding: "20px",
-          background: isDarkMode
-            ? "linear-gradient(135deg, rgba(17,24,39,0.8), rgba(15,23,42,0.72))"
-            : "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,250,252,0.9))",
-          border: isDarkMode
-            ? "1px solid rgba(148,163,184,0.1)"
-            : "1px solid rgba(226,232,240,0.8)",
-          borderRadius: "18px",
-          boxSizing: "border-box",
-          boxShadow: isDarkMode
-            ? "0 16px 32px rgba(0,0,0,0.2)"
-            : "0 12px 28px rgba(15,23,42,0.06)",
-        }}
-      >
-        {kpiCards.map((card) => (
-          <article
-            key={card.label}
-            style={{
-              position: "relative",
-              minHeight: "140px",
-              padding: "20px",
-              background: isDarkMode
-                ? "linear-gradient(135deg, rgba(17,24,39,0.95), rgba(15,23,42,0.85))"
-                : "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96))",
-              border: isDarkMode
-                ? "1px solid rgba(148,163,184,0.1)"
-                : "1px solid rgba(226,232,240,0.7)",
-              borderRadius: "14px",
-              boxSizing: "border-box",
-              overflow: "hidden",
-              boxShadow: isDarkMode
-                ? "0 12px 24px rgba(0,0,0,0.15)"
-                : "0 10px 22px rgba(15,23,42,0.06)",
-              transition: "all 0.3s ease",
-              cursor: "pointer",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-4px)";
-              e.currentTarget.style.boxShadow = isDarkMode
-                ? "0 16px 32px rgba(0,0,0,0.2)"
-                : "0 14px 28px rgba(15,23,42,0.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = isDarkMode
-                ? "0 12px 24px rgba(0,0,0,0.15)"
-                : "0 10px 22px rgba(15,23,42,0.06)";
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: "3px",
-                background: card.color,
-              }}
-            />
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: "12px",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    marginBottom: "10px",
-                    fontSize: "11px",
-                    fontWeight: 700,
-                    color: colors.textMuted,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                  }}
-                >
-                  {card.label}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "32px",
-                    lineHeight: 1,
-                    fontWeight: 800,
-                    letterSpacing: "-0.03em",
-                    color: colors.text,
-                  }}
-                >
-                  {card.value}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: "10px",
-                    fontSize: "12px",
-                    color: colors.textMuted,
-                    fontWeight: 500,
-                  }}
-                >
-                  {card.description}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  width: "38px",
-                  height: "38px",
-                  borderRadius: "9px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  background: card.background,
-                  border: `1px solid ${card.border}`,
-                  color: card.color,
-                  fontSize: "9px",
-                  fontWeight: 800,
-                }}
-              >
-                {card.short}
-              </div>
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "minmax(0, 1.45fr) minmax(310px, 0.9fr)",
-          gap: "16px",
-          marginBottom: "18px",
-          padding: "16px",
-          background: "#ffffff",
-          border: "1px solid #e5eaf1",
-          borderRadius: "10px",
-          boxSizing: "border-box",
-        }}
-      >
-        <article
-          style={{
-            minWidth: 0,
-            padding: "20px",
-            background: "#ffffff",
-            border: "1px solid #e5eaf1",
-            borderRadius: "10px",
-            boxSizing: "border-box",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: "15px",
-              marginBottom: "21px",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  marginBottom: "5px",
-                }}
-              >
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: "15px",
-                    fontWeight: 750,
-                    color: "#172033",
-                  }}
-                >
-                  Workforce Overview
-                </h2>
-
-                <span
-                  style={{
-                    padding: "3px 7px",
-                    borderRadius: "5px",
-                    background: "#f1f5f9",
-                    color: "#64748b",
-                    fontSize: "8px",
-                    fontWeight: 800,
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  LIVE
-                </span>
-              </div>
-
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "10px",
-                  color: "#8a94a6",
-                }}
-              >
-                Current employee status across the organization
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => navigate("/employees")}
-              style={{
-                border: "1px solid #dbe3ef",
-                background: "#ffffff",
-                color: "#2563eb",
-                borderRadius: "7px",
-                padding: "7px 10px",
-                fontSize: "10px",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              View Employees
-            </button>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "minmax(145px, 0.72fr) minmax(220px, 1fr)",
-              gap: "30px",
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-              }}
-            >
-              <div
-                style={{
-                  width: "136px",
-                  height: "136px",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: `conic-gradient(
-                    #2563eb 0% ${activePercentage}%,
-                    #e9eef5 ${activePercentage}% 100%
-                  )`,
-                }}
-              >
-                <div
-                  style={{
-                    width: "98px",
-                    height: "98px",
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexDirection: "column",
-                    background: "#ffffff",
-                  }}
-                >
-                  <strong
-                    style={{
-                      fontSize: "25px",
-                      lineHeight: 1,
-                      fontWeight: 750,
-                      color: "#172033",
-                    }}
-                  >
-                    {activePercentage}%
-                  </strong>
-
-                  <span
-                    style={{
-                      marginTop: "6px",
-                      fontSize: "9px",
-                      color: "#8a94a6",
-                    }}
-                  >
-                    Active
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              {workforceStatuses.map(
-                (status, index) => (
-                  <div
-                    key={status.label}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "15px",
-                      padding: "10px 0",
-                      borderBottom:
-                        index <
-                        workforceStatuses.length - 1
-                          ? "1px solid #edf0f5"
-                          : "none",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        minWidth: 0,
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: "7px",
-                          height: "7px",
-                          borderRadius: "50%",
-                          flexShrink: 0,
-                          background:
-                            status.color,
-                        }}
-                      />
-
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          color: "#64748b",
-                        }}
-                      >
-                        {status.label}
-                      </span>
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "9px",
-                          color: "#94a3b8",
-                        }}
-                      >
-                        {status.percentage}%
-                      </span>
-
-                      <strong
-                        style={{
-                          minWidth: "24px",
-                          textAlign: "right",
-                          fontSize: "12px",
-                          color: status.color,
-                        }}
-                      >
-                        {status.value}
-                      </strong>
-                    </div>
-                  </div>
-                ),
-              )}
-            </div>
-          </div>
-        </article>
-
-        <article
-          style={{
-            minWidth: 0,
-            padding: "20px",
-            background: "#ffffff",
-            border: "1px solid #e5eaf1",
-            borderRadius: "10px",
-            boxSizing: "border-box",
-          }}
-        >
-          <div
-            style={{
-              marginBottom: "17px",
-            }}
-          >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "15px",
-                fontWeight: 750,
-                color: "#172033",
-              }}
-            >
-              User Distribution
-            </h2>
-
-            <p
-              style={{
-                margin: "5px 0 0",
-                fontSize: "10px",
-                color: "#8a94a6",
-              }}
-            >
-              System users grouped by role
-            </p>
-          </div>
-
-          {roleDistribution.length > 0 ? (
-            <div>
-              {roleDistribution.map(
-                ([role, count], index) => {
-                  const percentage =
-                    getRolePercentage(count)
-
-                  return (
-                    <div
-                      key={role}
-                      style={{
-                        padding:
-                          index === 0
-                            ? "2px 0 10px"
-                            : "10px 0",
-                        borderBottom:
-                          index <
-                          roleDistribution.length - 1
-                            ? "1px solid #edf0f5"
-                            : "none",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: "10px",
-                          marginBottom: "7px",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: "10px",
-                            fontWeight: 600,
-                            color: "#475569",
-                          }}
-                        >
-                          {getRoleLabel(role)}
-                        </span>
-
-                        <strong
-                          style={{
-                            fontSize: "11px",
-                            color: "#172033",
-                          }}
-                        >
-                          {count}
-                        </strong>
-                      </div>
-
-                      <div
-                        style={{
-                          height: "5px",
-                          overflow: "hidden",
-                          borderRadius: "10px",
-                          background: "#edf1f6",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${percentage}%`,
-                            height: "100%",
-                            borderRadius: "10px",
-                            background: "#2563eb",
-                          }}
-                        />
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: "4px",
-                          textAlign: "right",
-                          fontSize: "8px",
-                          color: "#94a3b8",
-                        }}
-                      >
-                        {percentage}%
-                      </div>
-                    </div>
-                  )
-                },
-              )}
-            </div>
-          ) : (
-            <div
-              style={{
-                padding: "25px 10px",
-                textAlign: "center",
-                border: "1px dashed #dbe3ef",
-                borderRadius: "7px",
-                color: "#94a3b8",
-                fontSize: "10px",
-              }}
-            >
-              No user distribution data available.
-            </div>
-          )}
-        </article>
-      </section>
-
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "minmax(0, 1.3fr) minmax(270px, 0.7fr)",
-          gap: "16px",
-          marginBottom: "18px",
-          padding: "16px",
-          background: "#ffffff",
-          border: "1px solid #e5eaf1",
-          borderRadius: "10px",
-          boxSizing: "border-box",
-        }}
-      >
-        <article
-          style={{
-            minWidth: 0,
-            padding: "20px",
-            background: "#ffffff",
-            border: "1px solid #e5eaf1",
-            borderRadius: "10px",
-            boxSizing: "border-box",
-          }}
-        >
-          <div
-            style={{
-              marginBottom: "17px",
-            }}
-          >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "15px",
-                fontWeight: 750,
-                color: "#172033",
-              }}
-            >
-              Quick Actions
-            </h2>
-
-            <p
-              style={{
-                margin: "5px 0 0",
-                fontSize: "10px",
-                color: "#8a94a6",
-              }}
-            >
-              Frequently used HR management functions
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(3, minmax(0, 1fr))",
-              gap: "10px",
-            }}
-          >
-            {quickActions.map((item) => (
-              <button
-                key={item.path}
-                type="button"
-                onClick={() =>
-                  navigate(item.path)
-                }
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  minHeight: "64px",
-                  padding: "10px",
-                  border: "1px solid #e7ebf2",
-                  borderRadius: "8px",
-                  background: "#fafbfc",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  boxSizing: "border-box",
-                }}
-              >
-                <div
-                  style={{
-                    width: "34px",
-                    height: "34px",
-                    borderRadius: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    background: "#eff6ff",
-                    color: "#2563eb",
-                    fontSize: "8px",
-                    fontWeight: 800,
-                  }}
-                >
-                  {item.icon}
-                </div>
-
-                <div
-                  style={{
-                    minWidth: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "10px",
-                      fontWeight: 700,
-                      color: "#334155",
-                    }}
-                  >
-                    {item.label}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: "3px",
-                      fontSize: "8px",
-                      color: "#94a3b8",
-                    }}
-                  >
-                    Open module
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </article>
-
-        <article
-          style={{
-            minWidth: 0,
-            padding: "20px",
-            background: "#ffffff",
-            border: "1px solid #e5eaf1",
-            borderRadius: "10px",
-            boxSizing: "border-box",
-          }}
-        >
-          <div
-            style={{
-              marginBottom: "17px",
-            }}
-          >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: "15px",
-                fontWeight: 750,
-                color: "#172033",
-              }}
-            >
-              Workforce Actions
-            </h2>
-
-            <p
-              style={{
-                margin: "5px 0 0",
-                fontSize: "10px",
-                color: "#8a94a6",
-              }}
-            >
-              Employee lifecycle overview
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(2, minmax(0, 1fr))",
-              gap: "8px",
-            }}
-          >
-            {workforceStatuses.map(
-              (status) => (
-                <div
-                  key={status.label}
-                  style={{
-                    padding: "11px",
-                    borderRadius: "8px",
-                    background:
-                      status.background,
-                    border: `1px solid ${status.background}`,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "6px",
-                      marginBottom: "7px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "8px",
-                        fontWeight: 800,
-                        color: status.color,
-                      }}
-                    >
-                      {status.short}
-                    </span>
-
-                    <span
-                      style={{
-                        fontSize: "8px",
-                        color: "#94a3b8",
-                      }}
-                    >
-                      {status.percentage}%
-                    </span>
-                  </div>
-
-                  <strong
-                    style={{
-                      display: "block",
-                      fontSize: "21px",
-                      lineHeight: 1,
-                      fontWeight: 750,
-                      color: "#172033",
-                    }}
-                  >
-                    {status.value}
-                  </strong>
-
-                  <div
-                    style={{
-                      marginTop: "5px",
-                      fontSize: "8px",
-                      color: "#64748b",
-                    }}
-                  >
-                    {status.label}
-                  </div>
-                </div>
-              ),
-            )}
-          </div>
-        </article>
-      </section>
-
-      <section
-        style={{
-          padding: "20px",
-          background: "#ffffff",
-          border: "1px solid #e5eaf1",
-          borderRadius: "10px",
-          boxSizing: "border-box",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "15px",
-            marginBottom: "18px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginBottom: "5px",
-              }}
-            >
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: "15px",
-                  fontWeight: 750,
-                  color: "#172033",
-                }}
-              >
-                HRMS Modules
-              </h2>
-
-              <span
-                style={{
-                  padding: "3px 7px",
-                  borderRadius: "5px",
-                  background: "#f1f5f9",
-                  color: "#64748b",
-                  fontSize: "8px",
-                  fontWeight: 800,
-                }}
-              >
-                MODULES
-              </span>
-            </div>
-
-            <p
-              style={{
-                margin: 0,
-                fontSize: "10px",
-                color: "#8a94a6",
-              }}
-            >
-              Access the HR management modules available for your role
-            </p>
-          </div>
-
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "6px 10px",
-              borderRadius: "6px",
-              background: "#eff6ff",
-              color: "#2563eb",
-              fontSize: "9px",
-              fontWeight: 700,
-            }}
-          >
-            {visibleModules.length} Available
+          <span className="dashboard-module-icon">
+            {item.icon}
           </span>
-        </div>
 
-        {visibleModules.length > 0 ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fill, minmax(185px, 1fr))",
-              gap: "10px",
-            }}
-          >
-            {visibleModules.map((item) => (
-              <button
-                key={item.path}
-                type="button"
-                onClick={() =>
-                  navigate(item.path)
-                }
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "11px",
-                  width: "100%",
-                  minHeight: "63px",
-                  padding: "10px 12px",
-                  border: "1px solid #e7ebf2",
-                  borderRadius: "8px",
-                  background: "#ffffff",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  boxSizing: "border-box",
-                }}
-                onMouseEnter={(event) => {
-                  event.currentTarget.style.transform =
-                    "translateY(-2px)"
-                  event.currentTarget.style.borderColor =
-                    "#bfdbfe"
-                  event.currentTarget.style.background =
-                    "#f8fbff"
-                  event.currentTarget.style.boxShadow =
-                    "0 5px 14px rgba(15, 23, 42, 0.06)"
-                }}
-                onMouseLeave={(event) => {
-                  event.currentTarget.style.transform =
-                    "translateY(0)"
-                  event.currentTarget.style.borderColor =
-                    "#e7ebf2"
-                  event.currentTarget.style.background =
-                    "#ffffff"
-                  event.currentTarget.style.boxShadow =
-                    "none"
-                }}
-              >
-                <div
-                  style={{
-                    width: "35px",
-                    height: "35px",
-                    borderRadius: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    background: "#f1f5f9",
-                    color: "#475569",
-                    fontSize: "8px",
-                    fontWeight: 800,
-                  }}
-                >
-                  {item.icon}
-                </div>
+          <p className="dashboard-module-title">
+            {item.label}
+          </p>
 
-                <div
-                  style={{
-                    minWidth: 0,
-                    flex: 1,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "7px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        minWidth: 0,
-                        fontSize: "10px",
-                        fontWeight: 700,
-                        color: "#334155",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {item.label}
-                    </span>
+          <p className="dashboard-module-description">
+            {item.description}
+          </p>
 
-                    <span
-                      style={{
-                        color: "#94a3b8",
-                        fontSize: "13px",
-                        lineHeight: 1,
-                        flexShrink: 0,
-                      }}
-                    >
-                      →
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: "4px",
-                      fontSize: "8px",
-                      color: "#94a3b8",
-                    }}
-                  >
-                    Open module
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div
-            style={{
-              padding: "28px 15px",
-              textAlign: "center",
-              border: "1px dashed #dbe3ef",
-              borderRadius: "8px",
-              background: "#fafbfc",
-              color: "#8a94a6",
-              fontSize: "11px",
-            }}
-          >
-            No modules are available for your current role.
-          </div>
-        )}
-      </section>
-
-      <section
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "15px",
-          marginTop: "16px",
-          padding: "12px 15px",
-          background: "#ffffff",
-          border: "1px solid #e5eaf1",
-          borderRadius: "9px",
-          flexWrap: "wrap",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "10px",
-            color: "#7c8798",
-          }}
-        >
-          Signed in as{" "}
-          <strong
-            style={{
-              color: "#334155",
-            }}
-          >
-            {displayName}
-          </strong>
-        </div>
-
-        <div
-          style={{
-            padding: "5px 9px",
-            borderRadius: "6px",
-            background: "#f1f5f9",
-            color: "#475569",
-            fontSize: "9px",
-            fontWeight: 700,
-          }}
-        >
-          {currentRole}
-        </div>
-      </section>
+          <span className="dashboard-module-arrow">
+            Open Module →
+          </span>
+        </button>
+      ))}
     </div>
   )
 }
