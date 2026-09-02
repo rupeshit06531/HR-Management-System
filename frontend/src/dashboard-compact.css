@@ -1,6 +1,7 @@
-.dashboard-shell {
+.dashboard-page.dashboard-compact .dashboard-shell {
+  width: 100%;
   min-height: 100vh;
-  display: flex;
+  display: block !important;
   background: var(--app-bg);
 }
 
