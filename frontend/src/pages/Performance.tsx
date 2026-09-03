@@ -1,6 +1,8 @@
 import {
   useEffect,
+  useMemo,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -28,65 +30,134 @@ const createEmptyForm = (): CreatePerformanceRequest => ({
   review_date: "",
 })
 
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  padding: "16px",
+  backgroundColor: "#f5f7fa",
+  fontFamily: "Arial, sans-serif",
+  boxSizing: "border-box",
+}
+
+const containerStyle: CSSProperties = {
+  maxWidth: "1400px",
+  margin: "0 auto",
+}
+
+const cardStyle: CSSProperties = {
+  backgroundColor: "#ffffff",
+  border: "1px solid #e5e7eb",
+  borderRadius: "8px",
+  boxSizing: "border-box",
+}
+
+const inputStyle: CSSProperties = {
+  width: "100%",
+  minHeight: "36px",
+  padding: "7px 10px",
+  border: "1px solid #d1d5db",
+  borderRadius: "5px",
+  backgroundColor: "#ffffff",
+  color: "#111827",
+  boxSizing: "border-box",
+  fontSize: "13px",
+  outline: "none",
+}
+
+const textareaStyle: CSSProperties = {
+  ...inputStyle,
+  minHeight: "76px",
+  resize: "vertical",
+  fontFamily: "Arial, sans-serif",
+}
+
+const primaryButtonStyle: CSSProperties = {
+  minHeight: "34px",
+  padding: "7px 12px",
+  border: "none",
+  borderRadius: "5px",
+  backgroundColor: "#2563eb",
+  color: "#ffffff",
+  cursor: "pointer",
+  fontSize: "13px",
+  fontWeight: 600,
+}
+
+const secondaryButtonStyle: CSSProperties = {
+  minHeight: "34px",
+  padding: "7px 12px",
+  border: "1px solid #d1d5db",
+  borderRadius: "5px",
+  backgroundColor: "#ffffff",
+  color: "#374151",
+  cursor: "pointer",
+  fontSize: "13px",
+  fontWeight: 600,
+}
+
+const dangerButtonStyle: CSSProperties = {
+  minHeight: "32px",
+  padding: "6px 10px",
+  border: "none",
+  borderRadius: "5px",
+  backgroundColor: "#dc2626",
+  color: "#ffffff",
+  cursor: "pointer",
+  fontSize: "12px",
+  fontWeight: 600,
+}
+
+const editButtonStyle: CSSProperties = {
+  minHeight: "32px",
+  padding: "6px 10px",
+  border: "1px solid #2563eb",
+  borderRadius: "5px",
+  backgroundColor: "#ffffff",
+  color: "#2563eb",
+  cursor: "pointer",
+  fontSize: "12px",
+  fontWeight: 600,
+}
+
+const labelStyle: CSSProperties = {
+  display: "block",
+  marginBottom: "5px",
+  color: "#374151",
+  fontSize: "12px",
+  fontWeight: 600,
+}
+
+const getEmployeeLabel = (employee: Employee) =>
+  `${employee.full_name} — ${employee.employee_id}`
+
 function Performance() {
-  const [reviews, setReviews] = useState<
-    PerformanceReview[]
-  >([])
-
-  const [isLoading, setIsLoading] =
-    useState(true)
-
-  const [isSubmitting, setIsSubmitting] =
-    useState(false)
-
-  const [employees, setEmployees] =
-    useState<Employee[]>([])
-
-  const [isLoadingEmployees, setIsLoadingEmployees] =
-    useState(true)
-
-  const [deletingId, setDeletingId] =
-    useState<number | null>(null)
-
-  const [error, setError] =
-    useState<string | null>(null)
-
-  const [success, setSuccess] =
-    useState<string | null>(null)
-
-  const [showForm, setShowForm] =
-    useState(false)
-
-  const [editingId, setEditingId] =
-    useState<number | null>(null)
-
+  const [reviews, setReviews] = useState<PerformanceReview[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(true)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] =
-    useState<CreatePerformanceRequest>(
-      createEmptyForm(),
-    )
+    useState<CreatePerformanceRequest>(createEmptyForm())
 
   const loadReviews = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      const response =
-        await getPerformanceReviews()
+      const response = await getPerformanceReviews()
 
       if (Array.isArray(response)) {
         setReviews(response)
       } else {
-        const paginated =
-          response as PerformanceListResponse
-
-        setReviews(
-          paginated.results ?? [],
-        )
+        const paginated = response as PerformanceListResponse
+        setReviews(paginated.results ?? [])
       }
     } catch {
-      setError(
-        "Unable to load performance reviews.",
-      )
+      setError("Unable to load performance reviews.")
     } finally {
       setIsLoading(false)
     }
@@ -101,14 +172,10 @@ function Performance() {
       if (Array.isArray(response)) {
         setEmployees(response)
       } else {
-        setEmployees(
-          response.results ?? [],
-        )
+        setEmployees(response.results ?? [])
       }
     } catch {
-      setError(
-        "Unable to load employees.",
-      )
+      setError("Unable to load employees.")
     } finally {
       setIsLoadingEmployees(false)
     }
@@ -133,20 +200,15 @@ function Performance() {
     setSuccess(null)
   }
 
-  const openEditForm = (
-    review: PerformanceReview,
-  ) => {
+  const openEditForm = (review: PerformanceReview) => {
     setForm({
       employee: review.employee,
       review_period: review.review_period,
       strengths: review.strengths,
-      areas_for_improvement:
-        review.areas_for_improvement,
-      manager_comments:
-        review.manager_comments,
+      areas_for_improvement: review.areas_for_improvement,
+      manager_comments: review.manager_comments,
       review_date: review.review_date,
     })
-
     setEditingId(review.id)
     setShowForm(true)
     setError(null)
@@ -161,80 +223,53 @@ function Performance() {
     setError(null)
     setSuccess(null)
 
-    if (
-      !form.employee ||
-      form.employee <= 0
-    ) {
-      setError(
-        "Employee ID is required.",
-      )
+    if (!form.employee || form.employee <= 0) {
+      setError("Employee ID is required.")
       return
     }
 
     if (!form.review_period.trim()) {
-      setError(
-        "Review period is required.",
-      )
+      setError("Review period is required.")
       return
     }
 
     if (!form.review_date) {
-      setError(
-        "Review date is required.",
-      )
+      setError("Review date is required.")
       return
     }
 
     try {
       setIsSubmitting(true)
 
-      const payload: CreatePerformanceRequest =
-        {
-          employee: form.employee,
-          review_period:
-            form.review_period.trim(),
-          strengths:
-            form.strengths.trim(),
-          areas_for_improvement:
-            form.areas_for_improvement.trim(),
-          manager_comments:
-            form.manager_comments.trim(),
-          review_date:
-            form.review_date,
-        }
+      const payload: CreatePerformanceRequest = {
+        employee: form.employee,
+        review_period: form.review_period.trim(),
+        strengths: form.strengths.trim(),
+        areas_for_improvement:
+          form.areas_for_improvement.trim(),
+        manager_comments: form.manager_comments.trim(),
+        review_date: form.review_date,
+      }
 
       if (editingId !== null) {
-        const updated =
-          await updatePerformanceReview(
-            editingId,
-            payload,
-          )
+        const updated = await updatePerformanceReview(
+          editingId,
+          payload,
+        )
 
-        setReviews(
-          (current) =>
-            current.map(
-              (review) =>
-                review.id === editingId
-                  ? updated
-                  : review,
-            ),
+        setReviews((current) =>
+          current.map((review) =>
+            review.id === editingId ? updated : review,
+          ),
         )
 
         setSuccess(
           "Performance review updated successfully.",
         )
       } else {
-        const created =
-          await createPerformanceReview(
-            payload,
-          )
+        const created = await createPerformanceReview(payload)
 
-        setReviews(
-          (current) => [
-            created,
-            ...current,
-          ],
-        )
+        setReviews((current) => [created, ...current])
 
         setSuccess(
           "Performance review created successfully.",
@@ -253,13 +288,10 @@ function Performance() {
     }
   }
 
-  const handleDelete = async (
-    id: number,
-  ) => {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this performance review?",
-      )
+  const handleDelete = async (id: number) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this performance review?",
+    )
 
     if (!confirmed) {
       return
@@ -272,12 +304,8 @@ function Performance() {
 
       await deletePerformanceReview(id)
 
-      setReviews(
-        (current) =>
-          current.filter(
-            (review) =>
-              review.id !== id,
-          ),
+      setReviews((current) =>
+        current.filter((review) => review.id !== id),
       )
 
       if (editingId === id) {
@@ -288,118 +316,152 @@ function Performance() {
         "Performance review deleted successfully.",
       )
     } catch {
-      setError(
-        "Unable to delete performance review.",
-      )
+      setError("Unable to delete performance review.")
     } finally {
       setDeletingId(null)
     }
   }
 
-  const formatDate = (
-    value: string,
-  ) => {
+  const formatDate = (value: string) => {
     if (!value) {
       return "-"
     }
 
-    const date = new Date(
-      `${value}T00:00:00`,
-    )
+    const date = new Date(`${value}T00:00:00`)
 
     if (Number.isNaN(date.getTime())) {
       return value
     }
 
-    return date.toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      },
-    )
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
   }
 
+  const statistics = useMemo(() => {
+    const total = reviews.length
+
+    const completed = reviews.filter(
+      (review) =>
+        Boolean(review.strengths?.trim()) ||
+        Boolean(review.manager_comments?.trim()),
+    ).length
+
+    const pending = Math.max(total - completed, 0)
+
+    const currentYear = new Date().getFullYear()
+
+    const thisYear = reviews.filter((review) => {
+      if (!review.review_date) {
+        return false
+      }
+
+      const date = new Date(`${review.review_date}T00:00:00`)
+
+      return (
+        !Number.isNaN(date.getTime()) &&
+        date.getFullYear() === currentYear
+      )
+    }).length
+
+    return {
+      total,
+      completed,
+      pending,
+      thisYear,
+    }
+  }, [reviews])
+
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "32px",
-        backgroundColor: "#f5f7fa",
-        fontFamily:
-          "Arial, sans-serif",
-        boxSizing: "border-box",
-      }}
-    >
-      <section
-        style={{
-          maxWidth: "1300px",
-          margin: "0 auto",
-        }}
-      >
-        <header
+    <main style={pageStyle}>
+      <section style={containerStyle}>
+        <div
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent:
-              "space-between",
-            gap: "16px",
-            marginBottom: "24px",
+            justifyContent: "space-between",
+            gap: "10px",
             flexWrap: "wrap",
+            marginBottom: "12px",
           }}
         >
           <div>
-            <h1
+            <div
               style={{
-                margin: 0,
-                color: "#111827",
+                fontSize: "11px",
+                color: "#6b7280",
+                marginBottom: "2px",
               }}
             >
-              Performance
-            </h1>
+              HRMS / Performance
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                flexWrap: "wrap",
+              }}
+            >
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: "22px",
+                  lineHeight: 1.2,
+                  color: "#111827",
+                }}
+              >
+                Performance
+              </h1>
+
+              <span
+                style={{
+                  padding: "3px 7px",
+                  borderRadius: "999px",
+                  backgroundColor: "#eff6ff",
+                  color: "#1d4ed8",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                }}
+              >
+                REVIEWS
+              </span>
+            </div>
 
             <p
               style={{
+                margin: "3px 0 0",
                 color: "#6b7280",
-                marginBottom: 0,
+                fontSize: "12px",
               }}
             >
-              Manage employee performance
-              reviews
+              Manage employee performance reviews and evaluations.
             </p>
           </div>
 
           <button
             type="button"
             onClick={openCreateForm}
-            style={{
-              padding: "10px 16px",
-              border: "none",
-              borderRadius: "6px",
-              backgroundColor:
-                "#2563eb",
-              color: "#ffffff",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
+            style={primaryButtonStyle}
           >
-            Add Review
+            + Add Review
           </button>
-        </header>
+        </div>
 
         {error && (
           <section
             role="alert"
             style={{
-              padding: "16px",
-              marginBottom: "20px",
-              backgroundColor:
-                "#fee2e2",
-              borderRadius: "8px",
+              ...cardStyle,
+              padding: "9px 11px",
+              marginBottom: "10px",
+              backgroundColor: "#fef2f2",
+              borderColor: "#fecaca",
               color: "#991b1b",
-              border:
-                "1px solid #fecaca",
+              fontSize: "12px",
             }}
           >
             {error}
@@ -410,68 +472,138 @@ function Performance() {
           <section
             role="status"
             style={{
-              padding: "16px",
-              marginBottom: "20px",
-              backgroundColor:
-                "#dcfce7",
-              borderRadius: "8px",
+              ...cardStyle,
+              padding: "9px 11px",
+              marginBottom: "10px",
+              backgroundColor: "#f0fdf4",
+              borderColor: "#bbf7d0",
               color: "#166534",
-              border:
-                "1px solid #bbf7d0",
+              fontSize: "12px",
             }}
           >
             {success}
           </section>
         )}
 
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(4, minmax(0, 1fr))",
+            gap: "8px",
+            marginBottom: "10px",
+          }}
+        >
+          {[
+            {
+              label: "Total Reviews",
+              value: statistics.total,
+              note: "Current records",
+            },
+            {
+              label: "Completed",
+              value: statistics.completed,
+              note: "With evaluation notes",
+            },
+            {
+              label: "Pending",
+              value: statistics.pending,
+              note: "Needs evaluation",
+            },
+            {
+              label: "This Year",
+              value: statistics.thisYear,
+              note: `${new Date().getFullYear()} reviews`,
+            },
+          ].map((item) => (
+            <div
+              key={item.label}
+              style={{
+                ...cardStyle,
+                padding: "11px 12px",
+              }}
+            >
+              <div
+                style={{
+                  color: "#6b7280",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                }}
+              >
+                {item.label}
+              </div>
+
+              <div
+                style={{
+                  marginTop: "3px",
+                  color: "#111827",
+                  fontSize: "21px",
+                  lineHeight: 1.1,
+                  fontWeight: 700,
+                }}
+              >
+                {item.value}
+              </div>
+
+              <div
+                style={{
+                  marginTop: "3px",
+                  color: "#9ca3af",
+                  fontSize: "10px",
+                }}
+              >
+                {item.note}
+              </div>
+            </div>
+          ))}
+        </section>
+
         {showForm && (
           <section
             style={{
-              backgroundColor:
-                "#ffffff",
-              padding: "24px",
-              borderRadius: "10px",
-              marginBottom: "24px",
-              boxShadow:
-                "0 1px 3px rgba(0, 0, 0, 0.08)",
+              ...cardStyle,
+              padding: "13px",
+              marginBottom: "10px",
             }}
           >
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent:
-                  "space-between",
-                gap: "16px",
-                marginBottom: "20px",
+                justifyContent: "space-between",
+                gap: "8px",
+                marginBottom: "10px",
               }}
             >
-              <h2
-                style={{
-                  margin: 0,
-                }}
-              >
-                {editingId !== null
-                  ? "Edit Performance Review"
-                  : "Add Performance Review"}
-              </h2>
+              <div>
+                <h2
+                  style={{
+                    margin: 0,
+                    color: "#111827",
+                    fontSize: "15px",
+                  }}
+                >
+                  {editingId !== null
+                    ? "Edit Performance Review"
+                    : "Add Performance Review"}
+                </h2>
+
+                <p
+                  style={{
+                    margin: "3px 0 0",
+                    color: "#6b7280",
+                    fontSize: "11px",
+                  }}
+                >
+                  Enter the employee evaluation details.
+                </p>
+              </div>
 
               <button
                 type="button"
                 onClick={resetForm}
                 disabled={isSubmitting}
-                style={{
-                  padding: "7px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  backgroundColor:
-                    "#ffffff",
-                  cursor:
-                    isSubmitting
-                      ? "not-allowed"
-                      : "pointer",
-                }}
+                style={secondaryButtonStyle}
               >
                 Close
               </button>
@@ -481,284 +613,201 @@ function Performance() {
               onSubmit={handleSubmit}
               style={{
                 display: "grid",
-                gap: "16px",
-                maxWidth: "700px",
+                gap: "10px",
               }}
             >
-              <label>
-                Employee
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(3, minmax(0, 1fr))",
+                  gap: "9px",
+                }}
+              >
+                <label>
+                  <span style={labelStyle}>
+                    Employee
+                  </span>
 
-                <select
-                  value={
-                    form.employee || ""
-                  }
-                  onChange={(event) =>
-                    setForm(
-                      (current) => ({
+                  <select
+                    value={form.employee || ""}
+                    onChange={(event) =>
+                      setForm((current) => ({
                         ...current,
-                        employee:
-                          Number(
-                            event.target.value,
-                          ),
-                      }),
-                    )
-                  }
-                  required
-                  disabled={
-                    isSubmitting ||
-                    isLoadingEmployees
-                  }
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                    backgroundColor:
-                      "#ffffff",
-                  }}
-                >
-                  <option value="">
-                    {isLoadingEmployees
-                      ? "Loading employees..."
-                      : "Select employee"}
-                  </option>
+                        employee: Number(
+                          event.target.value,
+                        ),
+                      }))
+                    }
+                    required
+                    disabled={
+                      isSubmitting ||
+                      isLoadingEmployees
+                    }
+                    style={inputStyle}
+                  >
+                    <option value="">
+                      {isLoadingEmployees
+                        ? "Loading employees..."
+                        : "Select employee"}
+                    </option>
 
-                  {employees.map(
-                    (employee) => (
+                    {employees.map((employee) => (
                       <option
                         key={employee.id}
                         value={employee.id}
                       >
-                        {employee.full_name} —{" "}
-                        {employee.employee_id}
+                        {getEmployeeLabel(employee)}
                       </option>
-                    ),
-                  )}
-                </select>
-              </label>
+                    ))}
+                  </select>
+                </label>
 
-              <label>
-                Review Period
+                <label>
+                  <span style={labelStyle}>
+                    Review Period
+                  </span>
 
-                <input
-                  type="text"
-                  value={
-                    form.review_period
-                  }
-                  onChange={(event) =>
-                    setForm(
-                      (current) => ({
+                  <input
+                    type="text"
+                    value={form.review_period}
+                    onChange={(event) =>
+                      setForm((current) => ({
                         ...current,
                         review_period:
-                          event.target
-                            .value,
-                      }),
-                    )
-                  }
-                  required
-                  disabled={isSubmitting}
-                  placeholder="e.g. Annual Review"
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
-                />
-              </label>
+                          event.target.value,
+                      }))
+                    }
+                    required
+                    disabled={isSubmitting}
+                    placeholder="e.g. Annual Review"
+                    style={inputStyle}
+                  />
+                </label>
 
-              <label>
-                Review Date
+                <label>
+                  <span style={labelStyle}>
+                    Review Date
+                  </span>
 
-                <input
-                  type="date"
-                  value={
-                    form.review_date
-                  }
-                  onChange={(event) =>
-                    setForm(
-                      (current) => ({
+                  <input
+                    type="date"
+                    value={form.review_date}
+                    onChange={(event) =>
+                      setForm((current) => ({
                         ...current,
                         review_date:
-                          event.target
-                            .value,
-                      }),
-                    )
-                  }
-                  required
-                  disabled={isSubmitting}
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
-                />
-              </label>
+                          event.target.value,
+                      }))
+                    }
+                    required
+                    disabled={isSubmitting}
+                    style={inputStyle}
+                  />
+                </label>
+              </div>
 
-              <label>
-                Strengths
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(3, minmax(0, 1fr))",
+                  gap: "9px",
+                }}
+              >
+                <label>
+                  <span style={labelStyle}>
+                    Strengths
+                  </span>
 
-                <textarea
-                  value={form.strengths}
-                  onChange={(event) =>
-                    setForm(
-                      (current) => ({
+                  <textarea
+                    value={form.strengths}
+                    onChange={(event) =>
+                      setForm((current) => ({
                         ...current,
                         strengths:
-                          event.target
-                            .value,
-                      }),
-                    )
-                  }
-                  rows={4}
-                  disabled={isSubmitting}
-                  placeholder="Employee strengths and achievements"
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                    resize: "vertical",
-                  }}
-                />
-              </label>
+                          event.target.value,
+                      }))
+                    }
+                    rows={3}
+                    disabled={isSubmitting}
+                    placeholder="Employee strengths and achievements"
+                    style={textareaStyle}
+                  />
+                </label>
 
-              <label>
-                Areas for Improvement
+                <label>
+                  <span style={labelStyle}>
+                    Areas for Improvement
+                  </span>
 
-                <textarea
-                  value={
-                    form.areas_for_improvement
-                  }
-                  onChange={(event) =>
-                    setForm(
-                      (current) => ({
+                  <textarea
+                    value={
+                      form.areas_for_improvement
+                    }
+                    onChange={(event) =>
+                      setForm((current) => ({
                         ...current,
                         areas_for_improvement:
-                          event.target
-                            .value,
-                      }),
-                    )
-                  }
-                  rows={4}
-                  disabled={isSubmitting}
-                  placeholder="Skills or areas requiring improvement"
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                    resize: "vertical",
-                  }}
-                />
-              </label>
+                          event.target.value,
+                      }))
+                    }
+                    rows={3}
+                    disabled={isSubmitting}
+                    placeholder="Skills or areas requiring improvement"
+                    style={textareaStyle}
+                  />
+                </label>
 
-              <label>
-                Manager Comments
+                <label>
+                  <span style={labelStyle}>
+                    Manager Comments
+                  </span>
 
-                <textarea
-                  value={
-                    form.manager_comments
-                  }
-                  onChange={(event) =>
-                    setForm(
-                      (current) => ({
+                  <textarea
+                    value={form.manager_comments}
+                    onChange={(event) =>
+                      setForm((current) => ({
                         ...current,
                         manager_comments:
-                          event.target
-                            .value,
-                      }),
-                    )
-                  }
-                  rows={4}
-                  disabled={isSubmitting}
-                  placeholder="Manager's overall comments"
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                    resize: "vertical",
-                  }}
-                />
-              </label>
+                          event.target.value,
+                      }))
+                    }
+                    rows={3}
+                    disabled={isSubmitting}
+                    placeholder="Manager's overall comments"
+                    style={textareaStyle}
+                  />
+                </label>
+              </div>
 
               <div
                 style={{
                   display: "flex",
-                  gap: "10px",
+                  gap: "7px",
+                  justifyContent: "flex-end",
                   flexWrap: "wrap",
                 }}
               >
                 <button
+                  type="button"
+                  onClick={resetForm}
+                  disabled={isSubmitting}
+                  style={secondaryButtonStyle}
+                >
+                  Cancel
+                </button>
+
+                <button
                   type="submit"
-                  disabled={
-                    isSubmitting
-                  }
-                  style={{
-                    padding:
-                      "10px 18px",
-                    border: "none",
-                    borderRadius:
-                      "6px",
-                    backgroundColor:
-                      "#2563eb",
-                    color:
-                      "#ffffff",
-                    cursor:
-                      isSubmitting
-                        ? "not-allowed"
-                        : "pointer",
-                    fontWeight: 600,
-                  }}
+                  disabled={isSubmitting}
+                  style={primaryButtonStyle}
                 >
                   {isSubmitting
                     ? "Saving..."
                     : editingId !== null
                       ? "Update Review"
                       : "Save Review"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  disabled={
-                    isSubmitting
-                  }
-                  style={{
-                    padding:
-                      "10px 18px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "6px",
-                    backgroundColor:
-                      "#ffffff",
-                    cursor:
-                      isSubmitting
-                        ? "not-allowed"
-                        : "pointer",
-                  }}
-                >
-                  Cancel
                 </button>
               </div>
             </form>
@@ -767,181 +816,172 @@ function Performance() {
 
         <section
           style={{
-            backgroundColor:
-              "#ffffff",
-            borderRadius: "10px",
-            overflow: "auto",
-            boxShadow:
-              "0 1px 3px rgba(0, 0, 0, 0.05)",
+            ...cardStyle,
+            overflow: "hidden",
           }}
         >
           <div
             style={{
-              padding:
-                "20px 24px",
-              borderBottom:
-                "1px solid #e5e7eb",
+              padding: "10px 12px",
+              borderBottom: "1px solid #e5e7eb",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "8px",
+              flexWrap: "wrap",
             }}
           >
-            <h2
-              style={{
-                margin: 0,
-              }}
-            >
-              Performance Reviews
-            </h2>
+            <div>
+              <h2
+                style={{
+                  margin: 0,
+                  color: "#111827",
+                  fontSize: "14px",
+                }}
+              >
+                Performance Reviews
+              </h2>
 
-            <p
-              style={{
-                margin:
-                  "6px 0 0",
-                color:
-                  "#6b7280",
-                fontSize:
-                  "14px",
-              }}
-            >
-              {reviews.length}{" "}
-              {reviews.length === 1
-                ? "review"
-                : "reviews"}
-            </p>
+              <p
+                style={{
+                  margin: "2px 0 0",
+                  color: "#6b7280",
+                  fontSize: "11px",
+                }}
+              >
+                {reviews.length}{" "}
+                {reviews.length === 1
+                  ? "review"
+                  : "reviews"}
+              </p>
+            </div>
+
+            {!showForm && (
+              <button
+                type="button"
+                onClick={openCreateForm}
+                style={secondaryButtonStyle}
+              >
+                Add Review
+              </button>
+            )}
           </div>
 
           {isLoading ? (
-            <p
-              style={{
-                padding: "24px",
-              }}
-            >
-              Loading performance
-              reviews...
-            </p>
-          ) : reviews.length ===
-            0 ? (
             <div
               style={{
-                padding: "40px 24px",
-                textAlign:
-                  "center",
+                padding: "28px 16px",
+                textAlign: "center",
+                color: "#6b7280",
+                fontSize: "12px",
               }}
             >
-              <p
+              Loading performance reviews...
+            </div>
+          ) : reviews.length === 0 ? (
+            <div
+              style={{
+                padding: "32px 16px",
+                textAlign: "center",
+              }}
+            >
+              <div
                 style={{
-                  margin: 0,
-                  color:
-                    "#6b7280",
+                  color: "#374151",
+                  fontSize: "13px",
+                  fontWeight: 600,
                 }}
               >
-                No performance reviews
-                found.
+                No performance reviews found.
+              </div>
+
+              <p
+                style={{
+                  margin: "4px 0 0",
+                  color: "#9ca3af",
+                  fontSize: "11px",
+                }}
+              >
+                Create the first employee performance review.
               </p>
 
               <button
                 type="button"
-                onClick={
-                  openCreateForm
-                }
+                onClick={openCreateForm}
                 style={{
-                  marginTop:
-                    "14px",
-                  padding:
-                    "9px 14px",
-                  border: "none",
-                  borderRadius:
-                    "6px",
-                  backgroundColor:
-                    "#2563eb",
-                  color:
-                    "#ffffff",
-                  cursor:
-                    "pointer",
+                  ...primaryButtonStyle,
+                  marginTop: "10px",
                 }}
               >
-                Add First Review
+                + Add First Review
               </button>
             </div>
           ) : (
-            <table
-              style={{
-                width: "100%",
-                borderCollapse:
-                  "collapse",
-                minWidth:
-                  "1150px",
-              }}
-            >
-              <thead>
-                <tr>
-                  {[
-                    "Employee",
-                    "Review Period",
-                    "Review Date",
-                    "Strengths",
-                    "Areas for Improvement",
-                    "Manager Comments",
-                    "Actions",
-                  ].map(
-                    (heading) => (
+            <div style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  minWidth: "1050px",
+                }}
+              >
+                <thead>
+                  <tr>
+                    {[
+                      "Employee",
+                      "Review Period",
+                      "Review Date",
+                      "Strengths",
+                      "Areas for Improvement",
+                      "Manager Comments",
+                      "Actions",
+                    ].map((heading) => (
                       <th
-                        key={
-                          heading
-                        }
+                        key={heading}
                         style={{
-                          padding:
-                            "14px",
-                          textAlign:
-                            "left",
+                          padding: "8px 10px",
+                          textAlign: "left",
                           borderBottom:
                             "1px solid #e5e7eb",
-                          backgroundColor:
-                            "#f9fafb",
-                          whiteSpace:
-                            "nowrap",
-                          fontSize:
-                            "13px",
-                          color:
-                            "#374151",
+                          backgroundColor: "#f9fafb",
+                          whiteSpace: "nowrap",
+                          color: "#374151",
+                          fontSize: "11px",
+                          fontWeight: 700,
                         }}
                       >
                         {heading}
                       </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
+                    ))}
+                  </tr>
+                </thead>
 
-              <tbody>
-                {reviews.map(
-                  (review) => (
-                    <tr
-                      key={
-                        review.id
-                      }
-                    >
+                <tbody>
+                  {reviews.map((review) => (
+                    <tr key={review.id}>
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "9px 10px",
                           borderBottom:
                             "1px solid #f3f4f6",
-                          verticalAlign:
-                            "top",
+                          verticalAlign: "top",
                         }}
                       >
-                        <strong>
-                          {review.employee_name ||
-                            "-"}
-                        </strong>
+                        <div
+                          style={{
+                            color: "#111827",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {review.employee_name || "-"}
+                        </div>
 
                         <div
                           style={{
-                            fontSize:
-                              "12px",
-                            color:
-                              "#6b7280",
-                            marginTop:
-                              "4px",
+                            marginTop: "2px",
+                            color: "#6b7280",
+                            fontSize: "10px",
                           }}
                         >
                           {review.employee_id ||
@@ -951,151 +991,119 @@ function Performance() {
 
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "9px 10px",
                           borderBottom:
                             "1px solid #f3f4f6",
-                          verticalAlign:
-                            "top",
-                          whiteSpace:
-                            "nowrap",
+                          verticalAlign: "top",
+                          whiteSpace: "nowrap",
+                          color: "#374151",
+                          fontSize: "11px",
                         }}
                       >
-                        {
-                          review.review_period
-                        }
+                        {review.review_period}
                       </td>
 
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "9px 10px",
                           borderBottom:
                             "1px solid #f3f4f6",
-                          verticalAlign:
-                            "top",
-                          whiteSpace:
-                            "nowrap",
+                          verticalAlign: "top",
+                          whiteSpace: "nowrap",
+                          color: "#374151",
+                          fontSize: "11px",
                         }}
                       >
-                        {formatDate(
-                          review.review_date,
-                        )}
+                        {formatDate(review.review_date)}
                       </td>
 
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "9px 10px",
                           borderBottom:
                             "1px solid #f3f4f6",
-                          verticalAlign:
-                            "top",
-                          maxWidth:
-                            "220px",
-                          whiteSpace:
-                            "pre-wrap",
-                          overflowWrap:
-                            "anywhere",
+                          verticalAlign: "top",
+                          maxWidth: "210px",
+                          color: "#4b5563",
+                          fontSize: "11px",
+                          lineHeight: 1.45,
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
                         }}
                       >
-                        {review.strengths ||
-                          "-"}
+                        {review.strengths || "-"}
                       </td>
 
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "9px 10px",
                           borderBottom:
                             "1px solid #f3f4f6",
-                          verticalAlign:
-                            "top",
-                          maxWidth:
-                            "220px",
-                          whiteSpace:
-                            "pre-wrap",
-                          overflowWrap:
-                            "anywhere",
+                          verticalAlign: "top",
+                          maxWidth: "210px",
+                          color: "#4b5563",
+                          fontSize: "11px",
+                          lineHeight: 1.45,
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
                         }}
                       >
-                        {
-                          review.areas_for_improvement ||
-                          "-"
-                        }
+                        {review.areas_for_improvement || "-"}
                       </td>
 
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "9px 10px",
                           borderBottom:
                             "1px solid #f3f4f6",
-                          verticalAlign:
-                            "top",
-                          maxWidth:
-                            "220px",
-                          whiteSpace:
-                            "pre-wrap",
-                          overflowWrap:
-                            "anywhere",
+                          verticalAlign: "top",
+                          maxWidth: "210px",
+                          color: "#4b5563",
+                          fontSize: "11px",
+                          lineHeight: 1.45,
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
                         }}
                       >
-                        {
-                          review.manager_comments ||
-                          "-"
-                        }
+                        {review.manager_comments || "-"}
                       </td>
 
                       <td
                         style={{
-                          padding:
-                            "14px",
+                          padding: "9px 10px",
                           borderBottom:
                             "1px solid #f3f4f6",
-                          verticalAlign:
-                            "top",
+                          verticalAlign: "top",
                         }}
                       >
                         <div
                           style={{
-                            display:
-                              "flex",
-                            gap:
-                              "8px",
-                            flexWrap:
-                              "wrap",
+                            display: "flex",
+                            gap: "5px",
+                            flexWrap: "wrap",
                           }}
                         >
                           <button
                             type="button"
                             disabled={
                               isSubmitting ||
-                              deletingId !==
-                                null
+                              deletingId !== null
                             }
                             onClick={() =>
-                              openEditForm(
-                                review,
-                              )
+                              openEditForm(review)
                             }
                             style={{
-                              padding:
-                                "7px 12px",
-                              border:
-                                "1px solid #2563eb",
-                              borderRadius:
-                                "6px",
-                              backgroundColor:
-                                "#ffffff",
-                              color:
-                                "#2563eb",
+                              ...editButtonStyle,
                               cursor:
                                 isSubmitting ||
-                                deletingId !==
-                                  null
+                                deletingId !== null
                                   ? "not-allowed"
                                   : "pointer",
+                              opacity:
+                                isSubmitting ||
+                                deletingId !== null
+                                  ? 0.6
+                                  : 1,
                             }}
                           >
                             Edit
@@ -1104,8 +1112,7 @@ function Performance() {
                           <button
                             type="button"
                             disabled={
-                              deletingId ===
-                              review.id
+                              deletingId === review.id
                             }
                             onClick={() =>
                               void handleDelete(
@@ -1113,37 +1120,40 @@ function Performance() {
                               )
                             }
                             style={{
-                              padding:
-                                "7px 12px",
-                              border:
-                                "none",
-                              borderRadius:
-                                "6px",
-                              backgroundColor:
-                                "#dc2626",
-                              color:
-                                "#ffffff",
+                              ...dangerButtonStyle,
                               cursor:
-                                deletingId ===
-                                review.id
+                                deletingId === review.id
                                   ? "not-allowed"
                                   : "pointer",
+                              opacity:
+                                deletingId === review.id
+                                  ? 0.6
+                                  : 1,
                             }}
                           >
-                            {deletingId ===
-                            review.id
+                            {deletingId === review.id
                               ? "Deleting..."
                               : "Delete"}
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ),
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
+
+        <style>
+          {`
+            @media (max-width: 900px) {
+              .performance-responsive-grid {
+                grid-template-columns: 1fr !important;
+              }
+            }
+          `}
+        </style>
       </section>
     </main>
   )
