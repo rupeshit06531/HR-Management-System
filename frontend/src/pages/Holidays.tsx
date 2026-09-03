@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -40,6 +41,71 @@ const emptyForm: HolidayPayload = {
   holiday_type: "COMPANY",
   description: "",
   is_active: true,
+}
+
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  padding: "18px",
+  background: "#f5f7fb",
+  fontFamily: "Arial, sans-serif",
+  color: "#111827",
+  boxSizing: "border-box",
+}
+
+const containerStyle: CSSProperties = {
+  maxWidth: "1400px",
+  margin: "0 auto",
+}
+
+const cardStyle: CSSProperties = {
+  background: "#ffffff",
+  border: "1px solid #e5e7eb",
+  borderRadius: "10px",
+  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
+}
+
+const inputStyle: CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "8px 10px",
+  border: "1px solid #d1d5db",
+  borderRadius: "6px",
+  background: "#ffffff",
+  color: "#111827",
+  fontSize: "13px",
+  outline: "none",
+}
+
+const labelStyle: CSSProperties = {
+  display: "block",
+  marginBottom: "5px",
+  fontSize: "12px",
+  fontWeight: 700,
+  color: "#374151",
+}
+
+const primaryButtonStyle: CSSProperties = {
+  minHeight: "34px",
+  padding: "7px 13px",
+  border: "none",
+  borderRadius: "6px",
+  background: "#111827",
+  color: "#ffffff",
+  fontSize: "12px",
+  fontWeight: 700,
+  cursor: "pointer",
+}
+
+const secondaryButtonStyle: CSSProperties = {
+  minHeight: "34px",
+  padding: "7px 13px",
+  border: "1px solid #d1d5db",
+  borderRadius: "6px",
+  background: "#ffffff",
+  color: "#374151",
+  fontSize: "12px",
+  fontWeight: 700,
+  cursor: "pointer",
 }
 
 function Holidays() {
@@ -289,39 +355,350 @@ function Holidays() {
     holidays.length - activeCount
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "32px",
-        backgroundColor: "#f5f7fa",
-        fontFamily:
-          "Inter, Arial, sans-serif",
-        boxSizing: "border-box",
-      }}
-    >
-      <section
-        style={{
-          maxWidth: "1280px",
-          margin: "0 auto",
-        }}
-      >
-        <header
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "20px",
-            marginBottom: "28px",
-            flexWrap: "wrap",
-          }}
-        >
+    <main style={pageStyle}>
+      <style>
+        {`
+          .holidays-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 12px;
+          }
+
+          .holidays-kpis {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+          }
+
+          .holidays-kpi {
+            padding: 12px 14px;
+          }
+
+          .holidays-kpi-label {
+            font-size: 10px;
+            font-weight: 800;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          }
+
+          .holidays-kpi-value {
+            margin-top: 3px;
+            font-size: 22px;
+            line-height: 1;
+            font-weight: 800;
+            color: #111827;
+          }
+
+          .holidays-form-card {
+            padding: 14px;
+            margin-bottom: 12px;
+          }
+
+          .holidays-form-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
+          }
+
+          .holidays-form {
+            display: grid;
+            gap: 10px;
+          }
+
+          .holidays-form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+          }
+
+          .holidays-field {
+            min-width: 0;
+          }
+
+          .holidays-textarea {
+            min-height: 76px;
+            resize: vertical;
+          }
+
+          .holidays-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 32px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #374151;
+            cursor: pointer;
+          }
+
+          .holidays-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 7px;
+          }
+
+          .holidays-list-card {
+            overflow: hidden;
+          }
+
+          .holidays-list-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border-bottom: 1px solid #e5e7eb;
+          }
+
+          .holidays-filters {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) 170px 150px;
+            gap: 8px;
+            width: min(680px, 100%);
+          }
+
+          .holidays-table-wrap {
+            overflow-x: auto;
+          }
+
+          .holidays-table {
+            width: 100%;
+            min-width: 920px;
+            border-collapse: collapse;
+            font-size: 12px;
+          }
+
+          .holidays-table th {
+            padding: 8px 9px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+            color: #6b7280;
+            font-size: 10px;
+            font-weight: 800;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+          }
+
+          .holidays-table td {
+            padding: 9px;
+            border-bottom: 1px solid #eef0f3;
+            color: #374151;
+            vertical-align: middle;
+          }
+
+          .holidays-table tbody tr:last-child td {
+            border-bottom: none;
+          }
+
+          .holidays-table tbody tr:hover {
+            background: #fafafa;
+          }
+
+          .holiday-name {
+            max-width: 190px;
+            overflow: hidden;
+            color: #111827;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .holiday-description {
+            max-width: 260px;
+            overflow: hidden;
+            color: #6b7280;
+            font-size: 11px;
+            line-height: 1.4;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .holiday-date {
+            color: #374151;
+            font-weight: 700;
+            white-space: nowrap;
+          }
+
+          .holiday-type,
+          .holiday-status {
+            display: inline-flex;
+            align-items: center;
+            min-height: 21px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+          }
+
+          .holiday-type {
+            background: #f3f4f6;
+            color: #374151;
+          }
+
+          .holiday-status-active {
+            background: #dcfce7;
+            color: #166534;
+          }
+
+          .holiday-status-inactive {
+            background: #f3f4f6;
+            color: #6b7280;
+          }
+
+          .holiday-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          }
+
+          .holiday-edit {
+            min-height: 28px;
+            padding: 5px 9px;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            background: #ffffff;
+            color: #374151;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+          }
+
+          .holiday-delete {
+            min-height: 28px;
+            padding: 5px 9px;
+            border: 1px solid #dc2626;
+            border-radius: 5px;
+            background: #dc2626;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+          }
+
+          .holidays-empty,
+          .holidays-loading {
+            padding: 28px 14px;
+            color: #6b7280;
+            font-size: 12px;
+            text-align: center;
+          }
+
+          .holidays-alert {
+            margin-bottom: 10px;
+            padding: 9px 11px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+          }
+
+          .holidays-alert-error {
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #991b1b;
+          }
+
+          .holidays-alert-success {
+            border: 1px solid #bbf7d0;
+            background: #f0fdf4;
+            color: #166534;
+          }
+
+          @media (max-width: 900px) {
+            .holidays-form-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .holidays-list-header {
+              align-items: stretch;
+              flex-direction: column;
+            }
+
+            .holidays-filters {
+              width: 100%;
+            }
+          }
+
+          @media (max-width: 700px) {
+            .holidays-kpis {
+              grid-template-columns: 1fr;
+            }
+
+            .holidays-header {
+              align-items: flex-start;
+              flex-direction: column;
+            }
+
+            .holidays-form-grid,
+            .holidays-filters {
+              grid-template-columns: 1fr;
+            }
+          }
+        `}
+      </style>
+
+      <section style={containerStyle}>
+        <header className="holidays-header">
           <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "7px",
+                marginBottom: "3px",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  color: "#6b7280",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                HRMS
+              </span>
+
+              <span
+                style={{
+                  color: "#d1d5db",
+                  fontSize: "11px",
+                }}
+              >
+                /
+              </span>
+
+              <span
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  color: "#9ca3af",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Holidays
+              </span>
+            </div>
+
             <h1
               style={{
                 margin: 0,
+                fontSize: "22px",
+                lineHeight: 1.2,
+                fontWeight: 800,
                 color: "#111827",
-                fontSize: "30px",
-                fontWeight: 700,
               }}
             >
               Holidays
@@ -329,31 +706,19 @@ function Holidays() {
 
             <p
               style={{
-                margin:
-                  "8px 0 0",
+                margin: "4px 0 0",
+                fontSize: "12px",
                 color: "#6b7280",
-                fontSize: "15px",
               }}
             >
-              Manage and maintain the
-              organization's holiday calendar.
+              Manage the organization's holiday calendar.
             </p>
           </div>
 
           <button
             type="button"
             onClick={openCreateForm}
-            style={{
-              padding: "11px 18px",
-              border: "none",
-              borderRadius: "8px",
-              backgroundColor: "#2563eb",
-              color: "#ffffff",
-              cursor: "pointer",
-              fontWeight: 600,
-              boxShadow:
-                "0 2px 5px rgba(37, 99, 235, 0.25)",
-            }}
+            style={primaryButtonStyle}
           >
             + Add Holiday
           </button>
@@ -362,15 +727,7 @@ function Holidays() {
         {error && (
           <section
             role="alert"
-            style={{
-              padding: "14px 16px",
-              marginBottom: "20px",
-              backgroundColor: "#fef2f2",
-              border:
-                "1px solid #fecaca",
-              borderRadius: "8px",
-              color: "#991b1b",
-            }}
+            className="holidays-alert holidays-alert-error"
           >
             {error}
           </section>
@@ -379,145 +736,66 @@ function Holidays() {
         {success && (
           <section
             role="status"
-            style={{
-              padding: "14px 16px",
-              marginBottom: "20px",
-              backgroundColor: "#f0fdf4",
-              border:
-                "1px solid #bbf7d0",
-              borderRadius: "8px",
-              color: "#166534",
-            }}
+            className="holidays-alert holidays-alert-success"
           >
             {success}
           </section>
         )}
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: "16px",
-            marginBottom: "24px",
-          }}
-        >
+        <section className="holidays-kpis">
           <div
-            style={{
-              backgroundColor: "#ffffff",
-              padding: "20px",
-              borderRadius: "10px",
-              border:
-                "1px solid #e5e7eb",
-            }}
+            className="holidays-kpi"
+            style={cardStyle}
           >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                marginBottom: "6px",
-              }}
-            >
+            <div className="holidays-kpi-label">
               Total Holidays
             </div>
 
-            <strong
-              style={{
-                fontSize: "28px",
-                color: "#111827",
-              }}
-            >
+            <div className="holidays-kpi-value">
               {holidays.length}
-            </strong>
+            </div>
           </div>
 
           <div
-            style={{
-              backgroundColor: "#ffffff",
-              padding: "20px",
-              borderRadius: "10px",
-              border:
-                "1px solid #e5e7eb",
-            }}
+            className="holidays-kpi"
+            style={cardStyle}
           >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                marginBottom: "6px",
-              }}
-            >
+            <div className="holidays-kpi-label">
               Active Holidays
             </div>
 
-            <strong
-              style={{
-                fontSize: "28px",
-                color: "#166534",
-              }}
-            >
+            <div className="holidays-kpi-value">
               {activeCount}
-            </strong>
+            </div>
           </div>
 
           <div
-            style={{
-              backgroundColor: "#ffffff",
-              padding: "20px",
-              borderRadius: "10px",
-              border:
-                "1px solid #e5e7eb",
-            }}
+            className="holidays-kpi"
+            style={cardStyle}
           >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                marginBottom: "6px",
-              }}
-            >
+            <div className="holidays-kpi-label">
               Inactive Holidays
             </div>
 
-            <strong
-              style={{
-                fontSize: "28px",
-                color: "#6b7280",
-              }}
-            >
+            <div className="holidays-kpi-value">
               {inactiveCount}
-            </strong>
+            </div>
           </div>
         </section>
 
         {showForm && (
           <section
-            style={{
-              backgroundColor: "#ffffff",
-              padding: "24px",
-              borderRadius: "10px",
-              marginBottom: "24px",
-              border:
-                "1px solid #e5e7eb",
-              boxShadow:
-                "0 2px 6px rgba(0, 0, 0, 0.05)",
-            }}
+            className="holidays-form-card"
+            style={cardStyle}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "20px",
-                gap: "16px",
-              }}
-            >
+            <div className="holidays-form-header">
               <div>
                 <h2
                   style={{
                     margin: 0,
+                    fontSize: "15px",
+                    fontWeight: 800,
                     color: "#111827",
-                    fontSize: "20px",
                   }}
                 >
                   {editingId !== null
@@ -527,14 +805,12 @@ function Holidays() {
 
                 <p
                   style={{
-                    margin:
-                      "6px 0 0",
+                    margin: "3px 0 0",
+                    fontSize: "11px",
                     color: "#6b7280",
-                    fontSize: "14px",
                   }}
                 >
-                  Enter the holiday details
-                  below.
+                  Enter the holiday details below.
                 </p>
               </div>
 
@@ -543,44 +819,34 @@ function Holidays() {
                 onClick={resetForm}
                 disabled={isSubmitting}
                 style={{
-                  border: "none",
-                  backgroundColor:
-                    "transparent",
-                  color: "#6b7280",
-                  cursor: "pointer",
-                  fontSize: "20px",
+                  ...secondaryButtonStyle,
+                  opacity: isSubmitting
+                    ? 0.65
+                    : 1,
+                  cursor: isSubmitting
+                    ? "not-allowed"
+                    : "pointer",
                 }}
-                aria-label="Close form"
               >
-                ×
+                Close
               </button>
             </div>
 
             <form
               onSubmit={handleSubmit}
-              style={{
-                display: "grid",
-                gap: "18px",
-              }}
+              className="holidays-form"
             >
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "16px",
-                }}
-              >
-                <label
-                  style={{
-                    color: "#374151",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                  }}
-                >
-                  Holiday Name
+              <div className="holidays-form-grid">
+                <div className="holidays-field">
+                  <label
+                    htmlFor="holiday-name"
+                    style={labelStyle}
+                  >
+                    Holiday Name
+                  </label>
 
                   <input
+                    id="holiday-name"
                     type="text"
                     value={form.name}
                     onChange={(event) =>
@@ -594,31 +860,20 @@ function Holidays() {
                     }
                     required
                     placeholder="e.g. Independence Day"
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      marginTop: "7px",
-                      padding: "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius: "7px",
-                      boxSizing:
-                        "border-box",
-                      outline: "none",
-                    }}
+                    style={inputStyle}
                   />
-                </label>
+                </div>
 
-                <label
-                  style={{
-                    color: "#374151",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                  }}
-                >
-                  Date
+                <div className="holidays-field">
+                  <label
+                    htmlFor="holiday-date"
+                    style={labelStyle}
+                  >
+                    Date
+                  </label>
 
                   <input
+                    id="holiday-date"
                     type="date"
                     value={form.date}
                     onChange={(event) =>
@@ -631,30 +886,20 @@ function Holidays() {
                       )
                     }
                     required
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      marginTop: "7px",
-                      padding: "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius: "7px",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={inputStyle}
                   />
-                </label>
+                </div>
 
-                <label
-                  style={{
-                    color: "#374151",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                  }}
-                >
-                  Holiday Type
+                <div className="holidays-field">
+                  <label
+                    htmlFor="holiday-type"
+                    style={labelStyle}
+                  >
+                    Holiday Type
+                  </label>
 
                   <select
+                    id="holiday-type"
                     value={
                       form.holiday_type
                     }
@@ -667,19 +912,7 @@ function Holidays() {
                         }),
                       )
                     }
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      marginTop: "7px",
-                      padding: "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius: "7px",
-                      boxSizing:
-                        "border-box",
-                      backgroundColor:
-                        "#ffffff",
-                    }}
+                    style={inputStyle}
                   >
                     {holidayTypes.map(
                       (type) => (
@@ -692,19 +925,19 @@ function Holidays() {
                       ),
                     )}
                   </select>
-                </label>
+                </div>
               </div>
 
-              <label
-                style={{
-                  color: "#374151",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                }}
-              >
-                Description
+              <div className="holidays-field">
+                <label
+                  htmlFor="holiday-description"
+                  style={labelStyle}
+                >
+                  Description
+                </label>
 
                 <textarea
+                  id="holiday-description"
                   value={
                     form.description
                   }
@@ -717,34 +950,14 @@ function Holidays() {
                       }),
                     )
                   }
-                  rows={4}
+                  rows={3}
                   placeholder="Optional holiday description"
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    marginTop: "7px",
-                    padding: "11px 12px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius: "7px",
-                    boxSizing:
-                      "border-box",
-                    resize: "vertical",
-                  }}
+                  className="holidays-textarea"
+                  style={inputStyle}
                 />
-              </label>
+              </div>
 
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  color: "#374151",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
+              <label className="holidays-checkbox">
                 <input
                   type="checkbox"
                   checked={
@@ -760,35 +973,39 @@ function Holidays() {
                     )
                   }
                 />
+
                 Active Holiday
               </label>
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  flexWrap: "wrap",
-                }}
-              >
+              <div className="holidays-form-actions">
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  disabled={isSubmitting}
+                  style={{
+                    ...secondaryButtonStyle,
+                    opacity: isSubmitting
+                      ? 0.65
+                      : 1,
+                    cursor: isSubmitting
+                      ? "not-allowed"
+                      : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   style={{
-                    padding:
-                      "10px 18px",
-                    border: "none",
-                    borderRadius:
-                      "7px",
-                    backgroundColor:
-                      isSubmitting
-                        ? "#93c5fd"
-                        : "#2563eb",
-                    color: "#ffffff",
-                    cursor:
-                      isSubmitting
-                        ? "not-allowed"
-                        : "pointer",
-                    fontWeight: 600,
+                    ...primaryButtonStyle,
+                    opacity: isSubmitting
+                      ? 0.65
+                      : 1,
+                    cursor: isSubmitting
+                      ? "not-allowed"
+                      : "pointer",
                   }}
                 >
                   {isSubmitting
@@ -797,94 +1014,41 @@ function Holidays() {
                       ? "Update Holiday"
                       : "Save Holiday"}
                 </button>
-
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  disabled={isSubmitting}
-                  style={{
-                    padding:
-                      "10px 18px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "7px",
-                    backgroundColor:
-                      "#ffffff",
-                    color: "#374151",
-                    cursor:
-                      isSubmitting
-                        ? "not-allowed"
-                        : "pointer",
-                    fontWeight: 600,
-                  }}
-                >
-                  Cancel
-                </button>
               </div>
             </form>
           </section>
         )}
 
         <section
-          style={{
-            backgroundColor: "#ffffff",
-            borderRadius: "10px",
-            border:
-              "1px solid #e5e7eb",
-            overflow: "hidden",
-          }}
+          className="holidays-list-card"
+          style={cardStyle}
         >
-          <div
-            style={{
-              padding: "20px 24px",
-              borderBottom:
-                "1px solid #e5e7eb",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "16px",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <h2
-                  style={{
-                    margin: 0,
-                    color: "#111827",
-                    fontSize: "19px",
-                  }}
-                >
-                  Holiday Calendar
-                </h2>
+          <div className="holidays-list-header">
+            <div>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: "15px",
+                  fontWeight: 800,
+                  color: "#111827",
+                }}
+              >
+                Holiday Calendar
+              </h2>
 
-                <p
-                  style={{
-                    margin:
-                      "5px 0 0",
-                    color: "#6b7280",
-                    fontSize: "13px",
-                  }}
-                >
-                  {filteredHolidays.length}{" "}
-                  of {holidays.length} holidays
-                </p>
-              </div>
+              <p
+                style={{
+                  margin: "3px 0 0",
+                  fontSize: "11px",
+                  color: "#6b7280",
+                }}
+              >
+                {filteredHolidays.length} of{" "}
+                {holidays.length} holidays
+              </p>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "minmax(220px, 1fr) 180px 180px",
-                gap: "10px",
-                marginTop: "18px",
-              }}
-            >
+            <div className="holidays-filters">
               <input
                 type="search"
                 value={searchTerm}
@@ -894,14 +1058,8 @@ function Holidays() {
                   )
                 }
                 placeholder="Search holidays..."
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius: "7px",
-                  outline: "none",
-                }}
+                aria-label="Search holidays"
+                style={inputStyle}
               />
 
               <select
@@ -911,15 +1069,8 @@ function Holidays() {
                     event.target.value,
                   )
                 }
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius: "7px",
-                  backgroundColor:
-                    "#ffffff",
-                }}
+                aria-label="Filter holiday type"
+                style={inputStyle}
               >
                 <option value="ALL">
                   All Types
@@ -944,22 +1095,17 @@ function Holidays() {
                     event.target.value,
                   )
                 }
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius: "7px",
-                  backgroundColor:
-                    "#ffffff",
-                }}
+                aria-label="Filter holiday status"
+                style={inputStyle}
               >
                 <option value="ALL">
                   All Status
                 </option>
+
                 <option value="ACTIVE">
                   Active
                 </option>
+
                 <option value="INACTIVE">
                   Inactive
                 </option>
@@ -968,73 +1114,19 @@ function Holidays() {
           </div>
 
           {isLoading ? (
-            <div
-              style={{
-                padding: "40px 24px",
-                textAlign: "center",
-                color: "#6b7280",
-              }}
-            >
+            <div className="holidays-loading">
               Loading holidays...
             </div>
           ) : filteredHolidays.length ===
             0 ? (
-            <div
-              style={{
-                padding: "50px 24px",
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "36px",
-                  marginBottom: "10px",
-                }}
-              >
-                📅
-              </div>
-
-              <h3
-                style={{
-                  margin:
-                    "0 0 6px",
-                  color: "#111827",
-                }}
-              >
-                No holidays found
-              </h3>
-
-              <p
-                style={{
-                  margin: 0,
-                  color: "#6b7280",
-                }}
-              >
-                Try changing your filters
-                or add a new holiday.
-              </p>
+            <div className="holidays-empty">
+              No holidays found.
             </div>
           ) : (
-            <div
-              style={{
-                overflowX: "auto",
-              }}
-            >
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse:
-                    "collapse",
-                  minWidth: "900px",
-                }}
-              >
+            <div className="holidays-table-wrap">
+              <table className="holidays-table">
                 <thead>
-                  <tr
-                    style={{
-                      backgroundColor:
-                        "#f9fafb",
-                    }}
-                  >
+                  <tr>
                     {[
                       "Name",
                       "Date",
@@ -1043,27 +1135,7 @@ function Holidays() {
                       "Status",
                       "Actions",
                     ].map((heading) => (
-                      <th
-                        key={heading}
-                        style={{
-                          padding:
-                            "13px 16px",
-                          textAlign:
-                            "left",
-                          color:
-                            "#4b5563",
-                          fontSize:
-                            "12px",
-                          fontWeight:
-                            700,
-                          textTransform:
-                            "uppercase",
-                          borderBottom:
-                            "1px solid #e5e7eb",
-                          whiteSpace:
-                            "nowrap",
-                        }}
-                      >
+                      <th key={heading}>
                         {heading}
                       </th>
                     ))}
@@ -1076,98 +1148,53 @@ function Holidays() {
                       <tr
                         key={holiday.id}
                       >
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            color:
-                              "#111827",
-                            fontWeight:
-                              600,
-                          }}
-                        >
-                          {holiday.name}
+                        <td>
+                          <div
+                            className="holiday-name"
+                            title={
+                              holiday.name
+                            }
+                          >
+                            {holiday.name}
+                          </div>
                         </td>
 
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            color:
-                              "#374151",
-                            whiteSpace:
-                              "nowrap",
-                          }}
-                        >
-                          {formatDate(
-                            holiday.date,
-                          )}
+                        <td>
+                          <span className="holiday-date">
+                            {formatDate(
+                              holiday.date,
+                            )}
+                          </span>
                         </td>
 
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            color:
-                              "#374151",
-                          }}
-                        >
-                          {formatHolidayType(
-                            holiday.holiday_type,
-                          )}
+                        <td>
+                          <span className="holiday-type">
+                            {formatHolidayType(
+                              holiday.holiday_type,
+                            )}
+                          </span>
                         </td>
 
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                            color:
-                              "#6b7280",
-                            maxWidth:
-                              "300px",
-                          }}
-                        >
-                          {holiday.description ||
-                            "-"}
+                        <td>
+                          <div
+                            className="holiday-description"
+                            title={
+                              holiday.description ||
+                              "-"
+                            }
+                          >
+                            {holiday.description ||
+                              "-"}
+                          </div>
                         </td>
 
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                          }}
-                        >
+                        <td>
                           <span
-                            style={{
-                              display:
-                                "inline-block",
-                              padding:
-                                "5px 9px",
-                              borderRadius:
-                                "999px",
-                              backgroundColor:
-                                holiday.is_active
-                                  ? "#dcfce7"
-                                  : "#f3f4f6",
-                              color:
-                                holiday.is_active
-                                  ? "#166534"
-                                  : "#6b7280",
-                              fontSize:
-                                "12px",
-                              fontWeight:
-                                700,
-                            }}
+                            className={`holiday-status ${
+                              holiday.is_active
+                                ? "holiday-status-active"
+                                : "holiday-status-inactive"
+                            }`}
                           >
                             {holiday.is_active
                               ? "Active"
@@ -1175,21 +1202,8 @@ function Holidays() {
                           </span>
                         </td>
 
-                        <td
-                          style={{
-                            padding:
-                              "15px 16px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display:
-                                "flex",
-                              gap: "8px",
-                            }}
-                          >
+                        <td>
+                          <div className="holiday-actions">
                             <button
                               type="button"
                               onClick={() =>
@@ -1197,22 +1211,7 @@ function Holidays() {
                                   holiday,
                                 )
                               }
-                              style={{
-                                padding:
-                                  "7px 12px",
-                                border:
-                                  "1px solid #2563eb",
-                                borderRadius:
-                                  "6px",
-                                backgroundColor:
-                                  "#ffffff",
-                                color:
-                                  "#2563eb",
-                                cursor:
-                                  "pointer",
-                                fontWeight:
-                                  600,
-                              }}
+                              className="holiday-edit"
                             >
                               Edit
                             </button>
@@ -1228,27 +1227,18 @@ function Holidays() {
                                   holiday.id,
                                 )
                               }
+                              className="holiday-delete"
                               style={{
-                                padding:
-                                  "7px 12px",
-                                border:
-                                  "none",
-                                borderRadius:
-                                  "6px",
-                                backgroundColor:
+                                opacity:
                                   deletingId ===
                                   holiday.id
-                                    ? "#fca5a5"
-                                    : "#dc2626",
-                                color:
-                                  "#ffffff",
+                                    ? 0.65
+                                    : 1,
                                 cursor:
                                   deletingId ===
                                   holiday.id
                                     ? "not-allowed"
                                     : "pointer",
-                                fontWeight:
-                                  600,
                               }}
                             >
                               {deletingId ===
