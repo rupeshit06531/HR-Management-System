@@ -1480,6 +1480,9 @@ function AdminHrDashboard({
         navigate={navigate}
       />
 
+      <FieldOperationsSection />
+
+
       <DashboardBottomPanels
         announcements={announcements}
         holidays={holidays}
@@ -1831,6 +1834,144 @@ function ModuleGrid({
         </button>
       ))}
     </div>
+  )
+}
+
+function FieldOperationsSection() {
+  const fieldMetrics = [
+    {
+      label: "Field Employees",
+      value: "0",
+      description: "Employees assigned to field work",
+      short: "FIELD",
+    },
+    {
+      label: "Active Visits",
+      value: "0",
+      description: "Currently active field visits",
+      short: "VISITS",
+    },
+    {
+      label: "Sales Today",
+      value: "0",
+      description: "Sales activities recorded today",
+      short: "SALES",
+    },
+    {
+      label: "GPS Active",
+      value: "0",
+      description: "Employees currently sharing location",
+      short: "GPS",
+    },
+  ]
+
+  return (
+    <section
+      id="sales-field-operations"
+      className="dashboard-field-operations"
+    >
+      <div className="dashboard-field-heading">
+        <div>
+          <div className="dashboard-field-title-row">
+            <h2>Sales & GPS Tracking</h2>
+
+            <span className="dashboard-field-badge">
+              FIELD OPS
+            </span>
+          </div>
+
+          <p>
+            Monitor field workforce activity, sales performance and
+            location tracking.
+          </p>
+        </div>
+
+        <span className="dashboard-field-status">
+          Tracking Ready
+        </span>
+      </div>
+
+      <div className="dashboard-field-kpi-grid">
+        {fieldMetrics.map((metric) => (
+          <div
+            className="dashboard-field-kpi"
+            key={metric.label}
+          >
+            <div className="dashboard-field-kpi-top">
+              <span>{metric.label}</span>
+
+              <b>{metric.short}</b>
+            </div>
+
+            <strong>{metric.value}</strong>
+
+            <small>{metric.description}</small>
+          </div>
+        ))}
+      </div>
+
+      <div className="dashboard-field-panel-grid">
+        <div className="dashboard-field-panel">
+          <div className="dashboard-field-panel-heading">
+            <div>
+              <h3>Field Activity</h3>
+
+              <p>
+                Today's field workforce activity
+              </p>
+            </div>
+
+            <span>Today</span>
+          </div>
+
+          <div className="dashboard-field-activity-list">
+            <div>
+              <span>Check-ins</span>
+              <strong>0</strong>
+            </div>
+
+            <div>
+              <span>Visits Completed</span>
+              <strong>0</strong>
+            </div>
+
+            <div>
+              <span>Sales Logged</span>
+              <strong>0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="dashboard-field-panel">
+          <div className="dashboard-field-panel-heading">
+            <div>
+              <h3>GPS Status</h3>
+
+              <p>
+                Location sharing overview
+              </p>
+            </div>
+
+            <span>GPS</span>
+          </div>
+
+          <div className="dashboard-gps-empty">
+            <div className="dashboard-gps-icon">
+              GPS
+            </div>
+
+            <div>
+              <strong>No active tracking</strong>
+
+              <p>
+                GPS tracking data will appear here when field
+                employees are active.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -2753,6 +2894,270 @@ const dashboardStyles = `
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  /* Field operations */
+
+  .dashboard-field-operations {
+    margin-top: 18px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+
+  .dashboard-field-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  .dashboard-field-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dashboard-field-title-row h2 {
+    margin: 0;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 800;
+  }
+
+  .dashboard-field-title-row p {
+    margin: 0;
+  }
+
+  .dashboard-field-heading > div > p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .dashboard-field-badge,
+  .dashboard-field-status {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 5px;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .dashboard-field-badge {
+    padding: 3px 7px;
+    background: #eff6ff;
+    color: #2563eb;
+  }
+
+  .dashboard-field-status {
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--success);
+    white-space: nowrap;
+  }
+
+  .dashboard-field-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .dashboard-field-kpi {
+    min-width: 0;
+    padding: 13px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  .dashboard-field-kpi-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .dashboard-field-kpi-top span {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-field-kpi-top b {
+    display: grid;
+    place-items: center;
+    min-width: 34px;
+    height: 24px;
+    padding: 0 5px;
+    border-radius: 6px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 7px;
+    font-weight: 850;
+  }
+
+  .dashboard-field-kpi > strong {
+    display: block;
+    margin-top: 12px;
+    color: var(--text);
+    font-size: 23px;
+    line-height: 1;
+    font-weight: 850;
+  }
+
+  .dashboard-field-kpi > small {
+    display: block;
+    margin-top: 7px;
+    color: var(--muted);
+    font-size: 8px;
+    line-height: 1.4;
+  }
+
+  .dashboard-field-panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    margin-top: 9px;
+  }
+
+  .dashboard-field-panel {
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  .dashboard-field-panel-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .dashboard-field-panel-heading h3 {
+    margin: 0;
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 750;
+  }
+
+  .dashboard-field-panel-heading p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 8px;
+  }
+
+  .dashboard-field-panel-heading > span {
+    padding: 3px 6px;
+    border-radius: 5px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 7px;
+    font-weight: 800;
+  }
+
+  .dashboard-field-activity-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .dashboard-field-activity-list > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 9px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--card);
+  }
+
+  .dashboard-field-activity-list span {
+    color: var(--muted);
+    font-size: 8px;
+  }
+
+  .dashboard-field-activity-list strong {
+    color: var(--text);
+    font-size: 11px;
+  }
+
+  .dashboard-gps-empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 72px;
+    padding: 8px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: var(--card);
+  }
+
+  .dashboard-gps-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: var(--accent-soft);
+    color: var(--accent-2);
+    font-size: 7px;
+    font-weight: 850;
+  }
+
+  .dashboard-gps-empty strong {
+    color: var(--text);
+    font-size: 10px;
+  }
+
+  .dashboard-gps-empty p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 8px;
+    line-height: 1.45;
+  }
+
+  @media (max-width: 900px) {
+    .dashboard-field-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-field-panel-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .dashboard-field-operations {
+      padding: 14px;
+    }
+
+    .dashboard-field-heading {
+      flex-direction: column;
+    }
+
+    .dashboard-field-kpi-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-field-activity-list {
+      grid-template-columns: 1fr;
+    }
   }
 
   .dashboard-bottom-grid {
