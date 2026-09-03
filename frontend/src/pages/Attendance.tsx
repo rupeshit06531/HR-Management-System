@@ -186,26 +186,24 @@ function Attendance() {
     }
   }, [records])
 
-    const todayAttendance = useMemo(() => {
+  const todayAttendance = useMemo(() => {
     const today =
       new Date()
         .toISOString()
         .split("T")[0]
 
-    return records.find(
-      (record) => record.date === today,
-    ) ?? null
+    return (
+      records.find(
+        (record) => record.date === today,
+      ) ?? null
+    )
   }, [records])
 
   const hasPunchedIn =
-    Boolean(
-      todayAttendance?.check_in,
-    )
+    Boolean(todayAttendance?.check_in)
 
   const hasPunchedOut =
-    Boolean(
-      todayAttendance?.check_out,
-    )
+    Boolean(todayAttendance?.check_out)
 
   const handleInputChange = (
     event: ChangeEvent<
@@ -824,41 +822,32 @@ function Attendance() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background:
-            "linear-gradient(135deg, #fff7ed 0%, #f8fafc 50%, #eef2ff 100%)",
+          background: "#f8fafc",
           color: "#0f172a",
         }}
       >
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
             alignItems: "center",
-            gap: "14px",
+            gap: "10px",
+            color: "#64748b",
+            fontSize: "13px",
+            fontWeight: 700,
           }}
         >
-          <div
+          <span
             style={{
-              width: "42px",
-              height: "42px",
+              width: "18px",
+              height: "18px",
               borderRadius: "50%",
-              border: "4px solid #fed7aa",
+              border: "2px solid #fed7aa",
               borderTopColor: "#f97316",
               animation:
                 "attendanceSpin 0.8s linear infinite",
             }}
           />
-
-          <p
-            style={{
-              margin: 0,
-              color: "#64748b",
-              fontSize: "14px",
-              fontWeight: 600,
-            }}
-          >
-            Loading attendance...
-          </p>
+          Loading attendance...
         </div>
 
         <style>
@@ -874,13 +863,50 @@ function Attendance() {
     )
   }
 
+  const summaryCards = [
+    {
+      label: "Total Records",
+      value: summary.total,
+      icon: "T",
+      iconBackground: "#fff7ed",
+      iconColor: "#ea580c",
+    },
+    {
+      label: "Present",
+      value: summary.present,
+      icon: "P",
+      iconBackground: "#f0fdf4",
+      iconColor: "#16a34a",
+    },
+    {
+      label: "Late",
+      value: summary.late,
+      icon: "L",
+      iconBackground: "#fffbeb",
+      iconColor: "#d97706",
+    },
+    {
+      label: "Absent",
+      value: summary.absent,
+      icon: "A",
+      iconBackground: "#fff1f2",
+      iconColor: "#dc2626",
+    },
+    {
+      label: "Half Day",
+      value: summary.halfDay,
+      icon: "H",
+      iconBackground: "#eff6ff",
+      iconColor: "#2563eb",
+    },
+  ]
+
   return (
     <main
       style={{
         minHeight: "100vh",
-        padding: "28px",
-        background:
-          "linear-gradient(135deg, #fffaf5 0%, #f8fafc 48%, #eef2ff 100%)",
+        padding: "16px",
+        background: "#f8fafc",
         color: "#0f172a",
       }}
     >
@@ -891,36 +917,39 @@ function Attendance() {
           margin: "0 auto",
         }}
       >
-        {/* PAGE HEADER */}
         <header
           style={{
             display: "flex",
-            alignItems: "flex-start",
+            alignItems: "center",
             justifyContent: "space-between",
-            gap: "20px",
-            marginBottom: "24px",
+            gap: "12px",
+            padding: "0 0 14px",
+            borderBottom:
+              "1px solid #e2e8f0",
             flexWrap: "wrap",
           }}
         >
-          <div>
+          <div
+            style={{
+              minWidth: 0,
+            }}
+          >
             <div
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "8px",
-                padding: "6px 10px",
-                borderRadius: "999px",
-                backgroundColor: "#fff1e6",
-                color: "#c2410c",
-                fontSize: "12px",
-                fontWeight: 700,
-                marginBottom: "10px",
+                gap: "7px",
+                marginBottom: "5px",
+                color: "#ea580c",
+                fontSize: "10px",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
               }}
             >
               <span
                 style={{
-                  width: "7px",
-                  height: "7px",
+                  width: "6px",
+                  height: "6px",
                   borderRadius: "50%",
                   backgroundColor: "#f97316",
                 }}
@@ -931,10 +960,10 @@ function Attendance() {
             <h1
               style={{
                 margin: 0,
-                color: "#0f172a",
-                fontSize: "32px",
+                fontSize: "23px",
+                lineHeight: 1.2,
                 fontWeight: 800,
-                letterSpacing: "-0.8px",
+                letterSpacing: "-0.4px",
               }}
             >
               Attendance Management
@@ -942,14 +971,13 @@ function Attendance() {
 
             <p
               style={{
-                margin:
-                  "8px 0 0",
+                margin: "4px 0 0",
                 color: "#64748b",
-                fontSize: "15px",
+                fontSize: "12px",
               }}
             >
               {canManageAttendance
-                ? "Monitor, manage and maintain employee attendance records."
+                ? "Monitor and manage employee attendance."
                 : "Track and review your attendance activity."}
             </p>
           </div>
@@ -958,7 +986,7 @@ function Attendance() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "7px",
               flexWrap: "wrap",
             }}
           >
@@ -968,20 +996,17 @@ function Attendance() {
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "8px",
-                    minHeight: "42px",
-                    padding: "0 14px",
+                    justifyContent: "center",
+                    minHeight: "34px",
+                    padding: "0 11px",
                     border:
                       "1px solid #fed7aa",
-                    borderRadius: "9px",
-                    backgroundColor:
-                      "#ffffff",
-                    color: "#9a3412",
-                    fontSize: "13px",
-                    fontWeight: 700,
+                    borderRadius: "7px",
+                    backgroundColor: "#ffffff",
+                    color: "#c2410c",
+                    fontSize: "11px",
+                    fontWeight: 800,
                     cursor: "pointer",
-                    boxShadow:
-                      "0 1px 2px rgba(15, 23, 42, 0.04)",
                   }}
                 >
                   <input
@@ -993,23 +1018,12 @@ function Attendance() {
                     }
                     disabled={
                       isPunchingIn ||
-                      isPunchingOut ||
-                      !selfieFile ||
-                      hasPunchedIn
+                      isPunchingOut
                     }
                     style={{
                       display: "none",
                     }}
                   />
-
-                  <span
-                    style={{
-                      fontSize: "17px",
-                    }}
-                  >
-                    📷
-                  </span>
-
                   {selfieFile
                     ? "Selfie Selected"
                     : "Take Selfie"}
@@ -1022,23 +1036,25 @@ function Attendance() {
                   }
                   disabled={
                     isPunchingIn ||
-                    !selfieFile
+                    isPunchingOut ||
+                    !selfieFile ||
+                    hasPunchedIn
                   }
                   style={{
-                    minHeight: "42px",
-                    padding: "0 17px",
+                    minHeight: "34px",
+                    padding: "0 12px",
                     border: "none",
-                    borderRadius: "9px",
+                    borderRadius: "7px",
                     background:
                       isPunchingIn ||
                       isPunchingOut ||
                       !selfieFile ||
                       hasPunchedIn
                         ? "#cbd5e1"
-                        : "linear-gradient(135deg, #f97316, #ea580c)",
+                        : "#ea580c",
                     color: "#ffffff",
-                    fontSize: "13px",
-                    fontWeight: 700,
+                    fontSize: "11px",
+                    fontWeight: 800,
                     cursor:
                       isPunchingIn ||
                       isPunchingOut ||
@@ -1046,11 +1062,6 @@ function Attendance() {
                       hasPunchedIn
                         ? "not-allowed"
                         : "pointer",
-                    boxShadow:
-                      isPunchingIn ||
-                      !selfieFile
-                        ? "none"
-                        : "0 5px 14px rgba(234, 88, 12, 0.24)",
                   }}
                 >
                   {isPunchingIn
@@ -1059,6 +1070,7 @@ function Attendance() {
                       ? "Punched In"
                       : "Punch In"}
                 </button>
+
                 <button
                   type="button"
                   onClick={() =>
@@ -1072,10 +1084,11 @@ function Attendance() {
                     hasPunchedOut
                   }
                   style={{
-                    minHeight: "42px",
-                    padding: "0 17px",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "9px",
+                    minHeight: "34px",
+                    padding: "0 12px",
+                    border:
+                      "1px solid #cbd5e1",
+                    borderRadius: "7px",
                     backgroundColor:
                       isPunchingOut ||
                       isPunchingIn ||
@@ -1092,8 +1105,8 @@ function Attendance() {
                       hasPunchedOut
                         ? "#94a3b8"
                         : "#334155",
-                    fontSize: "13px",
-                    fontWeight: 700,
+                    fontSize: "11px",
+                    fontWeight: 800,
                     cursor:
                       isPunchingOut ||
                       isPunchingIn ||
@@ -1116,22 +1129,17 @@ function Attendance() {
             {canManageAttendance && (
               <button
                 type="button"
-                onClick={
-                  handleAddClick
-                }
+                onClick={handleAddClick}
                 style={{
-                  minHeight: "42px",
-                  padding: "0 17px",
+                  minHeight: "34px",
+                  padding: "0 12px",
                   border: "none",
-                  borderRadius: "9px",
-                  background:
-                    "linear-gradient(135deg, #f97316, #ea580c)",
+                  borderRadius: "7px",
+                  background: "#ea580c",
                   color: "#ffffff",
-                  fontSize: "13px",
-                  fontWeight: 700,
+                  fontSize: "11px",
+                  fontWeight: 800,
                   cursor: "pointer",
-                  boxShadow:
-                    "0 5px 14px rgba(234, 88, 12, 0.22)",
                 }}
               >
                 + Add Attendance
@@ -1144,16 +1152,15 @@ function Attendance() {
                 navigate("/dashboard")
               }
               style={{
-                minHeight: "42px",
-                padding: "0 15px",
+                minHeight: "34px",
+                padding: "0 11px",
                 border:
                   "1px solid #cbd5e1",
-                borderRadius: "9px",
-                backgroundColor:
-                  "#ffffff",
+                borderRadius: "7px",
+                backgroundColor: "#ffffff",
                 color: "#334155",
-                fontSize: "13px",
-                fontWeight: 700,
+                fontSize: "11px",
+                fontWeight: 800,
                 cursor: "pointer",
               }}
             >
@@ -1162,179 +1169,64 @@ function Attendance() {
           </div>
         </header>
 
-        {/* ALERTS */}
-        {error && (
+        {(error || success) && (
           <section
             style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "12px",
-              padding: "14px 16px",
-              marginBottom: "20px",
-              border:
-                "1px solid #fecaca",
-              borderRadius: "10px",
-              backgroundColor: "#fff1f2",
-              color: "#991b1b",
-              boxShadow:
-                "0 2px 8px rgba(127, 29, 29, 0.05)",
+              marginTop: "10px",
+              padding: "9px 12px",
+              borderRadius: "7px",
+              border: error
+                ? "1px solid #fecaca"
+                : "1px solid #bbf7d0",
+              backgroundColor: error
+                ? "#fff1f2"
+                : "#f0fdf4",
+              color: error
+                ? "#991b1b"
+                : "#166534",
+              fontSize: "11px",
+              fontWeight: 700,
             }}
           >
-            <span
-              style={{
-                fontSize: "18px",
-              }}
-            >
-              !
-            </span>
-
-            <div>
-              <strong
-                style={{
-                  display: "block",
-                  marginBottom: "2px",
-                  fontSize: "13px",
-                }}
-              >
-                Attention
-              </strong>
-
-              <span
-                style={{
-                  fontSize: "13px",
-                }}
-              >
-                {error}
-              </span>
-            </div>
+            {error || success}
           </section>
         )}
 
-        {success && (
-          <section
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "12px",
-              padding: "14px 16px",
-              marginBottom: "20px",
-              border:
-                "1px solid #bbf7d0",
-              borderRadius: "10px",
-              backgroundColor: "#f0fdf4",
-              color: "#166534",
-              boxShadow:
-                "0 2px 8px rgba(22, 101, 52, 0.05)",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "18px",
-              }}
-            >
-              ✓
-            </span>
-
-            <div>
-              <strong
-                style={{
-                  display: "block",
-                  marginBottom: "2px",
-                  fontSize: "13px",
-                }}
-              >
-                Success
-              </strong>
-
-              <span
-                style={{
-                  fontSize: "13px",
-                }}
-              >
-                {success}
-              </span>
-            </div>
-          </section>
-        )}
-
-        {/* SUMMARY CARDS */}
         <section
           style={{
             display: "grid",
             gridTemplateColumns:
-              "repeat(auto-fit, minmax(190px, 1fr))",
-            gap: "14px",
-            marginBottom: "22px",
+              "repeat(auto-fit, minmax(150px, 1fr))",
+            gap: "9px",
+            marginTop: "10px",
           }}
         >
-          {[
-            {
-              label: "Total Records",
-              value: summary.total,
-              icon: "▦",
-              background: "#fff7ed",
-              iconBackground: "#ffedd5",
-              iconColor: "#ea580c",
-            },
-            {
-              label: "Present",
-              value: summary.present,
-              icon: "✓",
-              background: "#f0fdf4",
-              iconBackground: "#dcfce7",
-              iconColor: "#16a34a",
-            },
-            {
-              label: "Late",
-              value: summary.late,
-              icon: "◷",
-              background: "#fffbeb",
-              iconBackground: "#fef3c7",
-              iconColor: "#d97706",
-            },
-            {
-              label: "Absent",
-              value: summary.absent,
-              icon: "×",
-              background: "#fff1f2",
-              iconBackground: "#ffe4e6",
-              iconColor: "#dc2626",
-            },
-            {
-              label: "Half Day",
-              value: summary.halfDay,
-              icon: "◐",
-              background: "#eff6ff",
-              iconBackground: "#dbeafe",
-              iconColor: "#2563eb",
-            },
-          ].map((card) => (
+          {summaryCards.map((card) => (
             <article
               key={card.label}
               style={{
-                padding: "18px",
-                border:
-                  "1px solid rgba(226, 232, 240, 0.9)",
-                borderRadius: "14px",
-                backgroundColor: "#ffffff",
-                boxShadow:
-                  "0 4px 14px rgba(15, 23, 42, 0.05)",
                 display: "flex",
                 alignItems: "center",
-                justifyContent:
-                  "space-between",
-                gap: "14px",
+                justifyContent: "space-between",
+                gap: "9px",
+                minHeight: "68px",
+                padding: "10px 12px",
+                border:
+                  "1px solid #e2e8f0",
+                borderRadius: "9px",
+                backgroundColor: "#ffffff",
+                boxShadow:
+                  "0 2px 8px rgba(15, 23, 42, 0.035)",
               }}
             >
               <div>
                 <p
                   style={{
-                    margin: "0 0 6px",
+                    margin: "0 0 4px",
                     color: "#64748b",
-                    fontSize: "12px",
-                    fontWeight: 700,
-                    textTransform:
-                      "uppercase",
+                    fontSize: "9px",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
                     letterSpacing: "0.05em",
                   }}
                 >
@@ -1344,7 +1236,7 @@ function Attendance() {
                 <strong
                   style={{
                     color: "#0f172a",
-                    fontSize: "26px",
+                    fontSize: "21px",
                     lineHeight: 1,
                   }}
                 >
@@ -1354,17 +1246,18 @@ function Attendance() {
 
               <div
                 style={{
-                  width: "44px",
-                  height: "44px",
+                  width: "30px",
+                  height: "30px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  borderRadius: "12px",
+                  flexShrink: 0,
+                  borderRadius: "8px",
                   backgroundColor:
                     card.iconBackground,
                   color: card.iconColor,
-                  fontSize: "20px",
-                  fontWeight: 800,
+                  fontSize: "10px",
+                  fontWeight: 900,
                 }}
               >
                 {card.icon}
@@ -1373,122 +1266,104 @@ function Attendance() {
           ))}
         </section>
 
-        {/* EMPLOYEE PUNCH CARD */}
         {user?.role === "EMPLOYEE" && (
           <section
             style={{
-              marginBottom: "22px",
-              borderRadius: "16px",
-              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              marginTop: "10px",
+              padding: "13px 15px",
+              borderRadius: "10px",
               background:
-                "linear-gradient(135deg, #172554 0%, #1e3a8a 55%, #c2410c 150%)",
+                "linear-gradient(135deg, #172554 0%, #1e3a8a 58%, #c2410c 150%)",
               boxShadow:
-                "0 10px 30px rgba(15, 23, 42, 0.14)",
+                "0 5px 18px rgba(15, 23, 42, 0.10)",
+              flexWrap: "wrap",
             }}
           >
+            <div>
+              <div
+                style={{
+                  marginBottom: "3px",
+                  color: "#fed7aa",
+                  fontSize: "9px",
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                }}
+              >
+                QUICK ATTENDANCE
+              </div>
+
+              <h2
+                style={{
+                  margin: 0,
+                  color: "#ffffff",
+                  fontSize: "15px",
+                  fontWeight: 800,
+                }}
+              >
+                {hasPunchedOut
+                  ? "Workday completed"
+                  : hasPunchedIn
+                    ? "Workday in progress"
+                    : "Start your workday"}
+              </h2>
+
+              <p
+                style={{
+                  margin: "3px 0 0",
+                  color: "#cbd5e1",
+                  fontSize: "10px",
+                }}
+              >
+                Selfie + GPS verification
+                required for secure attendance.
+              </p>
+            </div>
+
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent:
-                  "space-between",
-                gap: "24px",
-                padding: "24px",
-                flexWrap: "wrap",
+                gap: "6px",
+                padding: "7px 9px",
+                border:
+                  "1px solid rgba(255,255,255,0.15)",
+                borderRadius: "7px",
+                backgroundColor:
+                  "rgba(255,255,255,0.08)",
+                color: "#ffffff",
+                fontSize: "9px",
+                fontWeight: 800,
+                whiteSpace: "nowrap",
               }}
             >
-              <div
+              <span
                 style={{
-                  maxWidth: "650px",
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  backgroundColor: "#fb923c",
                 }}
-              >
-                <span
-                  style={{
-                    display: "inline-block",
-                    marginBottom: "8px",
-                    color: "#fed7aa",
-                    fontSize: "11px",
-                    fontWeight: 800,
-                    letterSpacing:
-                      "0.08em",
-                  }}
-                >
-                  QUICK ATTENDANCE
-                </span>
-
-                <h2
-                  style={{
-                    margin:
-                      "0 0 8px",
-                    color: "#ffffff",
-                    fontSize: "22px",
-                    fontWeight: 800,
-                  }}
-                >
-                  Start your workday
-                  securely
-                </h2>
-
-                <p
-                  style={{
-                    margin: 0,
-                    color: "#cbd5e1",
-                    fontSize: "13px",
-                    lineHeight: 1.7,
-                  }}
-                >
-                  Capture your selfie and
-                  allow location access to
-                  record a verified punch-in.
-                </p>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  padding: "12px 14px",
-                  border:
-                    "1px solid rgba(255,255,255,0.16)",
-                  borderRadius: "12px",
-                  backgroundColor:
-                    "rgba(255,255,255,0.08)",
-                  color: "#ffffff",
-                  fontSize: "12px",
-                  fontWeight: 700,
-                }}
-              >
-                <span
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    backgroundColor:
-                      "#fb923c",
-                    boxShadow:
-                      "0 0 0 4px rgba(251,146,60,0.16)",
-                  }}
-                />
-
-                GPS + Selfie Verification
-              </div>
+              />
+              GPS + Selfie
             </div>
           </section>
         )}
 
-        {/* FORM */}
         {showForm &&
           canManageAttendance && (
             <section
               style={{
-                marginBottom: "22px",
+                marginTop: "10px",
                 border:
                   "1px solid #e2e8f0",
-                borderRadius: "16px",
+                borderRadius: "10px",
                 backgroundColor: "#ffffff",
                 boxShadow:
-                  "0 6px 20px rgba(15, 23, 42, 0.07)",
+                  "0 3px 12px rgba(15, 23, 42, 0.05)",
                 overflow: "hidden",
               }}
             >
@@ -1496,36 +1371,33 @@ function Attendance() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent:
-                    "space-between",
-                  gap: "16px",
-                  padding: "20px 22px",
+                  justifyContent: "space-between",
+                  gap: "10px",
+                  padding: "11px 14px",
                   borderBottom:
                     "1px solid #eef2f7",
-                  background:
-                    "linear-gradient(90deg, #fff7ed, #ffffff)",
+                  backgroundColor: "#fffaf5",
                 }}
               >
                 <div>
-                  <p
+                  <div
                     style={{
-                      margin:
-                        "0 0 4px",
+                      marginBottom: "2px",
                       color: "#ea580c",
-                      fontSize: "11px",
-                      fontWeight: 800,
-                      letterSpacing:
-                        "0.08em",
+                      fontSize: "9px",
+                      fontWeight: 900,
+                      letterSpacing: "0.08em",
                     }}
                   >
                     ATTENDANCE ENTRY
-                  </p>
+                  </div>
 
                   <h2
                     style={{
                       margin: 0,
                       color: "#0f172a",
-                      fontSize: "20px",
+                      fontSize: "15px",
+                      fontWeight: 800,
                     }}
                   >
                     {editingId !== null
@@ -1538,16 +1410,15 @@ function Attendance() {
                   type="button"
                   onClick={resetForm}
                   style={{
-                    padding:
-                      "8px 13px",
+                    minHeight: "28px",
+                    padding: "0 9px",
                     border:
                       "1px solid #cbd5e1",
-                    borderRadius: "8px",
-                    backgroundColor:
-                      "#ffffff",
+                    borderRadius: "6px",
+                    backgroundColor: "#ffffff",
                     color: "#475569",
-                    fontSize: "12px",
-                    fontWeight: 700,
+                    fontSize: "10px",
+                    fontWeight: 800,
                     cursor: "pointer",
                   }}
                 >
@@ -1558,267 +1429,251 @@ function Attendance() {
               <form
                 onSubmit={handleSubmit}
                 style={{
-                  padding: "22px",
+                  padding: "13px 14px",
                 }}
               >
                 <div
                   style={{
                     display: "grid",
                     gridTemplateColumns:
-                      "repeat(auto-fit, minmax(220px, 1fr))",
-                    gap: "18px",
+                      "repeat(auto-fit, minmax(180px, 1fr))",
+                    gap: "10px",
                   }}
                 >
-                  {[
-                    {
-                      label: "Employee",
-                      name: "employee",
-                      content: (
-                        <select
-                          name="employee"
-                          value={
-                            form.employee ||
-                            ""
-                          }
-                          onChange={
-                            handleInputChange
-                          }
-                          required
-                          style={{
-                            width: "100%",
-                            height: "44px",
-                            padding:
-                              "0 12px",
-                            border:
-                              "1px solid #cbd5e1",
-                            borderRadius:
-                              "9px",
-                            backgroundColor:
-                              "#ffffff",
-                            color:
-                              "#0f172a",
-                            outline:
-                              "none",
-                          }}
-                        >
-                          <option value="">
-                            Select employee
-                          </option>
+                  <label
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "5px",
+                      color: "#334155",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                    }}
+                  >
+                    Employee
 
-                          {employees.map(
-                            (employee) => (
-                              <option
-                                key={
-                                  employee.id
-                                }
-                                value={
-                                  employee.id
-                                }
-                              >
-                                {
-                                  employee.employee_id
-                                }
-                                {" — "}
-                                {employee.full_name ||
-                                  "Employee"}
-                              </option>
-                            ),
-                          )}
-                        </select>
-                      ),
-                    },
-                    {
-                      label: "Date",
-                      name: "date",
-                      content: (
-                        <input
-                          type="date"
-                          name="date"
-                          value={
-                            form.date
-                          }
-                          onChange={
-                            handleInputChange
-                          }
-                          required
-                          style={{
-                            width: "100%",
-                            height: "44px",
-                            padding:
-                              "0 12px",
-                            border:
-                              "1px solid #cbd5e1",
-                            borderRadius:
-                              "9px",
-                            backgroundColor:
-                              "#ffffff",
-                            color:
-                              "#0f172a",
-                            outline:
-                              "none",
-                          }}
-                        />
-                      ),
-                    },
-                    {
-                      label: "Check In",
-                      name: "check_in",
-                      content: (
-                        <input
-                          type="time"
-                          name="check_in"
-                          value={
-                            form.check_in ??
-                            ""
-                          }
-                          onChange={
-                            handleInputChange
-                          }
-                          disabled={
-                            form.status ===
-                            "absent"
-                          }
-                          style={{
-                            width: "100%",
-                            height: "44px",
-                            padding:
-                              "0 12px",
-                            border:
-                              "1px solid #cbd5e1",
-                            borderRadius:
-                              "9px",
-                            backgroundColor:
-                              form.status ===
-                              "absent"
-                                ? "#f1f5f9"
-                                : "#ffffff",
-                            color:
-                              "#0f172a",
-                            outline:
-                              "none",
-                          }}
-                        />
-                      ),
-                    },
-                    {
-                      label: "Check Out",
-                      name: "check_out",
-                      content: (
-                        <input
-                          type="time"
-                          name="check_out"
-                          value={
-                            form.check_out ??
-                            ""
-                          }
-                          onChange={
-                            handleInputChange
-                          }
-                          disabled={
-                            form.status ===
-                            "absent"
-                          }
-                          style={{
-                            width: "100%",
-                            height: "44px",
-                            padding:
-                              "0 12px",
-                            border:
-                              "1px solid #cbd5e1",
-                            borderRadius:
-                              "9px",
-                            backgroundColor:
-                              form.status ===
-                              "absent"
-                                ? "#f1f5f9"
-                                : "#ffffff",
-                            color:
-                              "#0f172a",
-                            outline:
-                              "none",
-                          }}
-                        />
-                      ),
-                    },
-                    {
-                      label: "Status",
-                      name: "status",
-                      content: (
-                        <select
-                          name="status"
-                          value={
-                            form.status
-                          }
-                          onChange={
-                            handleInputChange
-                          }
-                          required
-                          style={{
-                            width: "100%",
-                            height: "44px",
-                            padding:
-                              "0 12px",
-                            border:
-                              "1px solid #cbd5e1",
-                            borderRadius:
-                              "9px",
-                            backgroundColor:
-                              "#ffffff",
-                            color:
-                              "#0f172a",
-                            outline:
-                              "none",
-                          }}
-                        >
-                          {attendanceStatuses.map(
-                            (status) => (
-                              <option
-                                key={
-                                  status.value
-                                }
-                                value={
-                                  status.value
-                                }
-                              >
-                                {
-                                  status.label
-                                }
-                              </option>
-                            ),
-                          )}
-                        </select>
-                      ),
-                    },
-                  ].map((field) => (
-                    <label
-                      key={field.name}
+                    <select
+                      name="employee"
+                      value={
+                        form.employee || ""
+                      }
+                      onChange={
+                        handleInputChange
+                      }
+                      required
                       style={{
-                        display: "flex",
-                        flexDirection:
-                          "column",
-                        gap: "7px",
-                        color:
-                          "#334155",
-                        fontSize: "12px",
-                        fontWeight: 700,
+                        width: "100%",
+                        height: "35px",
+                        padding: "0 9px",
+                        border:
+                          "1px solid #cbd5e1",
+                        borderRadius: "6px",
+                        backgroundColor:
+                          "#ffffff",
+                        color: "#0f172a",
+                        fontSize: "11px",
+                        outline: "none",
                       }}
                     >
-                      {field.label}
-                      {field.content}
-                    </label>
-                  ))}
+                      <option value="">
+                        Select employee
+                      </option>
+
+                      {employees.map(
+                        (employee) => (
+                          <option
+                            key={employee.id}
+                            value={employee.id}
+                          >
+                            {employee.employee_id}
+                            {" — "}
+                            {employee.full_name ||
+                              "Employee"}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
 
                   <label
                     style={{
                       display: "flex",
-                      flexDirection:
-                        "column",
-                      gap: "7px",
+                      flexDirection: "column",
+                      gap: "5px",
                       color: "#334155",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      gridColumn:
-                        "1 / -1",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                    }}
+                  >
+                    Date
+
+                    <input
+                      type="date"
+                      name="date"
+                      value={form.date}
+                      onChange={
+                        handleInputChange
+                      }
+                      required
+                      style={{
+                        width: "100%",
+                        height: "35px",
+                        padding: "0 9px",
+                        border:
+                          "1px solid #cbd5e1",
+                        borderRadius: "6px",
+                        backgroundColor:
+                          "#ffffff",
+                        color: "#0f172a",
+                        fontSize: "11px",
+                        outline: "none",
+                      }}
+                    />
+                  </label>
+
+                  <label
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "5px",
+                      color: "#334155",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                    }}
+                  >
+                    Check In
+
+                    <input
+                      type="time"
+                      name="check_in"
+                      value={
+                        form.check_in ?? ""
+                      }
+                      onChange={
+                        handleInputChange
+                      }
+                      disabled={
+                        form.status ===
+                        "absent"
+                      }
+                      style={{
+                        width: "100%",
+                        height: "35px",
+                        padding: "0 9px",
+                        border:
+                          "1px solid #cbd5e1",
+                        borderRadius: "6px",
+                        backgroundColor:
+                          form.status ===
+                          "absent"
+                            ? "#f1f5f9"
+                            : "#ffffff",
+                        color: "#0f172a",
+                        fontSize: "11px",
+                        outline: "none",
+                      }}
+                    />
+                  </label>
+
+                  <label
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "5px",
+                      color: "#334155",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                    }}
+                  >
+                    Check Out
+
+                    <input
+                      type="time"
+                      name="check_out"
+                      value={
+                        form.check_out ?? ""
+                      }
+                      onChange={
+                        handleInputChange
+                      }
+                      disabled={
+                        form.status ===
+                        "absent"
+                      }
+                      style={{
+                        width: "100%",
+                        height: "35px",
+                        padding: "0 9px",
+                        border:
+                          "1px solid #cbd5e1",
+                        borderRadius: "6px",
+                        backgroundColor:
+                          form.status ===
+                          "absent"
+                            ? "#f1f5f9"
+                            : "#ffffff",
+                        color: "#0f172a",
+                        fontSize: "11px",
+                        outline: "none",
+                      }}
+                    />
+                  </label>
+
+                  <label
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "5px",
+                      color: "#334155",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                    }}
+                  >
+                    Status
+
+                    <select
+                      name="status"
+                      value={form.status}
+                      onChange={
+                        handleInputChange
+                      }
+                      required
+                      style={{
+                        width: "100%",
+                        height: "35px",
+                        padding: "0 9px",
+                        border:
+                          "1px solid #cbd5e1",
+                        borderRadius: "6px",
+                        backgroundColor:
+                          "#ffffff",
+                        color: "#0f172a",
+                        fontSize: "11px",
+                        outline: "none",
+                      }}
+                    >
+                      {attendanceStatuses.map(
+                        (status) => (
+                          <option
+                            key={status.value}
+                            value={status.value}
+                          >
+                            {status.label}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+
+                  <label
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "5px",
+                      color: "#334155",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      gridColumn: "1 / -1",
                     }}
                   >
                     Remarks
@@ -1831,17 +1686,17 @@ function Attendance() {
                       onChange={
                         handleInputChange
                       }
-                      rows={3}
+                      rows={2}
                       placeholder="Add optional remarks..."
                       style={{
                         width: "100%",
-                        padding: "12px",
+                        padding: "8px 9px",
                         border:
                           "1px solid #cbd5e1",
-                        borderRadius: "9px",
+                        borderRadius: "6px",
                         resize: "vertical",
-                        color:
-                          "#0f172a",
+                        color: "#0f172a",
+                        fontSize: "11px",
                         outline: "none",
                       }}
                     />
@@ -1851,9 +1706,9 @@ function Attendance() {
                 <div
                   style={{
                     display: "flex",
-                    gap: "10px",
-                    marginTop: "22px",
-                    paddingTop: "18px",
+                    gap: "7px",
+                    marginTop: "11px",
+                    paddingTop: "10px",
                     borderTop:
                       "1px solid #eef2f7",
                   }}
@@ -1864,18 +1719,17 @@ function Attendance() {
                       isSubmitting
                     }
                     style={{
-                      minHeight: "42px",
-                      padding:
-                        "0 18px",
+                      minHeight: "32px",
+                      padding: "0 12px",
                       border: "none",
-                      borderRadius: "9px",
+                      borderRadius: "6px",
                       background:
                         isSubmitting
                           ? "#cbd5e1"
-                          : "linear-gradient(135deg, #f97316, #ea580c)",
+                          : "#ea580c",
                       color: "#ffffff",
-                      fontSize: "13px",
-                      fontWeight: 700,
+                      fontSize: "10px",
+                      fontWeight: 800,
                       cursor:
                         isSubmitting
                           ? "not-allowed"
@@ -1884,32 +1738,28 @@ function Attendance() {
                   >
                     {isSubmitting
                       ? "Saving..."
-                      : editingId !==
-                          null
+                      : editingId !== null
                         ? "Update Attendance"
                         : "Save Attendance"}
                   </button>
 
                   <button
                     type="button"
-                    onClick={
-                      resetForm
-                    }
+                    onClick={resetForm}
                     disabled={
                       isSubmitting
                     }
                     style={{
-                      minHeight: "42px",
-                      padding:
-                        "0 17px",
+                      minHeight: "32px",
+                      padding: "0 11px",
                       border:
                         "1px solid #cbd5e1",
-                      borderRadius: "9px",
+                      borderRadius: "6px",
                       backgroundColor:
                         "#ffffff",
                       color: "#475569",
-                      fontSize: "13px",
-                      fontWeight: 700,
+                      fontSize: "10px",
+                      fontWeight: 800,
                       cursor:
                         isSubmitting
                           ? "not-allowed"
@@ -1923,15 +1773,15 @@ function Attendance() {
             </section>
           )}
 
-        {/* RECORDS */}
         <section
           style={{
+            marginTop: "10px",
             border:
               "1px solid #e2e8f0",
-            borderRadius: "16px",
+            borderRadius: "10px",
             backgroundColor: "#ffffff",
             boxShadow:
-              "0 6px 20px rgba(15, 23, 42, 0.06)",
+              "0 3px 12px rgba(15, 23, 42, 0.045)",
             overflow: "hidden",
           }}
         >
@@ -1939,10 +1789,9 @@ function Attendance() {
             style={{
               display: "flex",
               alignItems: "center",
-              justifyContent:
-                "space-between",
-              gap: "16px",
-              padding: "20px 22px",
+              justifyContent: "space-between",
+              gap: "10px",
+              padding: "11px 14px",
               borderBottom:
                 "1px solid #eef2f7",
               flexWrap: "wrap",
@@ -1953,7 +1802,7 @@ function Attendance() {
                 style={{
                   margin: 0,
                   color: "#0f172a",
-                  fontSize: "19px",
+                  fontSize: "14px",
                   fontWeight: 800,
                 }}
               >
@@ -1962,10 +1811,9 @@ function Attendance() {
 
               <p
                 style={{
-                  margin:
-                    "5px 0 0",
-                  color: "#64748b",
-                  fontSize: "12px",
+                  margin: "3px 0 0",
+                  color: "#94a3b8",
+                  fontSize: "10px",
                 }}
               >
                 Employee attendance history
@@ -1976,15 +1824,13 @@ function Attendance() {
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "8px",
-                padding:
-                  "7px 11px",
+                minHeight: "24px",
+                padding: "0 8px",
                 borderRadius: "999px",
-                backgroundColor:
-                  "#fff7ed",
+                backgroundColor: "#fff7ed",
                 color: "#c2410c",
-                fontSize: "12px",
-                fontWeight: 800,
+                fontSize: "9px",
+                fontWeight: 900,
               }}
             >
               {records.length} Records
@@ -1994,36 +1840,34 @@ function Attendance() {
           {records.length === 0 ? (
             <div
               style={{
-                padding: "70px 20px",
+                padding: "42px 18px",
                 textAlign: "center",
               }}
             >
               <div
                 style={{
-                  width: "60px",
-                  height: "60px",
-                  margin:
-                    "0 auto 14px",
+                  width: "40px",
+                  height: "40px",
+                  margin: "0 auto 9px",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent:
-                    "center",
-                  borderRadius: "16px",
-                  backgroundColor:
-                    "#fff7ed",
+                  justifyContent: "center",
+                  borderRadius: "10px",
+                  backgroundColor: "#fff7ed",
                   color: "#ea580c",
-                  fontSize: "27px",
+                  fontSize: "13px",
+                  fontWeight: 900,
                 }}
               >
-                ▦
+                ATT
               </div>
 
               <h3
                 style={{
-                  margin:
-                    "0 0 6px",
+                  margin: "0 0 4px",
                   color: "#334155",
-                  fontSize: "16px",
+                  fontSize: "13px",
+                  fontWeight: 800,
                 }}
               >
                 No attendance records
@@ -2033,7 +1877,7 @@ function Attendance() {
                 style={{
                   margin: 0,
                   color: "#94a3b8",
-                  fontSize: "13px",
+                  fontSize: "10px",
                 }}
               >
                 Attendance records will
@@ -2052,8 +1896,8 @@ function Attendance() {
                   width: "100%",
                   minWidth:
                     canManageAttendance
-                      ? "1080px"
-                      : "850px",
+                      ? "1020px"
+                      : "800px",
                   borderCollapse:
                     "collapse",
                 }}
@@ -2077,19 +1921,17 @@ function Attendance() {
                         key={heading}
                         style={{
                           padding:
-                            "13px 15px",
-                          textAlign:
-                            "left",
+                            "9px 11px",
+                          textAlign: "left",
                           borderBottom:
                             "1px solid #e2e8f0",
                           backgroundColor:
                             "#f8fafc",
-                          color:
-                            "#64748b",
-                          fontSize: "11px",
-                          fontWeight: 800,
+                          color: "#64748b",
+                          fontSize: "9px",
+                          fontWeight: 900,
                           letterSpacing:
-                            "0.06em",
+                            "0.05em",
                           textTransform:
                             "uppercase",
                           whiteSpace:
@@ -2115,13 +1957,12 @@ function Attendance() {
                         <td
                           style={{
                             padding:
-                              "14px 15px",
+                              "10px 11px",
                             borderBottom:
                               "1px solid #f1f5f9",
-                            color:
-                              "#64748b",
-                            fontSize: "13px",
-                            fontWeight: 700,
+                            color: "#64748b",
+                            fontSize: "10px",
+                            fontWeight: 800,
                           }}
                         >
                           #{record.id}
@@ -2130,43 +1971,36 @@ function Attendance() {
                         <td
                           style={{
                             padding:
-                              "14px 15px",
+                              "10px 11px",
                             borderBottom:
                               "1px solid #f1f5f9",
                           }}
                         >
                           <div
                             style={{
-                              display:
-                                "flex",
+                              display: "flex",
                               alignItems:
                                 "center",
-                              gap: "10px",
+                              gap: "7px",
                             }}
                           >
                             <div
                               style={{
-                                width:
-                                  "34px",
-                                height:
-                                  "34px",
+                                width: "27px",
+                                height: "27px",
                                 flexShrink: 0,
-                                display:
-                                  "flex",
+                                display: "flex",
                                 alignItems:
                                   "center",
                                 justifyContent:
                                   "center",
                                 borderRadius:
-                                  "10px",
+                                  "7px",
                                 background:
                                   "linear-gradient(135deg, #fff7ed, #ffedd5)",
-                                color:
-                                  "#c2410c",
-                                fontSize:
-                                  "12px",
-                                fontWeight:
-                                  800,
+                                color: "#c2410c",
+                                fontSize: "9px",
+                                fontWeight: 900,
                               }}
                             >
                               {(
@@ -2179,12 +2013,9 @@ function Attendance() {
 
                             <span
                               style={{
-                                color:
-                                  "#0f172a",
-                                fontSize:
-                                  "13px",
-                                fontWeight:
-                                  700,
+                                color: "#0f172a",
+                                fontSize: "10px",
+                                fontWeight: 800,
                               }}
                             >
                               {record.employee_name ||
@@ -2196,13 +2027,12 @@ function Attendance() {
                         <td
                           style={{
                             padding:
-                              "14px 15px",
+                              "10px 11px",
                             borderBottom:
                               "1px solid #f1f5f9",
-                            color:
-                              "#475569",
-                            fontSize: "13px",
-                            fontWeight: 600,
+                            color: "#475569",
+                            fontSize: "10px",
+                            fontWeight: 700,
                           }}
                         >
                           {record.employee_id ||
@@ -2212,12 +2042,11 @@ function Attendance() {
                         <td
                           style={{
                             padding:
-                              "14px 15px",
+                              "10px 11px",
                             borderBottom:
                               "1px solid #f1f5f9",
-                            color:
-                              "#475569",
-                            fontSize: "13px",
+                            color: "#475569",
+                            fontSize: "10px",
                             whiteSpace:
                               "nowrap",
                           }}
@@ -2228,13 +2057,12 @@ function Attendance() {
                         <td
                           style={{
                             padding:
-                              "14px 15px",
+                              "10px 11px",
                             borderBottom:
                               "1px solid #f1f5f9",
-                            color:
-                              "#475569",
-                            fontSize: "13px",
-                            fontWeight: 600,
+                            color: "#475569",
+                            fontSize: "10px",
+                            fontWeight: 700,
                           }}
                         >
                           {record.check_in ||
@@ -2244,13 +2072,12 @@ function Attendance() {
                         <td
                           style={{
                             padding:
-                              "14px 15px",
+                              "10px 11px",
                             borderBottom:
                               "1px solid #f1f5f9",
-                            color:
-                              "#475569",
-                            fontSize: "13px",
-                            fontWeight: 600,
+                            color: "#475569",
+                            fontSize: "10px",
+                            fontWeight: 700,
                           }}
                         >
                           {record.check_out ||
@@ -2260,7 +2087,7 @@ function Attendance() {
                         <td
                           style={{
                             padding:
-                              "14px 15px",
+                              "10px 11px",
                             borderBottom:
                               "1px solid #f1f5f9",
                           }}
@@ -2271,9 +2098,9 @@ function Attendance() {
                                 "inline-flex",
                               alignItems:
                                 "center",
-                              gap: "6px",
+                              gap: "5px",
                               padding:
-                                "5px 9px",
+                                "4px 7px",
                               borderRadius:
                                 "999px",
                               backgroundColor:
@@ -2298,20 +2125,16 @@ function Attendance() {
                                         "late"
                                       ? "#b45309"
                                       : "#1d4ed8",
-                              fontSize:
-                                "11px",
-                              fontWeight:
-                                800,
+                              fontSize: "9px",
+                              fontWeight: 900,
                               whiteSpace:
                                 "nowrap",
                             }}
                           >
                             <span
                               style={{
-                                width:
-                                  "6px",
-                                height:
-                                  "6px",
+                                width: "5px",
+                                height: "5px",
                                 borderRadius:
                                   "50%",
                                 backgroundColor:
@@ -2328,14 +2151,12 @@ function Attendance() {
                         <td
                           style={{
                             padding:
-                              "14px 15px",
+                              "10px 11px",
                             borderBottom:
                               "1px solid #f1f5f9",
-                            maxWidth:
-                              "260px",
-                            color:
-                              "#64748b",
-                            fontSize: "12px",
+                            maxWidth: "220px",
+                            color: "#64748b",
+                            fontSize: "10px",
                           }}
                         >
                           {record.remarks ||
@@ -2346,16 +2167,15 @@ function Attendance() {
                           <td
                             style={{
                               padding:
-                                "14px 15px",
+                                "10px 11px",
                               borderBottom:
                                 "1px solid #f1f5f9",
                             }}
                           >
                             <div
                               style={{
-                                display:
-                                  "flex",
-                                gap: "7px",
+                                display: "flex",
+                                gap: "5px",
                               }}
                             >
                               <button
@@ -2366,20 +2186,20 @@ function Attendance() {
                                   )
                                 }
                                 style={{
+                                  minHeight: "26px",
                                   padding:
-                                    "7px 11px",
+                                    "0 8px",
                                   border:
                                     "1px solid #bfdbfe",
                                   borderRadius:
-                                    "7px",
+                                    "5px",
                                   backgroundColor:
                                     "#eff6ff",
                                   color:
                                     "#1d4ed8",
                                   fontSize:
-                                    "11px",
-                                  fontWeight:
-                                    800,
+                                    "9px",
+                                  fontWeight: 900,
                                   cursor:
                                     "pointer",
                                 }}
@@ -2399,12 +2219,13 @@ function Attendance() {
                                   )
                                 }
                                 style={{
+                                  minHeight: "26px",
                                   padding:
-                                    "7px 11px",
+                                    "0 8px",
                                   border:
                                     "1px solid #fecaca",
                                   borderRadius:
-                                    "7px",
+                                    "5px",
                                   backgroundColor:
                                     isDeleting ===
                                     record.id
@@ -2416,9 +2237,8 @@ function Attendance() {
                                       ? "#94a3b8"
                                       : "#dc2626",
                                   fontSize:
-                                    "11px",
-                                  fontWeight:
-                                    800,
+                                    "9px",
+                                  fontWeight: 900,
                                   cursor:
                                     isDeleting ===
                                     record.id
@@ -2448,13 +2268,13 @@ function Attendance() {
         {`
           @media (max-width: 768px) {
             main {
-              padding: 18px !important;
+              padding: 12px !important;
             }
           }
 
           @media (max-width: 480px) {
             main {
-              padding: 12px !important;
+              padding: 8px !important;
             }
           }
         `}
