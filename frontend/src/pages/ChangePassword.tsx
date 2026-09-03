@@ -111,7 +111,7 @@ function ChangePassword() {
     <div
       style={{
         width: "100%",
-        maxWidth: "620px",
+        maxWidth: "680px",
         margin: "0 auto",
         fontFamily:
           '"Inter", "Segoe UI", Arial, sans-serif',
@@ -120,17 +120,22 @@ function ChangePassword() {
     >
       <div
         style={{
-          marginBottom: "22px",
+          marginBottom: "16px",
         }}
       >
         <div
           style={{
+            display: "inline-flex",
+            alignItems: "center",
+            minHeight: "22px",
+            padding: "0 8px",
+            borderRadius: "6px",
+            background: "#eff6ff",
             color: "#2563eb",
-            fontSize: "11px",
+            fontSize: "10px",
             fontWeight: 800,
             textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            marginBottom: "7px",
+            letterSpacing: "0.07em",
           }}
         >
           Account Security
@@ -138,8 +143,8 @@ function ChangePassword() {
 
         <h1
           style={{
-            margin: 0,
-            fontSize: "26px",
+            margin: "8px 0 0",
+            fontSize: "24px",
             lineHeight: 1.2,
             fontWeight: 800,
             color: "#172033",
@@ -150,13 +155,14 @@ function ChangePassword() {
 
         <p
           style={{
-            margin: "7px 0 0",
+            margin: "5px 0 0",
             color: "#64748b",
-            fontSize: "13px",
+            fontSize: "12px",
+            lineHeight: 1.5,
           }}
         >
-          Update your account password
-          securely.
+          Keep your HRMS account secure by
+          updating your password regularly.
         </p>
       </div>
 
@@ -165,24 +171,76 @@ function ChangePassword() {
         style={{
           background: "#ffffff",
           border: "1px solid #e2e8f0",
-          borderRadius: "14px",
-          padding: "24px",
+          borderRadius: "12px",
+          padding: "20px",
           boxShadow:
-            "0 4px 14px rgba(15,23,42,0.04)",
+            "0 3px 12px rgba(15,23,42,0.04)",
         }}
       >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            marginBottom: "16px",
+            paddingBottom: "12px",
+            borderBottom:
+              "1px solid #eef1f5",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                color: "#172033",
+                fontSize: "13px",
+                fontWeight: 800,
+              }}
+            >
+              Password Settings
+            </div>
+
+            <div
+              style={{
+                marginTop: "3px",
+                color: "#94a3b8",
+                fontSize: "11px",
+              }}
+            >
+              Enter your current password and
+              choose a new secure password.
+            </div>
+          </div>
+
+          <div
+            style={{
+              flexShrink: 0,
+              padding: "5px 8px",
+              borderRadius: "6px",
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              color: "#64748b",
+              fontSize: "10px",
+              fontWeight: 700,
+            }}
+          >
+            Secure
+          </div>
+        </div>
+
         {error && (
           <div
             style={{
-              marginBottom: "18px",
-              padding: "12px 14px",
-              borderRadius: "8px",
+              marginBottom: "14px",
+              padding: "10px 12px",
+              borderRadius: "7px",
               background: "#fef2f2",
               border:
                 "1px solid #fecaca",
               color: "#b91c1c",
-              fontSize: "12px",
+              fontSize: "11px",
               fontWeight: 600,
+              lineHeight: 1.45,
             }}
           >
             {error}
@@ -192,15 +250,16 @@ function ChangePassword() {
         {message && (
           <div
             style={{
-              marginBottom: "18px",
-              padding: "12px 14px",
-              borderRadius: "8px",
+              marginBottom: "14px",
+              padding: "10px 12px",
+              borderRadius: "7px",
               background: "#f0fdf4",
               border:
                 "1px solid #bbf7d0",
               color: "#15803d",
-              fontSize: "12px",
+              fontSize: "11px",
               fontWeight: 600,
+              lineHeight: 1.45,
             }}
           >
             {message}
@@ -209,18 +268,19 @@ function ChangePassword() {
 
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "17px",
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(2, minmax(0, 1fr))",
+            gap: "14px",
           }}
         >
           <label
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: "7px",
+              gap: "6px",
               color: "#334155",
-              fontSize: "12px",
+              fontSize: "11px",
               fontWeight: 700,
             }}
           >
@@ -238,16 +298,16 @@ function ChangePassword() {
               placeholder="Enter current password"
               style={{
                 width: "100%",
-                height: "42px",
-                padding: "0 12px",
+                height: "40px",
+                padding: "0 11px",
                 boxSizing: "border-box",
                 border:
                   "1px solid #dbe1ea",
-                borderRadius: "8px",
+                borderRadius: "7px",
                 outline: "none",
                 color: "#172033",
                 background: "#ffffff",
-                fontSize: "13px",
+                fontSize: "12px",
               }}
             />
           </label>
@@ -256,9 +316,9 @@ function ChangePassword() {
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: "7px",
+              gap: "6px",
               color: "#334155",
-              fontSize: "12px",
+              fontSize: "11px",
               fontWeight: 700,
             }}
           >
@@ -276,16 +336,16 @@ function ChangePassword() {
               placeholder="Enter new password"
               style={{
                 width: "100%",
-                height: "42px",
-                padding: "0 12px",
+                height: "40px",
+                padding: "0 11px",
                 boxSizing: "border-box",
                 border:
                   "1px solid #dbe1ea",
-                borderRadius: "8px",
+                borderRadius: "7px",
                 outline: "none",
                 color: "#172033",
                 background: "#ffffff",
-                fontSize: "13px",
+                fontSize: "12px",
               }}
             />
           </label>
@@ -294,9 +354,9 @@ function ChangePassword() {
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: "7px",
+              gap: "6px",
               color: "#334155",
-              fontSize: "12px",
+              fontSize: "11px",
               fontWeight: 700,
             }}
           >
@@ -314,61 +374,102 @@ function ChangePassword() {
               placeholder="Confirm new password"
               style={{
                 width: "100%",
-                height: "42px",
-                padding: "0 12px",
+                height: "40px",
+                padding: "0 11px",
                 boxSizing: "border-box",
                 border:
                   "1px solid #dbe1ea",
-                borderRadius: "8px",
+                borderRadius: "7px",
                 outline: "none",
                 color: "#172033",
                 background: "#ffffff",
-                fontSize: "13px",
+                fontSize: "12px",
               }}
             />
           </label>
 
-          <button
-            type="submit"
-            disabled={isLoading}
+          <div
             style={{
-              marginTop: "5px",
-              width: "100%",
-              height: "43px",
-              border: "none",
-              borderRadius: "8px",
-              background: isLoading
-                ? "#93c5fd"
-                : "#2563eb",
-              color: "#ffffff",
-              cursor: isLoading
-                ? "not-allowed"
-                : "pointer",
-              fontSize: "13px",
-              fontWeight: 700,
+              display: "flex",
+              alignItems: "flex-end",
             }}
           >
-            {isLoading
-              ? "Changing Password..."
-              : "Change Password"}
-          </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                width: "100%",
+                height: "40px",
+                border: "none",
+                borderRadius: "7px",
+                background: isLoading
+                  ? "#93c5fd"
+                  : "#2563eb",
+                color: "#ffffff",
+                cursor: isLoading
+                  ? "not-allowed"
+                  : "pointer",
+                fontSize: "12px",
+                fontWeight: 700,
+              }}
+            >
+              {isLoading
+                ? "Changing Password..."
+                : "Change Password"}
+            </button>
+          </div>
         </div>
 
         <div
           style={{
-            marginTop: "18px",
-            paddingTop: "16px",
+            marginTop: "16px",
+            paddingTop: "12px",
             borderTop:
               "1px solid #eef1f5",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
             color: "#94a3b8",
-            fontSize: "11px",
-            lineHeight: 1.6,
+            fontSize: "10px",
+            lineHeight: 1.5,
           }}
         >
-          Your new password must contain
-          at least 8 characters.
+          <span>
+            New password must contain at
+            least 8 characters.
+          </span>
+
+          <span
+            style={{
+              flexShrink: 0,
+              fontWeight: 700,
+              color: "#64748b",
+            }}
+          >
+            HRMS Security
+          </span>
         </div>
       </form>
+
+      <style>
+        {`
+          @media (max-width: 640px) {
+            form > div:nth-child(4) {
+              grid-template-columns: 1fr !important;
+            }
+          }
+
+          input:focus {
+            border-color: #93c5fd !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+          }
+
+          button:not(:disabled):hover {
+            background: #1d4ed8 !important;
+          }
+        `}
+      </style>
     </div>
   )
 }
