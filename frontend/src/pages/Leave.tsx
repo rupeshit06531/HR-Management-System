@@ -1,6 +1,7 @@
 import {
   useEffect,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -37,6 +38,70 @@ const emptyForm: CreateLeaveRequest = {
   start_date: "",
   end_date: "",
   reason: "",
+}
+
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  padding: "18px",
+  background: "#f5f7fb",
+  fontFamily: "Arial, sans-serif",
+  color: "#111827",
+}
+
+const containerStyle: CSSProperties = {
+  maxWidth: "1400px",
+  margin: "0 auto",
+}
+
+const cardStyle: CSSProperties = {
+  background: "#ffffff",
+  border: "1px solid #e5e7eb",
+  borderRadius: "10px",
+  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
+}
+
+const labelStyle: CSSProperties = {
+  display: "block",
+  fontSize: "12px",
+  fontWeight: 700,
+  color: "#374151",
+  marginBottom: "5px",
+}
+
+const inputStyle: CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "8px 10px",
+  border: "1px solid #d1d5db",
+  borderRadius: "6px",
+  background: "#ffffff",
+  color: "#111827",
+  fontSize: "13px",
+  outline: "none",
+}
+
+const primaryButtonStyle: CSSProperties = {
+  minHeight: "34px",
+  padding: "7px 13px",
+  border: "none",
+  borderRadius: "6px",
+  background: "#111827",
+  color: "#ffffff",
+  fontSize: "12px",
+  fontWeight: 700,
+  cursor: "pointer",
+}
+
+const secondaryButtonStyle: CSSProperties = {
+  minHeight: "34px",
+  padding: "7px 13px",
+  border: "1px solid #d1d5db",
+  borderRadius: "6px",
+  background: "#ffffff",
+  color: "#374151",
+  fontSize: "12px",
+  fontWeight: 700,
+  cursor: "pointer",
 }
 
 function Leave() {
@@ -286,396 +351,641 @@ function Leave() {
       )
   }
 
-  return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "32px",
-        fontFamily:
-          "Arial, sans-serif",
-        background:
-          "#f5f7fb",
-      }}
-    >
-      <section
-        style={{
-          maxWidth: "1100px",
-          margin: "0 auto",
-        }}
-      >
-        <h1>
-          Leave Management
-        </h1>
+  const totalLeaves = leaves.length
 
-        <p>
-          Submit and manage your
-          leave requests.
-        </p>
+  const pendingLeaves = leaves.filter(
+    (leave) =>
+      leave.status.toLowerCase() ===
+      "pending",
+  ).length
+
+  const approvedLeaves = leaves.filter(
+    (leave) =>
+      leave.status.toLowerCase() ===
+      "approved",
+  ).length
+
+  return (
+    <main style={pageStyle}>
+      <style>
+        {`
+          .leave-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 14px;
+          }
+
+          .leave-kpis {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+          }
+
+          .leave-kpi {
+            padding: 12px 14px;
+          }
+
+          .leave-kpi-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }
+
+          .leave-kpi-value {
+            margin-top: 3px;
+            font-size: 22px;
+            line-height: 1;
+            font-weight: 800;
+            color: #111827;
+          }
+
+          .leave-content {
+            display: grid;
+            grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+            gap: 12px;
+            align-items: start;
+          }
+
+          .leave-card {
+            padding: 14px;
+          }
+
+          .leave-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
+          }
+
+          .leave-card-title {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 800;
+            color: #111827;
+          }
+
+          .leave-card-subtitle {
+            margin: 3px 0 0;
+            font-size: 11px;
+            color: #6b7280;
+          }
+
+          .leave-form {
+            display: grid;
+            gap: 10px;
+          }
+
+          .leave-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+          }
+
+          .leave-field {
+            min-width: 0;
+          }
+
+          .leave-textarea {
+            min-height: 82px;
+            resize: vertical;
+          }
+
+          .leave-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 7px;
+            padding-top: 2px;
+          }
+
+          .leave-table-wrap {
+            overflow-x: auto;
+          }
+
+          .leave-table {
+            width: 100%;
+            min-width: 820px;
+            border-collapse: collapse;
+            font-size: 12px;
+          }
+
+          .leave-table th {
+            padding: 8px 9px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+            color: #6b7280;
+            font-size: 10px;
+            font-weight: 800;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+          }
+
+          .leave-table td {
+            padding: 9px;
+            border-bottom: 1px solid #eef0f3;
+            color: #374151;
+            vertical-align: middle;
+          }
+
+          .leave-table tbody tr:last-child td {
+            border-bottom: none;
+          }
+
+          .leave-table tbody tr:hover {
+            background: #fafafa;
+          }
+
+          .leave-type {
+            font-weight: 700;
+            color: #111827;
+          }
+
+          .leave-reason {
+            max-width: 220px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .leave-status {
+            display: inline-flex;
+            align-items: center;
+            min-height: 22px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #f3f4f6;
+            color: #374151;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+          }
+
+          .leave-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          }
+
+          .leave-action {
+            min-height: 28px;
+            padding: 5px 9px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+          }
+
+          .leave-action-edit {
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #374151;
+          }
+
+          .leave-action-delete {
+            border: 1px solid #dc2626;
+            background: #dc2626;
+            color: #ffffff;
+          }
+
+          .leave-empty {
+            padding: 26px 12px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+          }
+
+          .leave-alert {
+            margin-bottom: 10px;
+            padding: 9px 11px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+          }
+
+          .leave-alert-error {
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #991b1b;
+          }
+
+          .leave-alert-success {
+            border: 1px solid #bbf7d0;
+            background: #f0fdf4;
+            color: #166534;
+          }
+
+          .leave-loading {
+            padding: 26px 12px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+          }
+
+          @media (max-width: 900px) {
+            .leave-content {
+              grid-template-columns: 1fr;
+            }
+          }
+
+          @media (max-width: 700px) {
+            .leave-kpis {
+              grid-template-columns: 1fr;
+            }
+
+            .leave-form-grid {
+              grid-template-columns: 1fr;
+            }
+
+            .leave-header {
+              align-items: flex-start;
+              flex-direction: column;
+            }
+          }
+        `}
+      </style>
+
+      <section style={containerStyle}>
+        <header className="leave-header">
+          <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "7px",
+                marginBottom: "3px",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  color: "#6b7280",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                HRMS
+              </span>
+
+              <span
+                style={{
+                  color: "#d1d5db",
+                  fontSize: "11px",
+                }}
+              >
+                /
+              </span>
+
+              <span
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  color: "#9ca3af",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Leave
+              </span>
+            </div>
+
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "22px",
+                lineHeight: 1.2,
+                fontWeight: 800,
+                color: "#111827",
+              }}
+            >
+              Leave Management
+            </h1>
+
+            <p
+              style={{
+                margin: "4px 0 0",
+                fontSize: "12px",
+                color: "#6b7280",
+              }}
+            >
+              Submit and manage your leave requests.
+            </p>
+          </div>
+
+          {editingId !== null && (
+            <button
+              type="button"
+              onClick={resetForm}
+              style={secondaryButtonStyle}
+            >
+              Cancel Edit
+            </button>
+          )}
+        </header>
 
         {error && (
-          <p
-            style={{
-              padding: "12px",
-              background:
-                "#fee2e2",
-              borderRadius: "6px",
-              color:
-                "#991b1b",
-            }}
-          >
+          <div className="leave-alert leave-alert-error">
             {error}
-          </p>
+          </div>
         )}
 
         {success && (
-          <p
-            style={{
-              padding: "12px",
-              background:
-                "#dcfce7",
-              borderRadius: "6px",
-              color:
-                "#166534",
-            }}
-          >
+          <div className="leave-alert leave-alert-success">
             {success}
-          </p>
+          </div>
         )}
 
-        <section
-          style={{
-            background:
-              "#ffffff",
-            padding: "24px",
-            borderRadius:
-              "10px",
-            marginTop: "24px",
-          }}
-        >
+        <section className="leave-kpis">
           <div
-            style={{
-              display: "flex",
-              alignItems:
-                "center",
-              justifyContent:
-                "space-between",
-              gap: "16px",
-            }}
+            className="leave-kpi"
+            style={cardStyle}
           >
-            <h2>
-              {editingId !== null
-                ? "Edit Leave Request"
-                : "Apply for Leave"}
-            </h2>
+            <div className="leave-kpi-label">
+              Total Requests
+            </div>
 
-            {editingId !== null && (
-              <button
-                type="button"
-                onClick={
-                  resetForm
-                }
-                style={{
-                  padding:
-                    "8px 14px",
-                  cursor:
-                    "pointer",
-                }}
-              >
-                Cancel Edit
-              </button>
-            )}
+            <div className="leave-kpi-value">
+              {totalLeaves}
+            </div>
           </div>
 
-          <form
-            onSubmit={
-              handleSubmit
-            }
-            style={{
-              display: "grid",
-              gap: "16px",
-              maxWidth: "600px",
-            }}
+          <div
+            className="leave-kpi"
+            style={cardStyle}
           >
-            <label>
-              Leave Type
+            <div className="leave-kpi-label">
+              Pending
+            </div>
 
-              <select
-                value={
-                  form.leave_type
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setForm(
-                    (current) => ({
+            <div className="leave-kpi-value">
+              {pendingLeaves}
+            </div>
+          </div>
+
+          <div
+            className="leave-kpi"
+            style={cardStyle}
+          >
+            <div className="leave-kpi-label">
+              Approved
+            </div>
+
+            <div className="leave-kpi-value">
+              {approvedLeaves}
+            </div>
+          </div>
+        </section>
+
+        <section className="leave-content">
+          <section
+            className="leave-card"
+            style={cardStyle}
+          >
+            <div className="leave-card-header">
+              <div>
+                <h2 className="leave-card-title">
+                  {editingId !== null
+                    ? "Edit Leave Request"
+                    : "Apply for Leave"}
+                </h2>
+
+                <p className="leave-card-subtitle">
+                  {editingId !== null
+                    ? "Update the selected leave request."
+                    : "Submit a new leave request."}
+                </p>
+              </div>
+            </div>
+
+            <form
+              onSubmit={handleSubmit}
+              className="leave-form"
+            >
+              <div className="leave-field">
+                <label
+                  htmlFor="leave-type"
+                  style={labelStyle}
+                >
+                  Leave Type
+                </label>
+
+                <select
+                  id="leave-type"
+                  value={form.leave_type}
+                  onChange={(event) =>
+                    setForm((current) => ({
                       ...current,
                       leave_type:
-                        event.target
-                          .value,
-                    }),
-                  )
-                }
-                style={{
-                  display:
-                    "block",
-                  width: "100%",
-                  marginTop:
-                    "6px",
-                  padding:
-                    "10px",
-                }}
-              >
-                {leaveTypes.map(
-                  (type) => (
+                        event.target.value,
+                    }))
+                  }
+                  style={inputStyle}
+                >
+                  {leaveTypes.map((type) => (
                     <option
-                      key={
-                        type.value
-                      }
-                      value={
-                        type.value
-                      }
+                      key={type.value}
+                      value={type.value}
                     >
                       {type.label}
                     </option>
-                  ),
-                )}
-              </select>
-            </label>
+                  ))}
+                </select>
+              </div>
 
-            <label>
-              Start Date
+              <div className="leave-form-grid">
+                <div className="leave-field">
+                  <label
+                    htmlFor="leave-start-date"
+                    style={labelStyle}
+                  >
+                    Start Date
+                  </label>
 
-              <input
-                type="date"
-                value={
-                  form.start_date
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setForm(
-                    (current) => ({
-                      ...current,
-                      start_date:
-                        event.target
-                          .value,
-                    }),
-                  )
-                }
-                style={{
-                  display:
-                    "block",
-                  width: "100%",
-                  marginTop:
-                    "6px",
-                  padding:
-                    "10px",
-                }}
-              />
-            </label>
+                  <input
+                    id="leave-start-date"
+                    type="date"
+                    value={form.start_date}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        start_date:
+                          event.target.value,
+                      }))
+                    }
+                    style={inputStyle}
+                  />
+                </div>
 
-            <label>
-              End Date
+                <div className="leave-field">
+                  <label
+                    htmlFor="leave-end-date"
+                    style={labelStyle}
+                  >
+                    End Date
+                  </label>
 
-              <input
-                type="date"
-                value={
-                  form.end_date
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setForm(
-                    (current) => ({
-                      ...current,
-                      end_date:
-                        event.target
-                          .value,
-                    }),
-                  )
-                }
-                style={{
-                  display:
-                    "block",
-                  width: "100%",
-                  marginTop:
-                    "6px",
-                  padding:
-                    "10px",
-                }}
-              />
-            </label>
+                  <input
+                    id="leave-end-date"
+                    type="date"
+                    value={form.end_date}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        end_date:
+                          event.target.value,
+                      }))
+                    }
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
 
-            <label>
-              Reason
+              <div className="leave-field">
+                <label
+                  htmlFor="leave-reason"
+                  style={labelStyle}
+                >
+                  Reason
+                </label>
 
-              <textarea
-                value={
-                  form.reason
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setForm(
-                    (current) => ({
+                <textarea
+                  id="leave-reason"
+                  value={form.reason}
+                  onChange={(event) =>
+                    setForm((current) => ({
                       ...current,
                       reason:
-                        event.target
-                          .value,
-                    }),
-                  )
-                }
-                rows={4}
-                style={{
-                  display:
-                    "block",
-                  width: "100%",
-                  marginTop:
-                    "6px",
-                  padding:
-                    "10px",
-                }}
-              />
-            </label>
+                        event.target.value,
+                    }))
+                  }
+                  rows={4}
+                  className="leave-textarea"
+                  style={inputStyle}
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={
-                isSubmitting
-              }
-              style={{
-                padding:
-                  "12px 18px",
-                cursor:
-                  isSubmitting
-                    ? "not-allowed"
-                    : "pointer",
-              }}
-            >
-              {isSubmitting
-                ? editingId !== null
-                  ? "Updating..."
-                  : "Submitting..."
-                : editingId !== null
-                  ? "Update Leave Request"
-                  : "Submit Leave Request"}
-            </button>
-          </form>
-        </section>
+              <div className="leave-form-actions">
+                {editingId !== null && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    style={secondaryButtonStyle}
+                  >
+                    Cancel
+                  </button>
+                )}
 
-        <section
-          style={{
-            background:
-              "#ffffff",
-            padding: "24px",
-            borderRadius:
-              "10px",
-            marginTop: "24px",
-          }}
-        >
-          <h2>
-            My Leave Requests
-          </h2>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  style={{
+                    ...primaryButtonStyle,
+                    opacity:
+                      isSubmitting ? 0.65 : 1,
+                    cursor: isSubmitting
+                      ? "not-allowed"
+                      : "pointer",
+                  }}
+                >
+                  {isSubmitting
+                    ? editingId !== null
+                      ? "Updating..."
+                      : "Submitting..."
+                    : editingId !== null
+                      ? "Update Request"
+                      : "Submit Request"}
+                </button>
+              </div>
+            </form>
+          </section>
 
-          {isLoading ? (
-            <p>Loading...</p>
-          ) : leaves.length === 0 ? (
-            <p>
-              No leave records
-              found.
-            </p>
-          ) : (
-            <div
-              style={{
-                overflowX:
-                  "auto",
-              }}
-            >
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse:
-                    "collapse",
-                  minWidth:
-                    "850px",
-                }}
-              >
-                <thead>
-                  <tr>
-                    <th align="left">
-                      Type
-                    </th>
+          <section
+            className="leave-card"
+            style={cardStyle}
+          >
+            <div className="leave-card-header">
+              <div>
+                <h2 className="leave-card-title">
+                  My Leave Requests
+                </h2>
 
-                    <th align="left">
-                      Start
-                    </th>
+                <p className="leave-card-subtitle">
+                  View, edit and manage submitted requests.
+                </p>
+              </div>
+            </div>
 
-                    <th align="left">
-                      End
-                    </th>
+            {isLoading ? (
+              <div className="leave-loading">
+                Loading leave records...
+              </div>
+            ) : leaves.length === 0 ? (
+              <div className="leave-empty">
+                No leave records found.
+              </div>
+            ) : (
+              <div className="leave-table-wrap">
+                <table className="leave-table">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Start</th>
+                      <th>End</th>
+                      <th>Status</th>
+                      <th>Reason</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
 
-                    <th align="left">
-                      Status
-                    </th>
-
-                    <th align="left">
-                      Reason
-                    </th>
-
-                    <th align="left">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {leaves.map(
-                    (leave) => (
-                      <tr
-                        key={
-                          leave.id
-                        }
-                      >
+                  <tbody>
+                    {leaves.map((leave) => (
+                      <tr key={leave.id}>
                         <td>
-                          {formatLeaveType(
-                            leave.leave_type,
-                          )}
+                          <span className="leave-type">
+                            {formatLeaveType(
+                              leave.leave_type,
+                            )}
+                          </span>
                         </td>
 
                         <td>
-                          {
-                            leave.start_date
-                          }
+                          {leave.start_date}
                         </td>
 
                         <td>
-                          {
-                            leave.end_date
-                          }
+                          {leave.end_date}
                         </td>
 
                         <td>
-                          {formatLeaveType(
-                            leave.status,
-                          )}
-                        </td>
-
-                        <td>
-                          {
-                            leave.reason
-                          }
+                          <span className="leave-status">
+                            {formatLeaveType(
+                              leave.status,
+                            )}
+                          </span>
                         </td>
 
                         <td>
                           <div
-                            style={{
-                              display:
-                                "flex",
-                              gap: "8px",
-                            }}
+                            className="leave-reason"
+                            title={leave.reason}
                           >
+                            {leave.reason}
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="leave-actions">
                             <button
                               type="button"
+                              className="leave-action leave-action-edit"
                               onClick={() =>
                                 handleEdit(
                                   leave,
@@ -685,18 +995,13 @@ function Leave() {
                                 deletingId ===
                                 leave.id
                               }
-                              style={{
-                                padding:
-                                  "7px 12px",
-                                cursor:
-                                  "pointer",
-                              }}
                             >
                               Edit
                             </button>
 
                             <button
                               type="button"
+                              className="leave-action leave-action-delete"
                               onClick={() =>
                                 void handleDelete(
                                   leave.id,
@@ -707,16 +1012,11 @@ function Leave() {
                                 leave.id
                               }
                               style={{
-                                padding:
-                                  "7px 12px",
-                                background:
-                                  "#dc2626",
-                                color:
-                                  "#ffffff",
-                                border:
-                                  "none",
-                                borderRadius:
-                                  "5px",
+                                opacity:
+                                  deletingId ===
+                                  leave.id
+                                    ? 0.65
+                                    : 1,
                                 cursor:
                                   deletingId ===
                                   leave.id
@@ -732,12 +1032,12 @@ function Leave() {
                           </div>
                         </td>
                       </tr>
-                    ),
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
         </section>
       </section>
     </main>
