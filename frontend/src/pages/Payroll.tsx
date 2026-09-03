@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -37,6 +38,72 @@ const emptyForm: PayrollForm = {
   deductions: "0",
   payment_status: "pending",
   paid_at: "",
+}
+
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  padding: "18px",
+  background: "#f5f7fb",
+  fontFamily: "Arial, sans-serif",
+  color: "#111827",
+  boxSizing: "border-box",
+}
+
+const containerStyle: CSSProperties = {
+  maxWidth: "1400px",
+  margin: "0 auto",
+}
+
+const cardStyle: CSSProperties = {
+  background: "#ffffff",
+  border: "1px solid #e5e7eb",
+  borderRadius: "10px",
+  boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
+}
+
+const inputStyle: CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  minHeight: "34px",
+  padding: "8px 10px",
+  border: "1px solid #d1d5db",
+  borderRadius: "6px",
+  background: "#ffffff",
+  color: "#111827",
+  fontSize: "12px",
+  outline: "none",
+}
+
+const labelStyle: CSSProperties = {
+  display: "block",
+  marginBottom: "5px",
+  fontSize: "12px",
+  fontWeight: 700,
+  color: "#374151",
+}
+
+const primaryButtonStyle: CSSProperties = {
+  minHeight: "34px",
+  padding: "7px 13px",
+  border: "none",
+  borderRadius: "6px",
+  background: "#111827",
+  color: "#ffffff",
+  fontSize: "12px",
+  fontWeight: 700,
+  cursor: "pointer",
+}
+
+const secondaryButtonStyle: CSSProperties = {
+  minHeight: "34px",
+  padding: "7px 13px",
+  border: "1px solid #d1d5db",
+  borderRadius: "6px",
+  background: "#ffffff",
+  color: "#374151",
+  fontSize: "12px",
+  fontWeight: 700,
+  cursor: "pointer",
 }
 
 function PayrollPage() {
@@ -81,13 +148,10 @@ function PayrollPage() {
 
   const pageSize = 10
 
-  const totalPages =
-    Math.max(
-      1,
-      Math.ceil(
-        totalRecords / pageSize,
-      ),
-    )
+  const totalPages = Math.max(
+    1,
+    Math.ceil(totalRecords / pageSize),
+  )
 
   const loadEmployees = async () => {
     try {
@@ -145,10 +209,9 @@ function PayrollPage() {
   }, [])
 
   useEffect(() => {
-    const timeoutId =
-      window.setTimeout(() => {
-        void loadPayroll(currentPage)
-      }, 300)
+    const timeoutId = window.setTimeout(() => {
+      void loadPayroll(currentPage)
+    }, 300)
 
     return () => {
       window.clearTimeout(timeoutId)
@@ -167,10 +230,7 @@ function PayrollPage() {
     ) {
       setCurrentPage(totalPages)
     }
-  }, [
-    currentPage,
-    totalPages,
-  ])
+  }, [currentPage, totalPages])
 
   const resetForm = () => {
     setForm({ ...emptyForm })
@@ -186,26 +246,16 @@ function PayrollPage() {
     setSuccess(null)
   }
 
-  const openEditForm = (
-    record: Payroll,
-  ) => {
+  const openEditForm = (record: Payroll) => {
     setForm({
       employee: record.employee,
-      month:
-        record.month.slice(0, 7),
-      basic_salary:
-        record.basic_salary,
-      allowances:
-        record.allowances,
-      deductions:
-        record.deductions,
-      payment_status:
-        record.payment_status,
+      month: record.month.slice(0, 7),
+      basic_salary: record.basic_salary,
+      allowances: record.allowances,
+      deductions: record.deductions,
+      payment_status: record.payment_status,
       paid_at: record.paid_at
-        ? record.paid_at.slice(
-            0,
-            16,
-          )
+        ? record.paid_at.slice(0, 16)
         : "",
     })
 
@@ -223,47 +273,35 @@ function PayrollPage() {
     setError(null)
     setSuccess(null)
 
-    if (
-      !form.employee ||
-      form.employee <= 0
-    ) {
-      setError(
-        "Please select an employee.",
-      )
+    if (!form.employee || form.employee <= 0) {
+      setError("Please select an employee.")
       return
     }
 
     if (!form.month) {
-      setError(
-        "Payroll month is required.",
-      )
+      setError("Payroll month is required.")
       return
     }
 
     if (!form.basic_salary) {
-      setError(
-        "Basic salary is required.",
-      )
+      setError("Basic salary is required.")
       return
     }
 
-    const basicSalary =
-      Number(form.basic_salary)
+    const basicSalary = Number(
+      form.basic_salary,
+    )
 
-    const allowances =
-      Number(
-        form.allowances || "0",
-      )
+    const allowances = Number(
+      form.allowances || "0",
+    )
 
-    const deductions =
-      Number(
-        form.deductions || "0",
-      )
+    const deductions = Number(
+      form.deductions || "0",
+    )
 
     if (
-      !Number.isFinite(
-        basicSalary,
-      ) ||
+      !Number.isFinite(basicSalary) ||
       basicSalary < 0
     ) {
       setError(
@@ -273,9 +311,7 @@ function PayrollPage() {
     }
 
     if (
-      !Number.isFinite(
-        allowances,
-      ) ||
+      !Number.isFinite(allowances) ||
       allowances < 0
     ) {
       setError(
@@ -285,9 +321,7 @@ function PayrollPage() {
     }
 
     if (
-      !Number.isFinite(
-        deductions,
-      ) ||
+      !Number.isFinite(deductions) ||
       deductions < 0
     ) {
       setError(
@@ -297,8 +331,7 @@ function PayrollPage() {
     }
 
     if (
-      form.payment_status ===
-        "paid" &&
+      form.payment_status === "paid" &&
       !form.paid_at
     ) {
       setError(
@@ -308,8 +341,7 @@ function PayrollPage() {
     }
 
     if (
-      form.payment_status ===
-        "pending" &&
+      form.payment_status === "pending" &&
       form.paid_at
     ) {
       setError(
@@ -321,27 +353,20 @@ function PayrollPage() {
     try {
       setIsSubmitting(true)
 
-      const payload: PayrollPayload =
-        {
-          employee:
-            form.employee,
-          month: `${form.month}-01`,
-          basic_salary:
-            form.basic_salary,
-          allowances:
-            form.allowances || "0",
-          deductions:
-            form.deductions || "0",
-          payment_status:
-            form.payment_status,
-          paid_at:
-            form.payment_status ===
-            "paid"
-              ? new Date(
-                  form.paid_at,
-                ).toISOString()
-              : null,
-        }
+      const payload: PayrollPayload = {
+        employee: form.employee,
+        month: `${form.month}-01`,
+        basic_salary: form.basic_salary,
+        allowances: form.allowances || "0",
+        deductions: form.deductions || "0",
+        payment_status: form.payment_status,
+        paid_at:
+          form.payment_status === "paid"
+            ? new Date(
+                form.paid_at,
+              ).toISOString()
+            : null,
+      }
 
       if (editingId !== null) {
         await patchPayroll(
@@ -349,21 +374,16 @@ function PayrollPage() {
           payload,
         )
 
-        await loadPayroll(
-          currentPage,
-        )
+        await loadPayroll(currentPage)
 
         setSuccess(
           "Payroll record updated successfully.",
         )
       } else {
-        await createPayroll(
-          payload,
-        )
+        await createPayroll(payload)
 
         setTotalRecords(
-          (current) =>
-            current + 1,
+          (current) => current + 1,
         )
 
         if (currentPage !== 1) {
@@ -389,13 +409,10 @@ function PayrollPage() {
     }
   }
 
-  const handleDelete = async (
-    id: number,
-  ) => {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this payroll record?",
-      )
+  const handleDelete = async (id: number) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this payroll record?",
+    )
 
     if (!confirmed) {
       return
@@ -408,34 +425,29 @@ function PayrollPage() {
 
       await deletePayroll(id)
 
-      const nextTotalRecords =
-        Math.max(0, totalRecords - 1)
+      const nextTotalRecords = Math.max(
+        0,
+        totalRecords - 1,
+      )
 
-      const nextTotalPages =
-        Math.max(
-          1,
-          Math.ceil(
-            nextTotalRecords / pageSize,
-          ),
-        )
+      const nextTotalPages = Math.max(
+        1,
+        Math.ceil(
+          nextTotalRecords / pageSize,
+        ),
+      )
 
       const nextPage =
         currentPage > nextTotalPages
           ? nextTotalPages
           : currentPage
 
-      setTotalRecords(
-        nextTotalRecords,
-      )
+      setTotalRecords(nextTotalRecords)
 
-      if (
-        nextPage !== currentPage
-      ) {
+      if (nextPage !== currentPage) {
         setCurrentPage(nextPage)
       } else {
-        await loadPayroll(
-          nextPage,
-        )
+        await loadPayroll(nextPage)
       }
 
       setSuccess(
@@ -450,15 +462,10 @@ function PayrollPage() {
     }
   }
 
-  const formatCurrency = (
-    value: string,
-  ) => {
-    const amount =
-      Number(value)
+  const formatCurrency = (value: string) => {
+    const amount = Number(value)
 
-    if (
-      !Number.isFinite(amount)
-    ) {
+    if (!Number.isFinite(amount)) {
       return value
     }
 
@@ -471,9 +478,7 @@ function PayrollPage() {
     )}`
   }
 
-  const formatStatus = (
-    value: string,
-  ) => {
+  const formatStatus = (value: string) => {
     return value
       .replace("_", " ")
       .replace(
@@ -490,14 +495,9 @@ function PayrollPage() {
       return "-"
     }
 
-    const date =
-      new Date(value)
+    const date = new Date(value)
 
-    if (
-      Number.isNaN(
-        date.getTime(),
-      )
-    ) {
+    if (Number.isNaN(date.getTime())) {
       return value
     }
 
@@ -510,26 +510,16 @@ function PayrollPage() {
     )
   }
 
-  const formatMonth = (
-    value: string,
-  ) => {
+  const formatMonth = (value: string) => {
     if (!value) {
       return "-"
     }
 
-    const date =
-      new Date(
-        `${value.slice(
-          0,
-          7,
-        )}-01T00:00:00`,
-      )
+    const date = new Date(
+      `${value.slice(0, 7)}-01T00:00:00`,
+    )
 
-    if (
-      Number.isNaN(
-        date.getTime(),
-      )
-    ) {
+    if (Number.isNaN(date.getTime())) {
       return value
     }
 
@@ -542,87 +532,422 @@ function PayrollPage() {
     )
   }
 
-  const statistics =
-    useMemo(() => {
-      const paidRecords =
-        records.filter(
-          (record) =>
-            record.payment_status ===
-            "paid",
-        )
+  const statistics = useMemo(() => {
+    const paidRecords = records.filter(
+      (record) =>
+        record.payment_status === "paid",
+    )
 
-      const pendingRecords =
-        records.filter(
-          (record) =>
-            record.payment_status ===
-            "pending",
-        )
+    const pendingRecords = records.filter(
+      (record) =>
+        record.payment_status === "pending",
+    )
 
-      const totalNetSalary =
-        records.reduce(
-          (total, record) =>
-            total +
-            Number(
-              record.net_salary || 0,
-            ),
-          0,
-        )
+    const totalNetSalary = records.reduce(
+      (total, record) =>
+        total +
+        Number(record.net_salary || 0),
+      0,
+    )
 
-      const paidNetSalary =
-        paidRecords.reduce(
-          (total, record) =>
-            total +
-            Number(
-              record.net_salary || 0,
-            ),
-          0,
-        )
+    const paidNetSalary = paidRecords.reduce(
+      (total, record) =>
+        total +
+        Number(record.net_salary || 0),
+      0,
+    )
 
-      return {
-        paid: paidRecords.length,
-        pending:
-          pendingRecords.length,
-        totalNetSalary,
-        paidNetSalary,
-      }
-    }, [records])
+    return {
+      paid: paidRecords.length,
+      pending: pendingRecords.length,
+      totalNetSalary,
+      paidNetSalary,
+    }
+  }, [records])
+
+  const rangeStart =
+    totalRecords === 0
+      ? 0
+      : (currentPage - 1) * pageSize + 1
+
+  const rangeEnd = Math.min(
+    currentPage * pageSize,
+    totalRecords,
+  )
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "32px",
-        backgroundColor:
-          "#f5f7fa",
-        fontFamily:
-          "Inter, Arial, sans-serif",
-        boxSizing: "border-box",
-      }}
-    >
-      <section
-        style={{
-          maxWidth: "1400px",
-          margin: "0 auto",
-        }}
-      >
-        <header
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent:
-              "space-between",
-            gap: "20px",
-            marginBottom: "28px",
-            flexWrap: "wrap",
-          }}
-        >
+    <main style={pageStyle}>
+      <style>
+        {`
+          .payroll-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 12px;
+          }
+
+          .payroll-kpis {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+          }
+
+          .payroll-kpi {
+            padding: 12px 14px;
+          }
+
+          .payroll-kpi-label {
+            font-size: 10px;
+            font-weight: 800;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          }
+
+          .payroll-kpi-value {
+            margin-top: 3px;
+            font-size: 21px;
+            line-height: 1;
+            font-weight: 800;
+            color: #111827;
+          }
+
+          .payroll-kpi-sub {
+            margin-top: 4px;
+            font-size: 10px;
+            color: #9ca3af;
+          }
+
+          .payroll-form-card {
+            padding: 14px;
+            margin-bottom: 12px;
+          }
+
+          .payroll-form-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
+          }
+
+          .payroll-form {
+            display: grid;
+            gap: 10px;
+          }
+
+          .payroll-form-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+          }
+
+          .payroll-field {
+            min-width: 0;
+          }
+
+          .payroll-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 7px;
+          }
+
+          .payroll-list-card {
+            overflow: hidden;
+          }
+
+          .payroll-list-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border-bottom: 1px solid #e5e7eb;
+          }
+
+          .payroll-filters {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) 150px 150px;
+            gap: 8px;
+            width: min(650px, 100%);
+          }
+
+          .payroll-table-wrap {
+            overflow-x: auto;
+          }
+
+          .payroll-table {
+            width: 100%;
+            min-width: 1200px;
+            border-collapse: collapse;
+            font-size: 11px;
+          }
+
+          .payroll-table th {
+            padding: 8px 9px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+            color: #6b7280;
+            font-size: 9px;
+            font-weight: 800;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+          }
+
+          .payroll-table th.money,
+          .payroll-table td.money {
+            text-align: right;
+          }
+
+          .payroll-table td {
+            padding: 9px;
+            border-bottom: 1px solid #eef0f3;
+            color: #374151;
+            vertical-align: middle;
+            white-space: nowrap;
+          }
+
+          .payroll-table tbody tr:last-child td {
+            border-bottom: none;
+          }
+
+          .payroll-table tbody tr:hover {
+            background: #fafafa;
+          }
+
+          .payroll-employee {
+            max-width: 175px;
+            overflow: hidden;
+            color: #111827;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .payroll-employee-id {
+            margin-top: 2px;
+            color: #9ca3af;
+            font-size: 10px;
+          }
+
+          .payroll-net {
+            color: #111827;
+            font-weight: 800;
+          }
+
+          .payroll-status {
+            display: inline-flex;
+            align-items: center;
+            min-height: 21px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+          }
+
+          .payroll-status-paid {
+            background: #dcfce7;
+            color: #166534;
+          }
+
+          .payroll-status-pending {
+            background: #fef3c7;
+            color: #92400e;
+          }
+
+          .payroll-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+          }
+
+          .payroll-edit,
+          .payroll-delete {
+            min-height: 27px;
+            padding: 5px 9px;
+            border-radius: 5px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+          }
+
+          .payroll-edit {
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #374151;
+          }
+
+          .payroll-delete {
+            border: 1px solid #dc2626;
+            background: #dc2626;
+            color: #ffffff;
+          }
+
+          .payroll-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 14px;
+            border-top: 1px solid #e5e7eb;
+          }
+
+          .payroll-pagination-info {
+            color: #6b7280;
+            font-size: 11px;
+          }
+
+          .payroll-pagination-actions {
+            display: flex;
+            gap: 6px;
+          }
+
+          .payroll-page-button {
+            min-height: 29px;
+            padding: 5px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            background: #ffffff;
+            color: #374151;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+          }
+
+          .payroll-page-button:disabled {
+            background: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+          }
+
+          .payroll-alert {
+            margin-bottom: 10px;
+            padding: 9px 11px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+          }
+
+          .payroll-alert-error {
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #991b1b;
+          }
+
+          .payroll-alert-success {
+            border: 1px solid #bbf7d0;
+            background: #f0fdf4;
+            color: #166534;
+          }
+
+          .payroll-empty,
+          .payroll-loading {
+            padding: 28px 14px;
+            color: #6b7280;
+            font-size: 12px;
+            text-align: center;
+          }
+
+          @media (max-width: 1000px) {
+            .payroll-kpis {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .payroll-form-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .payroll-list-header {
+              align-items: stretch;
+              flex-direction: column;
+            }
+
+            .payroll-filters {
+              width: 100%;
+            }
+          }
+
+          @media (max-width: 650px) {
+            .payroll-kpis {
+              grid-template-columns: 1fr;
+            }
+
+            .payroll-header {
+              align-items: flex-start;
+              flex-direction: column;
+            }
+
+            .payroll-form-grid,
+            .payroll-filters {
+              grid-template-columns: 1fr;
+            }
+
+            .payroll-pagination {
+              align-items: flex-start;
+              flex-direction: column;
+            }
+          }
+        `}
+      </style>
+
+      <section style={containerStyle}>
+        <header className="payroll-header">
           <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "7px",
+                marginBottom: "3px",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  color: "#6b7280",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                HRMS
+              </span>
+
+              <span
+                style={{
+                  color: "#d1d5db",
+                  fontSize: "11px",
+                }}
+              >
+                /
+              </span>
+
+              <span
+                style={{
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  color: "#9ca3af",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Payroll
+              </span>
+            </div>
+
             <h1
               style={{
                 margin: 0,
+                fontSize: "22px",
+                lineHeight: 1.2,
+                fontWeight: 800,
                 color: "#111827",
-                fontSize: "30px",
-                fontWeight: 700,
               }}
             >
               Payroll
@@ -630,35 +955,20 @@ function PayrollPage() {
 
             <p
               style={{
+                margin: "4px 0 0",
+                fontSize: "12px",
                 color: "#6b7280",
-                margin:
-                  "7px 0 0",
-                fontSize: "15px",
               }}
             >
               Manage employee salary,
-              payment and payroll records.
+              payments and payroll records.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={
-              openCreateForm
-            }
-            style={{
-              padding:
-                "11px 18px",
-              border: "none",
-              borderRadius: "8px",
-              backgroundColor:
-                "#2563eb",
-              color: "#ffffff",
-              cursor: "pointer",
-              fontWeight: 600,
-              boxShadow:
-                "0 2px 5px rgba(37, 99, 235, 0.25)",
-            }}
+            onClick={openCreateForm}
+            style={primaryButtonStyle}
           >
             + Add Payroll
           </button>
@@ -667,17 +977,7 @@ function PayrollPage() {
         {error && (
           <section
             role="alert"
-            style={{
-              padding:
-                "14px 16px",
-              marginBottom: "20px",
-              backgroundColor:
-                "#fef2f2",
-              border:
-                "1px solid #fecaca",
-              borderRadius: "8px",
-              color: "#991b1b",
-            }}
+            className="payroll-alert payroll-alert-error"
           >
             {error}
           </section>
@@ -686,190 +986,100 @@ function PayrollPage() {
         {success && (
           <section
             role="status"
-            style={{
-              padding:
-                "14px 16px",
-              marginBottom: "20px",
-              backgroundColor:
-                "#f0fdf4",
-              border:
-                "1px solid #bbf7d0",
-              borderRadius: "8px",
-              color: "#166534",
-            }}
+            className="payroll-alert payroll-alert-success"
           >
             {success}
           </section>
         )}
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(190px, 1fr))",
-            gap: "16px",
-            marginBottom: "24px",
-          }}
-        >
+        <section className="payroll-kpis">
           <div
-            style={{
-              backgroundColor:
-                "#ffffff",
-              padding: "20px",
-              borderRadius: "10px",
-              border:
-                "1px solid #e5e7eb",
-            }}
+            className="payroll-kpi"
+            style={cardStyle}
           >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                marginBottom: "7px",
-              }}
-            >
+            <div className="payroll-kpi-label">
               Total Records
             </div>
 
-            <strong
-              style={{
-                fontSize: "27px",
-                color: "#111827",
-              }}
-            >
+            <div className="payroll-kpi-value">
               {totalRecords}
-            </strong>
+            </div>
           </div>
 
           <div
-            style={{
-              backgroundColor:
-                "#ffffff",
-              padding: "20px",
-              borderRadius: "10px",
-              border:
-                "1px solid #e5e7eb",
-            }}
+            className="payroll-kpi"
+            style={cardStyle}
           >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                marginBottom: "7px",
-              }}
-            >
+            <div className="payroll-kpi-label">
               Paid Records
             </div>
 
-            <strong
-              style={{
-                fontSize: "27px",
-                color: "#166534",
-              }}
-            >
+            <div className="payroll-kpi-value">
               {statistics.paid}
-            </strong>
+            </div>
+
+            <div className="payroll-kpi-sub">
+              Current page
+            </div>
           </div>
 
           <div
-            style={{
-              backgroundColor:
-                "#ffffff",
-              padding: "20px",
-              borderRadius: "10px",
-              border:
-                "1px solid #e5e7eb",
-            }}
+            className="payroll-kpi"
+            style={cardStyle}
           >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                marginBottom: "7px",
-              }}
-            >
+            <div className="payroll-kpi-label">
               Pending Records
             </div>
 
-            <strong
-              style={{
-                fontSize: "27px",
-                color: "#92400e",
-              }}
-            >
+            <div className="payroll-kpi-value">
               {statistics.pending}
-            </strong>
+            </div>
+
+            <div className="payroll-kpi-sub">
+              Current page
+            </div>
           </div>
 
           <div
-            style={{
-              backgroundColor:
-                "#ffffff",
-              padding: "20px",
-              borderRadius: "10px",
-              border:
-                "1px solid #e5e7eb",
-            }}
+            className="payroll-kpi"
+            style={cardStyle}
           >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                marginBottom: "7px",
-              }}
-            >
+            <div className="payroll-kpi-label">
               Current Page Net Salary
             </div>
 
-            <strong
-              style={{
-                fontSize: "22px",
-                color: "#111827",
-              }}
-            >
+            <div className="payroll-kpi-value">
               {formatCurrency(
                 String(
                   statistics.totalNetSalary,
                 ),
               )}
-            </strong>
+            </div>
+
+            <div className="payroll-kpi-sub">
+              Paid:{" "}
+              {formatCurrency(
+                String(
+                  statistics.paidNetSalary,
+                ),
+              )}
+            </div>
           </div>
         </section>
 
         {showForm && (
           <section
-            style={{
-              backgroundColor:
-                "#ffffff",
-              padding: "24px",
-              borderRadius: "10px",
-              marginBottom: "24px",
-              border:
-                "1px solid #e5e7eb",
-              boxShadow:
-                "0 2px 6px rgba(0, 0, 0, 0.05)",
-            }}
+            className="payroll-form-card"
+            style={cardStyle}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent:
-                  "space-between",
-                alignItems:
-                  "center",
-                gap: "16px",
-                marginBottom:
-                  "20px",
-              }}
-            >
+            <div className="payroll-form-header">
               <div>
                 <h2
                   style={{
                     margin: 0,
-                    color:
-                      "#111827",
-                    fontSize:
-                      "20px",
+                    fontSize: "15px",
+                    fontWeight: 800,
+                    color: "#111827",
                   }}
                 >
                   {editingId !== null
@@ -879,97 +1089,56 @@ function PayrollPage() {
 
                 <p
                   style={{
-                    margin:
-                      "6px 0 0",
-                    color:
-                      "#6b7280",
-                    fontSize:
-                      "14px",
+                    margin: "3px 0 0",
+                    fontSize: "11px",
+                    color: "#6b7280",
                   }}
                 >
-                  Enter the payroll
-                  details below.
+                  Enter payroll details below.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={
-                  resetForm
-                }
-                disabled={
-                  isSubmitting
-                }
+                onClick={resetForm}
+                disabled={isSubmitting}
                 style={{
-                  border: "none",
-                  background:
-                    "transparent",
-                  color:
-                    "#6b7280",
-                  cursor:
-                    isSubmitting
-                      ? "not-allowed"
-                      : "pointer",
-                  fontSize:
-                    "22px",
+                  ...secondaryButtonStyle,
+                  opacity: isSubmitting
+                    ? 0.65
+                    : 1,
+                  cursor: isSubmitting
+                    ? "not-allowed"
+                    : "pointer",
                 }}
-                aria-label="Close form"
               >
-                ×
+                Close
               </button>
             </div>
 
             <form
-              onSubmit={
-                handleSubmit
-              }
-              style={{
-                display: "grid",
-                gap: "18px",
-              }}
+              onSubmit={handleSubmit}
+              className="payroll-form"
             >
-              <div
-                style={{
-                  display:
-                    "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "16px",
-                }}
-              >
-                <label
-                  style={{
-                    color:
-                      "#374151",
-                    fontSize:
-                      "14px",
-                    fontWeight:
-                      600,
-                  }}
-                >
-                  Employee
+              <div className="payroll-form-grid">
+                <div className="payroll-field">
+                  <label
+                    htmlFor="payroll-employee"
+                    style={labelStyle}
+                  >
+                    Employee
+                  </label>
 
                   <select
-                    value={
-                      form.employee ||
-                      ""
-                    }
-                    onChange={(
-                      event,
-                    ) =>
-                      setForm(
-                        (
-                          current,
-                        ) => ({
-                          ...current,
-                          employee:
-                            Number(
-                              event
-                                .target
-                                .value,
-                            ),
-                        }),
-                      )
+                    id="payroll-employee"
+                    value={form.employee || ""}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        employee: Number(
+                          event.target.value,
+                        ),
+                      }))
                     }
                     required
                     disabled={
@@ -977,26 +1146,11 @@ function PayrollPage() {
                       isSubmitting
                     }
                     style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      backgroundColor:
+                      ...inputStyle,
+                      background:
                         isLoadingEmployees
                           ? "#f3f4f6"
                           : "#ffffff",
-                      color:
-                        "#111827",
-                      boxSizing:
-                        "border-box",
                     }}
                   >
                     <option value="">
@@ -1008,15 +1162,10 @@ function PayrollPage() {
                     {employees.map(
                       (employee) => (
                         <option
-                          key={
-                            employee.id
-                          }
-                          value={
-                            employee.id
-                          }
+                          key={employee.id}
+                          value={employee.id}
                         >
-                          {employee.full_name}{" "}
-                          —{" "}
+                          {employee.full_name} —{" "}
                           {employee.employee_id}
                         </option>
                       ),
@@ -1024,298 +1173,148 @@ function PayrollPage() {
                   </select>
 
                   {!isLoadingEmployees &&
-                    employees.length ===
-                      0 && (
+                    employees.length === 0 && (
                       <span
                         style={{
-                          display:
-                            "block",
-                          marginTop:
-                            "6px",
-                          color:
-                            "#92400e",
-                          fontSize:
-                            "12px",
-                          fontWeight:
-                            500,
+                          display: "block",
+                          marginTop: "5px",
+                          color: "#92400e",
+                          fontSize: "10px",
+                          fontWeight: 600,
                         }}
                       >
                         No active employees
                         available.
                       </span>
                     )}
-                </label>
+                </div>
 
-                <label
-                  style={{
-                    color:
-                      "#374151",
-                    fontSize:
-                      "14px",
-                    fontWeight:
-                      600,
-                  }}
-                >
-                  Payroll Month
+                <div className="payroll-field">
+                  <label
+                    htmlFor="payroll-month"
+                    style={labelStyle}
+                  >
+                    Payroll Month
+                  </label>
 
                   <input
+                    id="payroll-month"
                     type="month"
-                    value={
-                      form.month
-                    }
-                    onChange={(
-                      event,
-                    ) =>
-                      setForm(
-                        (
-                          current,
-                        ) => ({
-                          ...current,
-                          month:
-                            event
-                              .target
-                              .value,
-                        }),
-                      )
+                    value={form.month}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        month:
+                          event.target.value,
+                      }))
                     }
                     required
-                    style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={inputStyle}
                   />
-                </label>
+                </div>
 
-                <label
-                  style={{
-                    color:
-                      "#374151",
-                    fontSize:
-                      "14px",
-                    fontWeight:
-                      600,
-                  }}
-                >
-                  Basic Salary
+                <div className="payroll-field">
+                  <label
+                    htmlFor="basic-salary"
+                    style={labelStyle}
+                  >
+                    Basic Salary
+                  </label>
 
                   <input
+                    id="basic-salary"
                     type="number"
                     min="0"
                     step="0.01"
-                    value={
-                      form.basic_salary
-                    }
-                    onChange={(
-                      event,
-                    ) =>
-                      setForm(
-                        (
-                          current,
-                        ) => ({
-                          ...current,
-                          basic_salary:
-                            event
-                              .target
-                              .value,
-                        }),
-                      )
+                    value={form.basic_salary}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        basic_salary:
+                          event.target.value,
+                      }))
                     }
                     required
-                    style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={inputStyle}
                   />
-                </label>
+                </div>
 
-                <label
-                  style={{
-                    color:
-                      "#374151",
-                    fontSize:
-                      "14px",
-                    fontWeight:
-                      600,
-                  }}
-                >
-                  Allowances
+                <div className="payroll-field">
+                  <label
+                    htmlFor="allowances"
+                    style={labelStyle}
+                  >
+                    Allowances
+                  </label>
 
                   <input
+                    id="allowances"
                     type="number"
                     min="0"
                     step="0.01"
-                    value={
-                      form.allowances
+                    value={form.allowances}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        allowances:
+                          event.target.value,
+                      }))
                     }
-                    onChange={(
-                      event,
-                    ) =>
-                      setForm(
-                        (
-                          current,
-                        ) => ({
-                          ...current,
-                          allowances:
-                            event
-                              .target
-                              .value,
-                        }),
-                      )
-                    }
-                    style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={inputStyle}
                   />
-                </label>
+                </div>
 
-                <label
-                  style={{
-                    color:
-                      "#374151",
-                    fontSize:
-                      "14px",
-                    fontWeight:
-                      600,
-                  }}
-                >
-                  Deductions
+                <div className="payroll-field">
+                  <label
+                    htmlFor="deductions"
+                    style={labelStyle}
+                  >
+                    Deductions
+                  </label>
 
                   <input
+                    id="deductions"
                     type="number"
                     min="0"
                     step="0.01"
-                    value={
-                      form.deductions
+                    value={form.deductions}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        deductions:
+                          event.target.value,
+                      }))
                     }
-                    onChange={(
-                      event,
-                    ) =>
-                      setForm(
-                        (
-                          current,
-                        ) => ({
-                          ...current,
-                          deductions:
-                            event
-                              .target
-                              .value,
-                        }),
-                      )
-                    }
-                    style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={inputStyle}
                   />
-                </label>
+                </div>
 
-                <label
-                  style={{
-                    color:
-                      "#374151",
-                    fontSize:
-                      "14px",
-                    fontWeight:
-                      600,
-                  }}
-                >
-                  Payment Status
+                <div className="payroll-field">
+                  <label
+                    htmlFor="payment-status"
+                    style={labelStyle}
+                  >
+                    Payment Status
+                  </label>
 
                   <select
-                    value={
-                      form.payment_status
+                    id="payment-status"
+                    value={form.payment_status}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        payment_status:
+                          event.target.value as
+                            | "pending"
+                            | "paid",
+                        paid_at:
+                          event.target.value ===
+                          "pending"
+                            ? ""
+                            : current.paid_at,
+                      }))
                     }
-                    onChange={(
-                      event,
-                    ) =>
-                      setForm(
-                        (
-                          current,
-                        ) => ({
-                          ...current,
-                          payment_status:
-                            event
-                              .target
-                              .value as
-                              | "pending"
-                              | "paid",
-                          paid_at:
-                            event
-                              .target
-                              .value ===
-                            "pending"
-                              ? ""
-                              : current.paid_at,
-                        }),
-                      )
-                    }
-                    style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      backgroundColor:
-                        "#ffffff",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={inputStyle}
                   >
                     <option value="pending">
                       Pending
@@ -1325,73 +1324,54 @@ function PayrollPage() {
                       Paid
                     </option>
                   </select>
-                </label>
+                </div>
 
                 {form.payment_status ===
                   "paid" && (
-                  <label
-                    style={{
-                      color:
-                        "#374151",
-                      fontSize:
-                        "14px",
-                      fontWeight:
-                        600,
-                    }}
-                  >
-                    Paid At
+                  <div className="payroll-field">
+                    <label
+                      htmlFor="paid-at"
+                      style={labelStyle}
+                    >
+                      Paid At
+                    </label>
 
                     <input
+                      id="paid-at"
                       type="datetime-local"
-                      value={
-                        form.paid_at
-                      }
-                      onChange={(
-                        event,
-                      ) =>
-                        setForm(
-                          (
-                            current,
-                          ) => ({
-                            ...current,
-                            paid_at:
-                              event
-                                .target
-                                .value,
-                          }),
-                        )
+                      value={form.paid_at}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          paid_at:
+                            event.target.value,
+                        }))
                       }
                       required
-                      style={{
-                        display:
-                          "block",
-                        width:
-                          "100%",
-                        marginTop:
-                          "7px",
-                        padding:
-                          "11px 12px",
-                        border:
-                          "1px solid #d1d5db",
-                        borderRadius:
-                          "7px",
-                        boxSizing:
-                          "border-box",
-                      }}
+                      style={inputStyle}
                     />
-                  </label>
+                  </div>
                 )}
               </div>
 
-              <div
-                style={{
-                  display:
-                    "flex",
-                  gap: "10px",
-                  flexWrap:
-                    "wrap",
-                }}
-              >
+              <div className="payroll-form-actions">
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  disabled={isSubmitting}
+                  style={{
+                    ...secondaryButtonStyle,
+                    opacity: isSubmitting
+                      ? 0.65
+                      : 1,
+                    cursor: isSubmitting
+                      ? "not-allowed"
+                      : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+
                 <button
                   type="submit"
                   disabled={
@@ -1400,65 +1380,26 @@ function PayrollPage() {
                     employees.length === 0
                   }
                   style={{
-                    padding:
-                      "10px 18px",
-                    border: "none",
-                    borderRadius:
-                      "7px",
-                    backgroundColor:
+                    ...primaryButtonStyle,
+                    opacity:
                       isSubmitting ||
                       isLoadingEmployees ||
                       employees.length === 0
-                        ? "#93c5fd"
-                        : "#2563eb",
-                    color:
-                      "#ffffff",
+                        ? 0.65
+                        : 1,
                     cursor:
                       isSubmitting ||
                       isLoadingEmployees ||
                       employees.length === 0
                         ? "not-allowed"
                         : "pointer",
-                    fontWeight:
-                      600,
                   }}
                 >
                   {isSubmitting
                     ? "Saving..."
-                    : editingId !==
-                        null
+                    : editingId !== null
                       ? "Update Payroll"
                       : "Save Payroll"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={
-                    resetForm
-                  }
-                  disabled={
-                    isSubmitting
-                  }
-                  style={{
-                    padding:
-                      "10px 18px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "7px",
-                    backgroundColor:
-                      "#ffffff",
-                    color:
-                      "#374151",
-                    cursor:
-                      isSubmitting
-                        ? "not-allowed"
-                        : "pointer",
-                    fontWeight:
-                      600,
-                  }}
-                >
-                  Cancel
                 </button>
               </div>
             </form>
@@ -1466,145 +1407,60 @@ function PayrollPage() {
         )}
 
         <section
-          style={{
-            backgroundColor:
-              "#ffffff",
-            borderRadius: "10px",
-            border:
-              "1px solid #e5e7eb",
-            overflow: "hidden",
-          }}
+          className="payroll-list-card"
+          style={cardStyle}
         >
-          <div
-            style={{
-              padding:
-                "20px 24px",
-              borderBottom:
-                "1px solid #e5e7eb",
-            }}
-          >
-            <div
-              style={{
-                display:
-                  "flex",
-                justifyContent:
-                  "space-between",
-                alignItems:
-                  "center",
-                gap: "16px",
-                flexWrap:
-                  "wrap",
-              }}
-            >
-              <div>
-                <h2
-                  style={{
-                    margin: 0,
-                    color:
-                      "#111827",
-                    fontSize:
-                      "19px",
-                  }}
-                >
-                  Payroll Records
-                </h2>
+          <div className="payroll-list-header">
+            <div>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: "15px",
+                  fontWeight: 800,
+                  color: "#111827",
+                }}
+              >
+                Payroll Records
+              </h2>
 
-                <p
-                  style={{
-                    margin:
-                      "5px 0 0",
-                    color:
-                      "#6b7280",
-                    fontSize:
-                      "13px",
-                  }}
-                >
-                  Showing{" "}
-                  {totalRecords === 0
-                    ? 0
-                    : (currentPage -
-                        1) *
-                        pageSize +
-                      1}{" "}
-                  -{" "}
-                  {Math.min(
-                    currentPage *
-                      pageSize,
-                    totalRecords,
-                  )}{" "}
-                  of{" "}
-                  {totalRecords}{" "}
-                  records
-                </p>
-              </div>
+              <p
+                style={{
+                  margin: "3px 0 0",
+                  fontSize: "11px",
+                  color: "#6b7280",
+                }}
+              >
+                Showing {rangeStart} - {rangeEnd} of{" "}
+                {totalRecords} records
+              </p>
             </div>
 
-            <div
-              style={{
-                display:
-                  "grid",
-                gridTemplateColumns:
-                  "minmax(240px, 1fr) 170px 170px",
-                gap: "10px",
-                marginTop:
-                  "18px",
-              }}
-            >
+            <div className="payroll-filters">
               <input
                 type="search"
-                value={
-                  searchTerm
-                }
-                onChange={(
-                  event,
-                ) =>
+                value={searchTerm}
+                onChange={(event) =>
                   setSearchTerm(
-                    event.target
-                      .value,
+                    event.target.value,
                   )
                 }
                 placeholder="Search employee..."
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius:
-                    "7px",
-                  outline:
-                    "none",
-                  boxSizing:
-                    "border-box",
-                  width:
-                    "100%",
-                }}
+                aria-label="Search employee"
+                style={inputStyle}
               />
 
               <select
-                value={
-                  statusFilter
-                }
-                onChange={(
-                  event,
-                ) =>
+                value={statusFilter}
+                onChange={(event) =>
                   setStatusFilter(
-                    event.target
-                      .value as
+                    event.target.value as
                       | "all"
                       | "pending"
                       | "paid",
                   )
                 }
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius:
-                    "7px",
-                  backgroundColor:
-                    "#ffffff",
-                }}
+                aria-label="Filter payment status"
+                style={inputStyle}
               >
                 <option value="all">
                   All Status
@@ -1621,497 +1477,225 @@ function PayrollPage() {
 
               <input
                 type="month"
-                value={
-                  monthFilter
-                }
-                onChange={(
-                  event,
-                ) =>
+                value={monthFilter}
+                onChange={(event) =>
                   setMonthFilter(
-                    event.target
-                      .value,
+                    event.target.value,
                   )
                 }
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius:
-                    "7px",
-                  backgroundColor:
-                    "#ffffff",
-                }}
+                aria-label="Filter payroll month"
+                style={inputStyle}
               />
             </div>
           </div>
 
           {isLoading ? (
-            <div
-              style={{
-                padding:
-                  "45px 24px",
-                textAlign:
-                  "center",
-                color:
-                  "#6b7280",
-              }}
-            >
+            <div className="payroll-loading">
               Loading payroll...
             </div>
-          ) : records.length ===
-            0 ? (
-            <div
-              style={{
-                padding:
-                  "50px 24px",
-                textAlign:
-                  "center",
-              }}
-            >
-              <div
-                style={{
-                  fontSize:
-                    "36px",
-                  marginBottom:
-                    "10px",
-                }}
-              >
-                ₹
-              </div>
-
-              <h3
-                style={{
-                  margin:
-                    "0 0 6px",
-                  color:
-                    "#111827",
-                }}
-              >
-                No payroll records
-                found
-              </h3>
-
-              <p
-                style={{
-                  margin: 0,
-                  color:
-                    "#6b7280",
-                }}
-              >
-                Try changing the
-                filters or add a
-                new payroll record.
-              </p>
+          ) : records.length === 0 ? (
+            <div className="payroll-empty">
+              No payroll records found. Try
+              changing the filters or add a new
+              payroll record.
             </div>
           ) : (
             <>
-              <div
-                style={{
-                  overflowX:
-                    "auto",
-                }}
-              >
-                <table
-                  style={{
-                    width:
-                      "100%",
-                    borderCollapse:
-                      "collapse",
-                    minWidth:
-                      "1350px",
-                  }}
-                >
+              <div className="payroll-table-wrap">
+                <table className="payroll-table">
                   <thead>
-                    <tr
-                      style={{
-                        backgroundColor:
-                          "#f9fafb",
-                      }}
-                    >
+                    <tr>
                       {[
-                        "Employee",
-                        "Month",
-                        "Basic",
-                        "Allowances",
-                        "Deductions",
-                        "Gross",
-                        "Net Salary",
-                        "Status",
-                        "Paid At",
-                        "Actions",
-                      ].map(
-                        (heading) => (
-                          <th
-                            key={
-                              heading
-                            }
-                            style={{
-                              padding:
-                                "13px 16px",
-                              textAlign:
-                                [
-                                  "Basic",
-                                  "Allowances",
-                                  "Deductions",
-                                  "Gross",
-                                  "Net Salary",
-                                ].includes(
-                                  heading,
-                                )
-                                  ? "right"
-                                  : "left",
-                              color:
-                                "#4b5563",
-                              fontSize:
-                                "12px",
-                              fontWeight:
-                                700,
-                              textTransform:
-                                "uppercase",
-                              borderBottom:
-                                "1px solid #e5e7eb",
-                              whiteSpace:
-                                "nowrap",
-                            }}
-                          >
-                            {heading}
-                          </th>
-                        ),
-                      )}
+                        {
+                          label: "Employee",
+                          className: "",
+                        },
+                        {
+                          label: "Month",
+                          className: "",
+                        },
+                        {
+                          label: "Basic",
+                          className: "money",
+                        },
+                        {
+                          label: "Allowances",
+                          className: "money",
+                        },
+                        {
+                          label: "Deductions",
+                          className: "money",
+                        },
+                        {
+                          label: "Gross",
+                          className: "money",
+                        },
+                        {
+                          label: "Net Salary",
+                          className: "money",
+                        },
+                        {
+                          label: "Status",
+                          className: "",
+                        },
+                        {
+                          label: "Paid At",
+                          className: "",
+                        },
+                        {
+                          label: "Actions",
+                          className: "",
+                        },
+                      ].map((heading) => (
+                        <th
+                          key={heading.label}
+                          className={
+                            heading.className
+                          }
+                        >
+                          {heading.label}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
 
                   <tbody>
-                    {records.map(
-                      (record) => (
-                        <tr
-                          key={
-                            record.id
-                          }
-                        >
-                          <td
-                            style={{
-                              padding:
-                                "15px 16px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                              color:
-                                "#111827",
-                            }}
+                    {records.map((record) => (
+                      <tr key={record.id}>
+                        <td>
+                          <div
+                            className="payroll-employee"
+                            title={
+                              record.employee_name ||
+                              "-"
+                            }
                           >
-                            <strong>
-                              {record.employee_name ||
-                                "-"}
-                            </strong>
+                            {record.employee_name ||
+                              "-"}
+                          </div>
 
-                            <div
-                              style={{
-                                fontSize:
-                                  "12px",
-                                color:
-                                  "#6b7280",
-                                marginTop:
-                                  "4px",
-                              }}
+                          <div className="payroll-employee-id">
+                            {record.employee_id ||
+                              `Employee #${record.employee}`}
+                          </div>
+                        </td>
+
+                        <td>
+                          {formatMonth(
+                            record.month,
+                          )}
+                        </td>
+
+                        <td className="money">
+                          {formatCurrency(
+                            record.basic_salary,
+                          )}
+                        </td>
+
+                        <td className="money">
+                          {formatCurrency(
+                            record.allowances,
+                          )}
+                        </td>
+
+                        <td className="money">
+                          {formatCurrency(
+                            record.deductions,
+                          )}
+                        </td>
+
+                        <td className="money">
+                          {formatCurrency(
+                            record.gross_salary,
+                          )}
+                        </td>
+
+                        <td className="money payroll-net">
+                          {formatCurrency(
+                            record.net_salary,
+                          )}
+                        </td>
+
+                        <td>
+                          <span
+                            className={`payroll-status ${
+                              record.payment_status ===
+                              "paid"
+                                ? "payroll-status-paid"
+                                : "payroll-status-pending"
+                            }`}
+                          >
+                            {formatStatus(
+                              record.payment_status,
+                            )}
+                          </span>
+                        </td>
+
+                        <td>
+                          {formatPaidAt(
+                            record.paid_at,
+                          )}
+                        </td>
+
+                        <td>
+                          <div className="payroll-actions">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openEditForm(
+                                  record,
+                                )
+                              }
+                              className="payroll-edit"
                             >
-                              {record.employee_id ||
-                                `Employee #${record.employee}`}
-                            </div>
-                          </td>
+                              Edit
+                            </button>
 
-                          <td
-                            style={{
-                              padding:
-                                "15px 16px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                              whiteSpace:
-                                "nowrap",
-                              color:
-                                "#374151",
-                            }}
-                          >
-                            {formatMonth(
-                              record.month,
-                            )}
-                          </td>
-
-                          <td
-                            style={{
-                              padding:
-                                "15px 16px",
-                              textAlign:
-                                "right",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                              whiteSpace:
-                                "nowrap",
-                            }}
-                          >
-                            {formatCurrency(
-                              record.basic_salary,
-                            )}
-                          </td>
-
-                          <td
-                            style={{
-                              padding:
-                                "15px 16px",
-                              textAlign:
-                                "right",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                              whiteSpace:
-                                "nowrap",
-                            }}
-                          >
-                            {formatCurrency(
-                              record.allowances,
-                            )}
-                          </td>
-
-                          <td
-                            style={{
-                              padding:
-                                "15px 16px",
-                              textAlign:
-                                "right",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                              whiteSpace:
-                                "nowrap",
-                            }}
-                          >
-                            {formatCurrency(
-                              record.deductions,
-                            )}
-                          </td>
-
-                          <td
-                            style={{
-                              padding:
-                                "15px 16px",
-                              textAlign:
-                                "right",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                              whiteSpace:
-                                "nowrap",
-                            }}
-                          >
-                            {formatCurrency(
-                              record.gross_salary,
-                            )}
-                          </td>
-
-                          <td
-                            style={{
-                              padding:
-                                "15px 16px",
-                              textAlign:
-                                "right",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                              borderBottomColor:
-                                "#f3f4f6",
-                              fontWeight:
-                                700,
-                              color:
-                                "#111827",
-                              whiteSpace:
-                                "nowrap",
-                            }}
-                          >
-                            {formatCurrency(
-                              record.net_salary,
-                            )}
-                          </td>
-
-                          <td
-                            style={{
-                              padding:
-                                "15px 16px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                            }}
-                          >
-                            <span
+                            <button
+                              type="button"
+                              disabled={
+                                deletingId ===
+                                record.id
+                              }
+                              onClick={() =>
+                                void handleDelete(
+                                  record.id,
+                                )
+                              }
+                              className="payroll-delete"
                               style={{
-                                display:
-                                  "inline-block",
-                                padding:
-                                  "5px 9px",
-                                borderRadius:
-                                  "999px",
-                                backgroundColor:
-                                  record.payment_status ===
-                                  "paid"
-                                    ? "#dcfce7"
-                                    : "#fef3c7",
-                                color:
-                                  record.payment_status ===
-                                  "paid"
-                                    ? "#166534"
-                                    : "#92400e",
-                                fontSize:
-                                  "12px",
-                                fontWeight:
-                                  700,
-                              }}
-                            >
-                              {formatStatus(
-                                record.payment_status,
-                              )}
-                            </span>
-                          </td>
-
-                          <td
-                            style={{
-                              padding:
-                                "15px 16px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                              whiteSpace:
-                                "nowrap",
-                              color:
-                                "#4b5563",
-                            }}
-                          >
-                            {formatPaidAt(
-                              record.paid_at,
-                            )}
-                          </td>
-
-                          <td
-                            style={{
-                              padding:
-                                "15px 16px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                            }}
-                          >
-                            <div
-                              style={{
-                                display:
-                                  "flex",
-                                gap:
-                                  "8px",
-                              }}
-                            >
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  openEditForm(
-                                    record,
-                                  )
-                                }
-                                style={{
-                                  padding:
-                                    "7px 12px",
-                                  border:
-                                    "1px solid #2563eb",
-                                  borderRadius:
-                                    "6px",
-                                  backgroundColor:
-                                    "#ffffff",
-                                  color:
-                                    "#2563eb",
-                                  cursor:
-                                    "pointer",
-                                  fontWeight:
-                                    600,
-                                }}
-                              >
-                                Edit
-                              </button>
-
-                              <button
-                                type="button"
-                                disabled={
+                                opacity:
                                   deletingId ===
                                   record.id
-                                }
-                                onClick={() =>
-                                  void handleDelete(
-                                    record.id,
-                                  )
-                                }
-                                style={{
-                                  padding:
-                                    "7px 12px",
-                                  border:
-                                    "none",
-                                  borderRadius:
-                                    "6px",
-                                  backgroundColor:
-                                    deletingId ===
-                                    record.id
-                                      ? "#fca5a5"
-                                      : "#dc2626",
-                                  color:
-                                    "#ffffff",
-                                  cursor:
-                                    deletingId ===
-                                    record.id
-                                      ? "not-allowed"
-                                      : "pointer",
-                                  fontWeight:
-                                    600,
-                                }}
-                              >
-                                {deletingId ===
-                                record.id
-                                  ? "Deleting..."
-                                  : "Delete"}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ),
-                    )}
+                                    ? 0.65
+                                    : 1,
+                                cursor:
+                                  deletingId ===
+                                  record.id
+                                    ? "not-allowed"
+                                    : "pointer",
+                              }}
+                            >
+                              {deletingId ===
+                              record.id
+                                ? "Deleting..."
+                                : "Delete"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
 
-              <div
-                style={{
-                  display:
-                    "flex",
-                  alignItems:
-                    "center",
-                  justifyContent:
-                    "space-between",
-                  gap: "16px",
-                  padding:
-                    "16px 24px",
-                  borderTop:
-                    "1px solid #e5e7eb",
-                  flexWrap:
-                    "wrap",
-                }}
-              >
-                <span
-                  style={{
-                    color:
-                      "#6b7280",
-                    fontSize:
-                      "14px",
-                  }}
-                >
-                  Page{" "}
-                  {currentPage}{" "}
-                  of{" "}
+              <div className="payroll-pagination">
+                <span className="payroll-pagination-info">
+                  Page {currentPage} of{" "}
                   {totalPages}
                 </span>
 
-                <div
-                  style={{
-                    display:
-                      "flex",
-                    gap: "8px",
-                  }}
-                >
+                <div className="payroll-pagination-actions">
                   <button
                     type="button"
                     disabled={
@@ -2127,31 +1711,7 @@ function PayrollPage() {
                           ),
                       )
                     }
-                    style={{
-                      padding:
-                        "8px 14px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      backgroundColor:
-                        currentPage <=
-                        1
-                          ? "#f3f4f6"
-                          : "#ffffff",
-                      color:
-                        currentPage <=
-                        1
-                          ? "#9ca3af"
-                          : "#374151",
-                      cursor:
-                        currentPage <=
-                        1
-                          ? "not-allowed"
-                          : "pointer",
-                      fontWeight:
-                        600,
-                    }}
+                    className="payroll-page-button"
                   >
                     Previous
                   </button>
@@ -2168,36 +1728,11 @@ function PayrollPage() {
                         (current) =>
                           Math.min(
                             totalPages,
-                            current +
-                              1,
+                            current + 1,
                           ),
                       )
                     }
-                    style={{
-                      padding:
-                        "8px 14px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      backgroundColor:
-                        currentPage >=
-                        totalPages
-                          ? "#f3f4f6"
-                          : "#ffffff",
-                      color:
-                        currentPage >=
-                        totalPages
-                          ? "#9ca3af"
-                          : "#374151",
-                      cursor:
-                        currentPage >=
-                        totalPages
-                          ? "not-allowed"
-                          : "pointer",
-                      fontWeight:
-                        600,
-                    }}
+                    className="payroll-page-button"
                   >
                     Next
                   </button>
