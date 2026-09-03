@@ -1,34 +1,61 @@
 import {
   useState,
+  type ChangeEvent,
+  type CSSProperties,
+  type FormEvent,
 } from "react"
 
-import type {
-  FormEvent,
-} from "react"
+import { forgotPassword } from "../api/auth"
 
-import type {
-  ChangeEvent,
-} from "react"
+const pageStyle: CSSProperties = {
+  minHeight: "100vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "16px",
+  boxSizing: "border-box",
+  background: "#f8fafc",
+  fontFamily: "Inter, Arial, Helvetica, sans-serif",
+}
 
-import {
-  forgotPassword,
-} from "../api/auth"
+const cardStyle: CSSProperties = {
+  width: "100%",
+  maxWidth: "400px",
+  background: "#ffffff",
+  border: "1px solid #e5e7eb",
+  borderRadius: "8px",
+  padding: "22px",
+  boxSizing: "border-box",
+  boxShadow: "0 2px 6px rgba(15,23,42,0.04)",
+}
+
+const labelStyle: CSSProperties = {
+  display: "block",
+  marginBottom: "5px",
+  color: "#374151",
+  fontSize: "12px",
+  fontWeight: 700,
+}
+
+const inputStyle: CSSProperties = {
+  width: "100%",
+  minHeight: "36px",
+  padding: "7px 10px",
+  border: "1px solid #d1d5db",
+  borderRadius: "6px",
+  outline: "none",
+  boxSizing: "border-box",
+  color: "#111827",
+  background: "#ffffff",
+  fontSize: "12px",
+}
 
 function ForgotPassword() {
-  const [username, setUsername] =
-    useState("")
-
-  const [email, setEmail] =
-    useState("")
-
-  const [message, setMessage] =
-    useState("")
-
-  const [error, setError] =
-    useState("")
-
-  const [isLoading, setIsLoading] =
-    useState(false)
+  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
+  const [message, setMessage] = useState("")
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>,
@@ -48,13 +75,10 @@ function ForgotPassword() {
     try {
       setIsLoading(true)
 
-      const response =
-        await forgotPassword({
-          username:
-            username.trim() || undefined,
-          email:
-            email.trim() || undefined,
-        })
+      const response = await forgotPassword({
+        username: username.trim() || undefined,
+        email: email.trim() || undefined,
+      })
 
       setMessage(response.detail)
     } catch (requestError) {
@@ -84,54 +108,32 @@ function ForgotPassword() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
-        background: "#f5f7fb",
-        fontFamily:
-          "Inter, Arial, Helvetica, sans-serif",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "430px",
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
-          borderRadius: "14px",
-          padding: "30px",
-          boxSizing: "border-box",
-          boxShadow:
-            "0 8px 24px rgba(15,23,42,0.06)",
-        }}
-      >
+    <main style={pageStyle}>
+      <section style={cardStyle}>
         <div
           style={{
-            marginBottom: "24px",
+            marginBottom: "18px",
           }}
         >
           <div
             style={{
               color: "#2563eb",
-              fontSize: "11px",
+              fontSize: "10px",
               fontWeight: 800,
               textTransform: "uppercase",
               letterSpacing: "0.08em",
-              marginBottom: "7px",
+              marginBottom: "4px",
             }}
           >
-            HR Management System
+            HRMS / Account Recovery
           </div>
 
           <h1
             style={{
               margin: 0,
-              color: "#172033",
-              fontSize: "24px",
+              color: "#111827",
+              fontSize: "21px",
+              lineHeight: 1.2,
               fontWeight: 800,
             }}
           >
@@ -140,28 +142,29 @@ function ForgotPassword() {
 
           <p
             style={{
-              margin: "8px 0 0",
-              color: "#64748b",
-              fontSize: "13px",
-              lineHeight: 1.6,
+              margin: "5px 0 0",
+              color: "#6b7280",
+              fontSize: "11px",
+              lineHeight: 1.5,
             }}
           >
-            Enter your username or email address
-            to start the password recovery process.
+            Enter your username or email address to
+            start the password recovery process.
           </p>
         </div>
 
         {message && (
           <div
+            role="status"
             style={{
-              marginBottom: "18px",
-              padding: "12px 14px",
-              borderRadius: "8px",
+              marginBottom: "12px",
+              padding: "8px 10px",
+              borderRadius: "6px",
               background: "#f0fdf4",
               border: "1px solid #bbf7d0",
               color: "#166534",
-              fontSize: "13px",
-              lineHeight: 1.5,
+              fontSize: "11px",
+              lineHeight: 1.45,
             }}
           >
             {message}
@@ -170,15 +173,16 @@ function ForgotPassword() {
 
         {error && (
           <div
+            role="alert"
             style={{
-              marginBottom: "18px",
-              padding: "12px 14px",
-              borderRadius: "8px",
+              marginBottom: "12px",
+              padding: "8px 10px",
+              borderRadius: "6px",
               background: "#fef2f2",
               border: "1px solid #fecaca",
-              color: "#b91c1c",
-              fontSize: "13px",
-              lineHeight: 1.5,
+              color: "#991b1b",
+              fontSize: "11px",
+              lineHeight: 1.45,
             }}
           >
             {error}
@@ -188,18 +192,12 @@ function ForgotPassword() {
         <form onSubmit={handleSubmit}>
           <div
             style={{
-              marginBottom: "16px",
+              marginBottom: "10px",
             }}
           >
             <label
               htmlFor="forgot-username"
-              style={{
-                display: "block",
-                marginBottom: "7px",
-                color: "#334155",
-                fontSize: "13px",
-                fontWeight: 700,
-              }}
+              style={labelStyle}
             >
               Username
             </label>
@@ -211,35 +209,18 @@ function ForgotPassword() {
               onChange={handleUsernameChange}
               placeholder="Enter username"
               autoComplete="username"
-              style={{
-                width: "100%",
-                padding: "11px 12px",
-                border:
-                  "1px solid #d1d5db",
-                borderRadius: "8px",
-                outline: "none",
-                boxSizing: "border-box",
-                color: "#172033",
-                background: "#ffffff",
-                fontSize: "13px",
-              }}
+              style={inputStyle}
             />
           </div>
 
           <div
             style={{
-              marginBottom: "20px",
+              marginBottom: "14px",
             }}
           >
             <label
               htmlFor="forgot-email"
-              style={{
-                display: "block",
-                marginBottom: "7px",
-                color: "#334155",
-                fontSize: "13px",
-                fontWeight: 700,
-              }}
+              style={labelStyle}
             >
               Email Address
             </label>
@@ -251,18 +232,7 @@ function ForgotPassword() {
               onChange={handleEmailChange}
               placeholder="Enter email address"
               autoComplete="email"
-              style={{
-                width: "100%",
-                padding: "11px 12px",
-                border:
-                  "1px solid #d1d5db",
-                borderRadius: "8px",
-                outline: "none",
-                boxSizing: "border-box",
-                color: "#172033",
-                background: "#ffffff",
-                fontSize: "13px",
-              }}
+              style={inputStyle}
             />
           </div>
 
@@ -271,14 +241,15 @@ function ForgotPassword() {
             disabled={isLoading}
             style={{
               width: "100%",
-              padding: "11px 14px",
+              minHeight: "36px",
+              padding: "7px 12px",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "6px",
               background: isLoading
                 ? "#93c5fd"
                 : "#2563eb",
               color: "#ffffff",
-              fontSize: "13px",
+              fontSize: "12px",
               fontWeight: 700,
               cursor: isLoading
                 ? "not-allowed"
@@ -290,8 +261,21 @@ function ForgotPassword() {
               : "Reset Password"}
           </button>
         </form>
-      </div>
-    </div>
+
+        <div
+          style={{
+            marginTop: "12px",
+            paddingTop: "10px",
+            borderTop: "1px solid #f1f5f9",
+            textAlign: "center",
+            color: "#9ca3af",
+            fontSize: "10px",
+          }}
+        >
+          HR Management System
+        </div>
+      </section>
+    </main>
   )
 }
 
