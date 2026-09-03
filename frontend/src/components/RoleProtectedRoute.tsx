@@ -25,7 +25,7 @@ function RoleProtectedRoute({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "24px",
+          padding: "16px",
           boxSizing: "border-box",
           background: "#f8fafc",
           color: "#475569",
@@ -36,14 +36,14 @@ function RoleProtectedRoute({
         <section
           style={{
             width: "100%",
-            maxWidth: "360px",
-            padding: "28px",
+            maxWidth: "320px",
+            padding: "20px",
             background: "#ffffff",
             border: "1px solid #e2e8f0",
-            borderRadius: "12px",
+            borderRadius: "10px",
             textAlign: "center",
             boxShadow:
-              "0 4px 14px rgba(15,23,42,0.05)",
+              "0 2px 8px rgba(15,23,42,0.04)",
           }}
         >
           <p
@@ -59,9 +59,10 @@ function RoleProtectedRoute({
 
           <p
             style={{
-              margin: "8px 0 0",
+              margin: "6px 0 0",
               color: "#64748b",
               fontSize: "12px",
+              lineHeight: 1.4,
             }}
           >
             Please wait while we verify your access.
