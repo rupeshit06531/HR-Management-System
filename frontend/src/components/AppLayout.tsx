@@ -1,8 +1,13 @@
 import {
   NavLink,
   Outlet,
+  useLocation,
   useNavigate,
 } from "react-router-dom"
+import {
+  useEffect,
+  useState,
+} from "react"
 
 import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
@@ -152,6 +157,7 @@ const roleLabels: Record<string, string> = {
 
 function AppLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
 
   const {
     user,
@@ -163,15 +169,11 @@ function AppLayout() {
     toggleDarkMode,
   } = useTheme()
 
-  const handleLogout = async () => {
-    try {
-      await logout()
-    } finally {
-      navigate("/login", {
-        replace: true,
-      })
-    }
-  }
+  const [isMobileMenuOpen, setIsMobileMenuOpen] =
+    useState(false)
+
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] =
+    useState(false)
 
   const visibleNavigationItems =
     navigationItems.filter((item) =>
@@ -200,14 +202,61 @@ function AppLayout() {
       )
       .join("") || "U"
 
+  const currentNavigation =
+    visibleNavigationItems.find(
+      (item) =>
+        location.pathname === item.path ||
+        location.pathname.startsWith(
+          `${item.path}/`,
+        ),
+    )
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } finally {
+      navigate("/login", {
+        replace: true,
+      })
+    }
+  }
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false)
+  }
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [location.pathname])
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 900) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+
+    window.addEventListener(
+      "resize",
+      handleResize,
+    )
+
+    return () => {
+      window.removeEventListener(
+        "resize",
+        handleResize,
+      )
+    }
+  }, [])
+
   return (
     <div
       style={{
         minHeight: "100vh",
         display: "flex",
         background: isDarkMode
-          ? "linear-gradient(180deg, #071018 0%, #0f172a 100%)"
-          : "linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)",
+          ? "linear-gradient(180deg, #080d13 0%, #0f1720 100%)"
+          : "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
         color: isDarkMode
           ? "#f8fafc"
           : "#111827",
@@ -215,10 +264,35 @@ function AppLayout() {
           '"Inter", "Segoe UI", Arial, sans-serif',
       }}
     >
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={closeMobileMenu}
+          style={{
+            position: "fixed",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            border: "none",
+            borderRadius: 0,
+            background: isDarkMode
+              ? "rgba(0,0,0,0.62)"
+              : "rgba(15,23,42,0.35)",
+            cursor: "pointer",
+            zIndex: 40,
+          }}
+        />
+      )}
+
       <aside
         style={{
-          width: "225px",
-          minWidth: "225px",
+          width: isDesktopSidebarCollapsed
+            ? "72px"
+            : "225px",
+          minWidth: isDesktopSidebarCollapsed
+            ? "72px"
+            : "225px",
           height: "100vh",
           position: "sticky",
           top: 0,
@@ -228,16 +302,25 @@ function AppLayout() {
           flexDirection: "column",
           boxSizing: "border-box",
           background: isDarkMode
-            ? "linear-gradient(180deg, rgba(8,12,18,0.98), rgba(12,17,25,0.99))"
+            ? "linear-gradient(180deg, #090d13 0%, #0d141d 100%)"
             : "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
           borderRight: isDarkMode
-            ? "1px solid rgba(148,163,184,0.16)"
+            ? "1px solid rgba(148,163,184,0.14)"
             : "1px solid #e2e8f0",
+          boxShadow: isDarkMode
+            ? "8px 0 28px rgba(0,0,0,0.18)"
+            : "8px 0 24px rgba(15,23,42,0.05)",
+          transition:
+            "width 180ms ease, min-width 180ms ease, transform 180ms ease",
+          zIndex: 50,
         }}
+        className="hrms-sidebar"
       >
         <div
           style={{
-            padding: "15px 15px 14px",
+            padding: isDesktopSidebarCollapsed
+              ? "15px 10px 14px"
+              : "15px 15px 14px",
             borderBottom:
               "1px solid var(--border)",
           }}
@@ -247,6 +330,7 @@ function AppLayout() {
             onClick={() =>
               navigate("/dashboard")
             }
+            aria-label="Go to dashboard"
             style={{
               width: "100%",
               border: "none",
@@ -261,6 +345,10 @@ function AppLayout() {
               style={{
                 display: "flex",
                 alignItems: "center",
+                justifyContent:
+                  isDesktopSidebarCollapsed
+                    ? "center"
+                    : "flex-start",
                 gap: "9px",
               }}
             >
@@ -279,43 +367,47 @@ function AppLayout() {
                   fontWeight: 900,
                   letterSpacing: "0.03em",
                   flexShrink: 0,
+                  boxShadow:
+                    "0 6px 16px rgba(249,115,22,0.20)",
                 }}
               >
                 HR
               </div>
 
-              <div
-                style={{
-                  minWidth: 0,
-                }}
-              >
+              {!isDesktopSidebarCollapsed && (
                 <div
                   style={{
-                    color: isDarkMode
-                      ? "#f8fafc"
-                      : "#0f172a",
-                    fontSize: "14px",
-                    lineHeight: 1.2,
-                    fontWeight: 800,
-                    letterSpacing: "-0.02em",
+                    minWidth: 0,
                   }}
                 >
-                  HR Management
-                </div>
+                  <div
+                    style={{
+                      color: isDarkMode
+                        ? "#f8fafc"
+                        : "#0f172a",
+                      fontSize: "14px",
+                      lineHeight: 1.2,
+                      fontWeight: 800,
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    HR Management
+                  </div>
 
-                <div
-                  style={{
-                    marginTop: "2px",
-                    color: isDarkMode
-                      ? "#94a3b8"
-                      : "#64748b",
-                    fontSize: "9px",
-                    fontWeight: 500,
-                  }}
-                >
-                  Enterprise HRMS
+                  <div
+                    style={{
+                      marginTop: "2px",
+                      color: isDarkMode
+                        ? "#94a3b8"
+                        : "#64748b",
+                      fontSize: "9px",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Enterprise HRMS
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </button>
         </div>
@@ -326,20 +418,22 @@ function AppLayout() {
             flex: 1,
           }}
         >
-          <div
-            style={{
-              padding: "0 9px 7px",
-              color: isDarkMode
-                ? "#94a3b8"
-                : "#64748b",
-              fontSize: "9px",
-              fontWeight: 800,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
-          >
-            Main Menu
-          </div>
+          {!isDesktopSidebarCollapsed && (
+            <div
+              style={{
+                padding: "0 9px 7px",
+                color: isDarkMode
+                  ? "#94a3b8"
+                  : "#64748b",
+                fontSize: "9px",
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}
+            >
+              Main Menu
+            </div>
+          )}
 
           <nav
             aria-label="Main navigation"
@@ -354,12 +448,23 @@ function AppLayout() {
                 <NavLink
                   key={item.path}
                   to={item.path}
+                  title={
+                    isDesktopSidebarCollapsed
+                      ? item.label
+                      : undefined
+                  }
                   style={({ isActive }) => ({
                     display: "flex",
                     alignItems: "center",
+                    justifyContent:
+                      isDesktopSidebarCollapsed
+                        ? "center"
+                        : "flex-start",
                     gap: "9px",
                     minHeight: "38px",
-                    padding: "6px 9px",
+                    padding: isDesktopSidebarCollapsed
+                      ? "6px"
+                      : "6px 9px",
                     borderRadius: "8px",
                     color: isActive
                       ? "#fff7ed"
@@ -413,15 +518,19 @@ function AppLayout() {
                         {item.short}
                       </span>
 
-                      <span
-                        style={{
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {item.label}
-                      </span>
+                      {!isDesktopSidebarCollapsed && (
+                        <span
+                          style={{
+                            overflow: "hidden",
+                            textOverflow:
+                              "ellipsis",
+                            whiteSpace:
+                              "nowrap",
+                          }}
+                        >
+                          {item.label}
+                        </span>
+                      )}
                     </>
                   )}
                 </NavLink>
@@ -435,17 +544,71 @@ function AppLayout() {
             padding: "10px",
             borderTop:
               "1px solid var(--border)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "7px",
           }}
         >
+          <button
+            type="button"
+            onClick={() =>
+              setIsDesktopSidebarCollapsed(
+                (current) => !current,
+              )
+            }
+            title={
+              isDesktopSidebarCollapsed
+                ? "Expand sidebar"
+                : "Collapse sidebar"
+            }
+            aria-label={
+              isDesktopSidebarCollapsed
+                ? "Expand sidebar"
+                : "Collapse sidebar"
+            }
+            style={{
+              width: "100%",
+              minHeight: "32px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border:
+                "1px solid var(--border)",
+              borderRadius: "8px",
+              background: isDarkMode
+                ? "rgba(30,41,59,0.55)"
+                : "#f8fafc",
+              color: isDarkMode
+                ? "#cbd5e1"
+                : "#475569",
+              cursor: "pointer",
+              fontSize: "10px",
+              fontWeight: 800,
+            }}
+          >
+            {isDesktopSidebarCollapsed
+              ? ">"
+              : "<"}
+          </button>
+
           <button
             type="button"
             onClick={() => {
               void handleLogout()
             }}
+            title={
+              isDesktopSidebarCollapsed
+                ? "Sign out"
+                : undefined
+            }
             style={{
               width: "100%",
               display: "flex",
               alignItems: "center",
+              justifyContent:
+                isDesktopSidebarCollapsed
+                  ? "center"
+                  : "flex-start",
               gap: "9px",
               padding: "8px 9px",
               border:
@@ -480,12 +643,15 @@ function AppLayout() {
                   : "#ea580c",
                 border:
                   "1px solid rgba(251,146,60,0.24)",
+                flexShrink: 0,
               }}
             >
               OUT
             </span>
 
-            <span>Sign Out</span>
+            {!isDesktopSidebarCollapsed && (
+              <span>Sign Out</span>
+            )}
           </button>
         </div>
       </aside>
@@ -516,36 +682,124 @@ function AppLayout() {
             position: "sticky",
             top: 0,
             zIndex: 20,
+            backdropFilter: "blur(12px)",
           }}
         >
           <div
             style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "9px",
               minWidth: 0,
             }}
           >
-            <div
+            <button
+              type="button"
+              onClick={() =>
+                setIsMobileMenuOpen(
+                  (current) => !current,
+                )
+              }
+              aria-label={
+                isMobileMenuOpen
+                  ? "Close navigation"
+                  : "Open navigation"
+              }
               style={{
+                display: "none",
+                width: "34px",
+                height: "34px",
+                alignItems: "center",
+                justifyContent: "center",
+                border:
+                  "1px solid var(--border)",
+                borderRadius: "8px",
+                background: "var(--surface)",
+                color: "var(--app-text)",
+                cursor: "pointer",
                 fontSize: "14px",
-                fontWeight: 750,
-                color: isDarkMode
-                  ? "#f8fafc"
-                  : "#0f172a",
-                lineHeight: 1.2,
+                fontWeight: 800,
               }}
+              className="hrms-mobile-menu-button"
             >
-              Human Resources
-            </div>
+              {isMobileMenuOpen
+                ? "×"
+                : "☰"}
+            </button>
 
             <div
               style={{
-                marginTop: "1px",
-                fontSize: "9px",
-                color: isDarkMode
-                  ? "#94a3b8"
-                  : "#64748b",
+                minWidth: 0,
               }}
             >
-              Workforce management platform
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "7px",
+                  minWidth: 0,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 750,
+                    color: isDarkMode
+                      ? "#f8fafc"
+                      : "#0f172a",
+                    lineHeight: 1.2,
+                    overflow: "hidden",
+                    textOverflow:
+                      "ellipsis",
+                    whiteSpace:
+                      "nowrap",
+                  }}
+                >
+                  {currentNavigation?.label ||
+                    "Human Resources"}
+                </div>
+
+                {currentNavigation && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      minHeight: "18px",
+                      padding: "2px 6px",
+                      borderRadius: "999px",
+                      background:
+                        "var(--app-primary-soft)",
+                      color:
+                        "var(--app-primary)",
+                      border:
+                        "1px solid var(--app-border)",
+                      fontSize: "8px",
+                      fontWeight: 800,
+                      letterSpacing:
+                        "0.04em",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {currentNavigation.short}
+                  </span>
+                )}
+              </div>
+
+              <div
+                style={{
+                  marginTop: "1px",
+                  fontSize: "9px",
+                  color: isDarkMode
+                    ? "#94a3b8"
+                    : "#64748b",
+                  overflow: "hidden",
+                  textOverflow:
+                    "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Workforce management platform
+              </div>
             </div>
           </div>
 
@@ -620,6 +874,7 @@ function AppLayout() {
                 justifyContent: "center",
                 fontSize: "10px",
                 fontWeight: 800,
+                flexShrink: 0,
               }}
             >
               {initials}
@@ -637,8 +892,10 @@ function AppLayout() {
                   fontWeight: 700,
                   color: "var(--app-text)",
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
+                  textOverflow:
+                    "ellipsis",
+                  whiteSpace:
+                    "nowrap",
                 }}
               >
                 {displayName}
@@ -648,10 +905,13 @@ function AppLayout() {
                 style={{
                   marginTop: "1px",
                   fontSize: "9px",
-                  color: "var(--app-text-muted)",
+                  color:
+                    "var(--app-text-muted)",
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
+                  textOverflow:
+                    "ellipsis",
+                  whiteSpace:
+                    "nowrap",
                 }}
               >
                 {currentRole}
@@ -664,6 +924,10 @@ function AppLayout() {
           style={{
             flex: 1,
             minWidth: 0,
+            width: "100%",
+            maxWidth:
+              "var(--content-max-width)",
+            margin: "0 auto",
             padding: "16px",
             boxSizing: "border-box",
             overflowX: "auto",
@@ -672,6 +936,53 @@ function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      <style>
+        {`
+          @media (max-width: 900px) {
+            .hrms-sidebar {
+              position: fixed !important;
+              left: 0 !important;
+              top: 0 !important;
+              bottom: 0 !important;
+              width: 225px !important;
+              min-width: 225px !important;
+              transform: translateX(
+                ${isMobileMenuOpen ? "0" : "-100%"}
+              ) !important;
+              box-shadow:
+                12px 0 32px rgba(15, 23, 42, 0.18) !important;
+            }
+
+            .hrms-mobile-menu-button {
+              display: flex !important;
+            }
+          }
+
+          @media (max-width: 620px) {
+            .hrms-mobile-menu-button {
+              width: 32px !important;
+              height: 32px !important;
+            }
+
+            .hrms-mobile-menu-button + div {
+              max-width: 180px !important;
+            }
+
+            .hrms-sidebar {
+              width: 238px !important;
+              min-width: 238px !important;
+            }
+          }
+
+          @media (max-width: 480px) {
+            .hrms-sidebar {
+              width: 250px !important;
+              min-width: 250px !important;
+            }
+          }
+        `}
+      </style>
     </div>
   )
 }
