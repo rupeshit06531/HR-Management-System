@@ -189,6 +189,57 @@ function formatMetric(value: number) {
   return value.toLocaleString("en-IN")
 }
 
+function getApiErrorMessage(error: unknown, fallback: string) {
+  if (!error || typeof error !== "object") {
+    return fallback
+  }
+
+  const candidate = error as {
+    response?: { data?: unknown }
+    message?: unknown
+  }
+  const data = candidate.response?.data
+
+  if (typeof data === "string" && data.trim()) {
+    return data.trim()
+  }
+
+  if (data && typeof data === "object") {
+    const payload = data as Record<string, unknown>
+
+    if (typeof payload.detail === "string" && payload.detail.trim()) {
+      return payload.detail.trim()
+    }
+
+    if (typeof payload.message === "string" && payload.message.trim()) {
+      return payload.message.trim()
+    }
+
+    const fieldErrors = Object.entries(payload)
+      .flatMap(([field, value]) => {
+        const messages = Array.isArray(value)
+          ? value.filter((item): item is string => typeof item === "string")
+          : typeof value === "string"
+            ? [value]
+            : []
+
+        return messages.map((message) =>
+          field === "non_field_errors" ? message : `${field}: ${message}`,
+        )
+      })
+
+    if (fieldErrors.length > 0) {
+      return fieldErrors.slice(0, 2).join(" ")
+    }
+  }
+
+  if (typeof candidate.message === "string" && candidate.message.trim()) {
+    return candidate.message.trim()
+  }
+
+  return fallback
+}
+
 function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -244,7 +295,12 @@ function Dashboard() {
       }
 
       console.error("Failed to load dashboard:", requestError)
-      setError("Unable to load dashboard information.")
+      setError(
+        getApiErrorMessage(
+          requestError,
+          "Unable to load dashboard information.",
+        ),
+      )
     } finally {
       if (dashboardRequestControllerRef.current === controller) {
         dashboardRequestControllerRef.current = null
@@ -311,7 +367,12 @@ function Dashboard() {
       }
 
       console.error("Failed to load dashboard content:", requestError)
-      setContentError("Unable to load announcements and holidays.")
+      setContentError(
+        getApiErrorMessage(
+          requestError,
+          "Unable to load announcements and holidays.",
+        ),
+      )
     } finally {
       if (
         dashboardMountedRef.current &&
@@ -661,6 +722,7 @@ function Dashboard() {
             holidays={holidays}
             contentError={contentError}
             isContentLoading={isContentLoading}
+            onRetryContent={() => void loadDashboardContent()}
           />
         )}
 
@@ -1501,6 +1563,7 @@ function AdminHrDashboard({
   holidays,
   contentError,
   isContentLoading,
+  onRetryContent,
 }: {
   role: string
   totalEmployees: number
@@ -1518,6 +1581,7 @@ function AdminHrDashboard({
   holidays: Holiday[]
   contentError: string
   isContentLoading: boolean
+  onRetryContent: () => void
 }) {
   const isSuperAdmin = role === "SUPER_ADMIN"
 
@@ -1645,6 +1709,7 @@ function AdminHrDashboard({
         holidays={holidays}
         contentError={contentError}
         isLoading={isContentLoading}
+        onRetry={onRetryContent}
       />
     </>
   )
@@ -2467,11 +2532,13 @@ const DashboardBottomPanels = memo(function DashboardBottomPanels({
   holidays,
   contentError,
   isLoading,
+  onRetry,
 }: {
   announcements: AnnouncementRecord[]
   holidays: Holiday[]
   contentError: string
   isLoading: boolean
+  onRetry: () => void
 }) {
   const navigate = useNavigate()
   const nextHoliday = holidays[0]
@@ -2517,6 +2584,14 @@ const DashboardBottomPanels = memo(function DashboardBottomPanels({
           <div className="dashboard-empty-state">
             <strong>Content unavailable</strong>
             <span>{contentError}</span>
+            <button
+              type="button"
+              className="dashboard-list-panel-action dashboard-content-retry"
+              onClick={onRetry}
+            >
+              <span>Retry</span>
+              <span aria-hidden="true">\u21BB</span>
+            </button>
           </div>
         ) : announcements.length === 0 ? (
           <div className="dashboard-empty-state">
@@ -2579,6 +2654,14 @@ const DashboardBottomPanels = memo(function DashboardBottomPanels({
           <div className="dashboard-empty-state">
             <strong>Content unavailable</strong>
             <span>{contentError}</span>
+            <button
+              type="button"
+              className="dashboard-list-panel-action dashboard-content-retry"
+              onClick={onRetry}
+            >
+              <span>Retry</span>
+              <span aria-hidden="true">\u21BB</span>
+            </button>
           </div>
         ) : holidays.length === 0 ? (
           <div className="dashboard-empty-state">
@@ -5333,6 +5416,16 @@ const dashboardStyles = `
 
   .dashboard-footer-dot {
     opacity: 0.45;
+  }
+
+  .dashboard-content-retry {
+    align-self: flex-start;
+    margin-top: 8px;
+  }
+
+  .dashboard-content-retry:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 2px;
   }
 
   .dashboard-state {
