@@ -2100,6 +2100,16 @@ function ModuleGrid({
   modules: ModuleItem[]
   navigate: ReturnType<typeof useNavigate>
 }) {
+  const [query, setQuery] = useState("")
+
+  const filteredModules = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+    if (!normalizedQuery) return modules
+    return modules.filter((item) =>
+      `${item.label} ${item.description}`.toLowerCase().includes(normalizedQuery),
+    )
+  }, [modules, query])
+
   if (modules.length === 0) {
     return (
       <div className="dashboard-panel">
@@ -2118,7 +2128,8 @@ function ModuleGrid({
             MODULE ACCESS
           </span>
           <strong>
-            {modules.length} {modules.length === 1 ? "module" : "modules"} available
+            {filteredModules.length} of {modules.length}{" "}
+            {modules.length === 1 ? "module" : "modules"} available
           </strong>
         </div>
 
@@ -2127,11 +2138,40 @@ function ModuleGrid({
         </span>
       </div>
 
+      <div className="dashboard-module-toolbar">
+        <label className="dashboard-module-search">
+          <span className="dashboard-module-search-icon" aria-hidden="true">Q</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Find a module..."
+            aria-label="Find an HRMS module"
+          />
+          {query && (
+            <button
+              type="button"
+              className="dashboard-module-search-clear"
+              onClick={() => setQuery("")}
+              aria-label="Clear module search"
+            >
+              Clear
+            </button>
+          )}
+        </label>
+        <span className="dashboard-module-toolbar-note">
+          {query.trim()
+            ? `${filteredModules.length} match${filteredModules.length === 1 ? "" : "es"}`
+            : "Quick access"}
+        </span>
+      </div>
+
+      {filteredModules.length > 0 ? (
       <div
         className="dashboard-module-grid"
         aria-label="Available HRMS modules"
       >
-        {modules.map((item, index) => (
+        {filteredModules.map((item, index) => (
           <button
             type="button"
             className="dashboard-module"
@@ -2163,6 +2203,13 @@ function ModuleGrid({
           </button>
         ))}
       </div>
+      ) : (
+        <div className="dashboard-module-no-results">
+          <strong>No matching module</strong>
+          <p>Try another module name or clear the search.</p>
+          <button type="button" onClick={() => setQuery("")}>Clear search</button>
+        </div>
+      )}
     </div>
   )
 }
@@ -3857,6 +3904,109 @@ const dashboardStyles = `
     letter-spacing: 0.07em;
   }
 
+  .dashboard-module-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 9px;
+  }
+
+  .dashboard-module-search {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    width: min(100%, 330px);
+    height: 32px;
+    padding: 0 8px;
+    gap: 7px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+  }
+
+  .dashboard-module-search:focus-within {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .dashboard-module-search-icon {
+    display: grid;
+    flex: 0 0 19px;
+    width: 19px;
+    height: 19px;
+    place-items: center;
+    border-radius: 5px;
+    background: var(--surface-strong);
+    color: var(--muted-strong);
+    font-size: 7px;
+    font-weight: 850;
+  }
+
+  .dashboard-module-search input {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 8px;
+  }
+
+  .dashboard-module-search input::placeholder {
+    color: var(--muted);
+  }
+
+  .dashboard-module-search-clear {
+    border: 0;
+    background: transparent;
+    color: var(--accent-2);
+    font-size: 7px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .dashboard-module-toolbar-note {
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 750;
+  }
+
+  .dashboard-module-no-results {
+    display: flex;
+    min-height: 112px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 18px;
+    border: 1px dashed var(--border-strong);
+    border-radius: 10px;
+    background: var(--surface);
+    text-align: center;
+  }
+
+  .dashboard-module-no-results strong {
+    color: var(--text);
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .dashboard-module-no-results p {
+    margin: 4px 0 9px;
+    color: var(--muted);
+    font-size: 8px;
+  }
+
+  .dashboard-module-no-results button {
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 6px 9px;
+    background: var(--card);
+    color: var(--accent-2);
+    font-size: 7px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
   .dashboard-module-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -5277,6 +5427,15 @@ const dashboardStyles = `
   }
 
   @media (max-width: 700px) {
+    .dashboard-module-toolbar {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .dashboard-module-search {
+      width: 100%;
+    }
+
     .dashboard-health-items {
       grid-template-columns: 1fr;
     }
