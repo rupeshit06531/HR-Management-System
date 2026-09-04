@@ -2761,9 +2761,23 @@ function getDaysUntilDate(value: string) {
 
 function DashboardListLoading() {
   return (
-    <div className="dashboard-list-loading">
-      <div className="dashboard-mini-spinner" />
-      <span>Loading information...</span>
+    <div
+      className="dashboard-list-loading"
+      aria-busy="true"
+      aria-label="Loading dashboard information"
+    >
+      <div className="dashboard-list-skeleton" aria-hidden="true">
+        {[0, 1, 2].map((item) => (
+          <div className="dashboard-list-skeleton-row" key={item}>
+            <span className="dashboard-skeleton-marker" />
+            <span className="dashboard-skeleton-copy dashboard-skeleton-copy-wide" />
+            <span className="dashboard-skeleton-date" />
+          </div>
+        ))}
+      </div>
+      <span className="dashboard-list-loading-label">
+        Loading information...
+      </span>
     </div>
   )
 }
@@ -2841,20 +2855,29 @@ function DashboardState({
 }) {
   return (
     <div className="dashboard-state">
-      <div className="dashboard-state-card">
-        {loading && (
-          <div className="dashboard-state-icon">
-            <div className="dashboard-spinner" />
+      <div
+        className="dashboard-state-card"
+        aria-busy={loading || undefined}
+      >
+        {loading ? (
+          <div className="dashboard-state-loading" aria-hidden="true">
+            <span className="dashboard-state-skeleton-icon" />
+            <span className="dashboard-state-skeleton-kicker" />
+            <span className="dashboard-state-skeleton-title" />
+            <span className="dashboard-state-skeleton-text" />
+            <span className="dashboard-state-skeleton-text dashboard-state-skeleton-text-short" />
           </div>
+        ) : (
+          <>
+            <span className="dashboard-state-kicker">
+              HRMS
+            </span>
+
+            <h2>{title}</h2>
+
+            <p>{text}</p>
+          </>
         )}
-
-        <span className="dashboard-state-kicker">
-          HRMS
-        </span>
-
-        <h2>{title}</h2>
-
-        <p>{text}</p>
 
         {actionLabel && onAction && (
           <button
@@ -4853,10 +4876,73 @@ const dashboardStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
     min-height: 55px;
     color: var(--muted);
     font-size: 8px;
+  }
+
+  .dashboard-list-loading {
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 0;
+  }
+
+  .dashboard-list-loading-label {
+    font-size: 8px;
+    color: var(--muted);
+  }
+
+  .dashboard-list-skeleton {
+    width: 100%;
+    display: grid;
+    gap: 6px;
+  }
+
+  .dashboard-list-skeleton-row {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) 52px;
+    align-items: center;
+    gap: 9px;
+    min-height: 29px;
+  }
+
+  .dashboard-skeleton-marker,
+  .dashboard-skeleton-copy,
+  .dashboard-skeleton-date,
+  .dashboard-state-skeleton-icon,
+  .dashboard-state-skeleton-kicker,
+  .dashboard-state-skeleton-title,
+  .dashboard-state-skeleton-text {
+    display: block;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--track) 72%, transparent),
+      color-mix(in srgb, var(--surface) 88%, white),
+      color-mix(in srgb, var(--track) 72%, transparent)
+    );
+    background-size: 200% 100%;
+    animation: dashboard-skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  .dashboard-skeleton-marker {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+  }
+
+  .dashboard-skeleton-copy {
+    height: 8px;
+  }
+
+  .dashboard-skeleton-copy-wide {
+    width: min(76%, 260px);
+  }
+
+  .dashboard-skeleton-date {
+    width: 46px;
+    height: 7px;
+    justify-self: end;
   }
 
   .dashboard-mini-spinner {
@@ -5518,6 +5604,38 @@ const dashboardStyles = `
     letter-spacing: 0.12em;
   }
 
+  .dashboard-state-loading {
+    width: 100%;
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+  }
+
+  .dashboard-state-skeleton-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
+
+  .dashboard-state-skeleton-kicker {
+    width: 48px;
+    height: 7px;
+  }
+
+  .dashboard-state-skeleton-title {
+    width: min(220px, 72%);
+    height: 18px;
+  }
+
+  .dashboard-state-skeleton-text {
+    width: min(310px, 88%);
+    height: 8px;
+  }
+
+  .dashboard-state-skeleton-text-short {
+    width: min(220px, 66%);
+  }
+
   .dashboard-state-card h2 {
     margin: 7px 0 6px;
     color: var(--text);
@@ -5543,6 +5661,15 @@ const dashboardStyles = `
   @keyframes dashboard-spin {
     to {
       transform: rotate(360deg);
+    }
+  }
+
+  @keyframes dashboard-skeleton-shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
     }
   }
 
