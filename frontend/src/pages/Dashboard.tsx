@@ -2177,6 +2177,32 @@ function FieldOperationsSection() {
               <strong>--</strong>
             </div>
           </div>
+
+          <div className="dashboard-field-pipeline">
+            <div className="dashboard-field-pipeline-step">
+              <span>01</span>
+              <div>
+                <strong>Field Check-in</strong>
+                <small>Awaiting attendance integration</small>
+              </div>
+            </div>
+
+            <div className="dashboard-field-pipeline-step">
+              <span>02</span>
+              <div>
+                <strong>Visit Tracking</strong>
+                <small>Awaiting visit data</small>
+              </div>
+            </div>
+
+            <div className="dashboard-field-pipeline-step">
+              <span>03</span>
+              <div>
+                <strong>Sales Capture</strong>
+                <small>Awaiting sales data</small>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="dashboard-field-panel">
@@ -2201,6 +2227,25 @@ function FieldOperationsSection() {
                 GPS tracking data will appear here after the field
                 operations integration is connected.
               </p>
+            </div>
+          </div>
+
+          <div className="dashboard-field-gps-grid">
+            <div className="dashboard-field-gps-metric">
+              <span>Live Locations</span>
+              <strong>--</strong>
+            </div>
+            <div className="dashboard-field-gps-metric">
+              <span>Last Sync</span>
+              <strong>--</strong>
+            </div>
+            <div className="dashboard-field-gps-metric">
+              <span>Coverage</span>
+              <strong>--</strong>
+            </div>
+            <div className="dashboard-field-gps-metric">
+              <span>Alerts</span>
+              <strong>--</strong>
             </div>
           </div>
         </div>
@@ -4400,6 +4445,86 @@ const dashboardStyles = `
     line-height: 1.4;
   }
 
+  .dashboard-field-pipeline {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .dashboard-field-pipeline-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--card);
+  }
+
+  .dashboard-field-pipeline-step > span {
+    display: grid;
+    flex: 0 0 21px;
+    width: 21px;
+    height: 21px;
+    place-items: center;
+    border-radius: 5px;
+    background: var(--surface-strong);
+    color: var(--muted-strong);
+    font-size: 6px;
+    font-weight: 850;
+  }
+
+  .dashboard-field-pipeline-step > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .dashboard-field-pipeline-step strong {
+    color: var(--text);
+    font-size: 7px;
+    font-weight: 800;
+  }
+
+  .dashboard-field-pipeline-step small {
+    color: var(--muted);
+    font-size: 6px;
+    line-height: 1.35;
+  }
+
+  .dashboard-field-gps-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .dashboard-field-gps-metric {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 7px 8px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--card);
+  }
+
+  .dashboard-field-gps-metric span {
+    color: var(--muted);
+    font-size: 6px;
+    font-weight: 700;
+  }
+
+  .dashboard-field-gps-metric strong {
+    color: var(--text);
+    font-size: 8px;
+    font-weight: 850;
+  }
+
   .dashboard-bottom-grid {
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
@@ -4712,6 +4837,10 @@ const dashboardStyles = `
   }
 
   @media (max-width: 700px) {
+    .dashboard-field-pipeline {
+      grid-template-columns: 1fr;
+    }
+
     .dashboard-page {
       border-radius: 10px;
     }
