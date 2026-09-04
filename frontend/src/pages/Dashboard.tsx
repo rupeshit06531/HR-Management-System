@@ -1803,7 +1803,9 @@ function SectionHeader({
     <div className="dashboard-section-header">
       <div>
         <span className="dashboard-section-kicker">WORKSPACE</span>
-        <h2>{title}</h2>
+        <h2 id={`dashboard-section-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
+          {title}
+        </h2>
         <p>{description}</p>
       </div>
 
@@ -1917,7 +1919,10 @@ const WorkforcePanel = memo(function WorkforcePanel({
       : 0
 
   return (
-    <div className="dashboard-panel dashboard-workforce-panel">
+    <section
+      className="dashboard-panel dashboard-workforce-panel"
+      aria-label="Workforce status"
+    >
       <PanelHeading
         title="Workforce Status"
         description="Current employee distribution by employment status."
@@ -2021,7 +2026,7 @@ const WorkforcePanel = memo(function WorkforcePanel({
         <span>Tracked Workforce</span>
         <strong>{formatMetric(totalEmployees)} employees</strong>
       </div>
-    </div>
+    </section>
   )
 })
 
@@ -2033,7 +2038,10 @@ const RoleDistribution = memo(function RoleDistribution({
   maxRoleCount: number
 }) {
   return (
-    <div className="dashboard-panel">
+    <section
+      className="dashboard-panel"
+      aria-label="User distribution by role"
+    >
       <PanelHeading
         title="User Distribution by Role"
         description="System users grouped by assigned role."
@@ -2109,7 +2117,7 @@ const RoleDistribution = memo(function RoleDistribution({
           )}
         </strong>
       </div>
-    </div>
+    </section>
   )
 })
 
@@ -2139,7 +2147,10 @@ const QuickActionsPanel = memo(function QuickActionsPanel({
   navigate: ReturnType<typeof useNavigate>
 }) {
   return (
-    <div className="dashboard-panel">
+    <section
+      className="dashboard-panel"
+      aria-label={title}
+    >
       <PanelHeading
         title={title}
         description={description}
@@ -2155,7 +2166,7 @@ const QuickActionsPanel = memo(function QuickActionsPanel({
           />
         ))}
       </div>
-    </div>
+    </section>
   )
 })
 
@@ -2168,12 +2179,16 @@ function PanelHeading({
   description: string
   badge?: string
 }) {
+  const headingId = `dashboard-panel-${title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")}`
+
   return (
     <div className="dashboard-panel-heading">
       <div>
         <span className="dashboard-panel-kicker">OVERVIEW</span>
-        <h2>{title}</h2>
-        <p>{description}</p>
+        <h2 id={headingId}>{title}</h2>
+        <p id={`${headingId}-description`}>{description}</p>
       </div>
 
       {badge && (
@@ -2198,7 +2213,7 @@ function QuickAction({
       className="dashboard-quick-action"
       onClick={() => navigate(item.path)}
     >
-      <span className="dashboard-quick-icon">
+      <span className="dashboard-quick-icon" aria-hidden="true">
         {item.icon}
       </span>
 
@@ -2278,7 +2293,11 @@ const ModuleGrid = memo(function ModuleGrid({
             </button>
           )}
         </label>
-        <span className="dashboard-module-toolbar-note">
+        <span
+          className="dashboard-module-toolbar-note"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {query.trim()
             ? `${filteredModules.length} match${filteredModules.length === 1 ? "" : "es"}`
             : "Quick access"}
@@ -2326,7 +2345,13 @@ const ModuleGrid = memo(function ModuleGrid({
         <div className="dashboard-module-no-results">
           <strong>No matching module</strong>
           <p>Try another module name or clear the search.</p>
-          <button type="button" onClick={() => setQuery("")}>Clear search</button>
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Clear module search"
+          >
+            Clear search
+          </button>
         </div>
       )}
     </div>
@@ -2338,6 +2363,7 @@ function FieldOperationsSection() {
     <section
       id="sales-field-operations"
       className="dashboard-field-operations"
+      aria-labelledby="sales-field-operations-title"
     >
       <div className="dashboard-field-heading">
         <div>
@@ -2348,7 +2374,7 @@ function FieldOperationsSection() {
 
             <div>
               <div className="dashboard-field-title-line">
-                <h2>Sales & GPS Tracking</h2>
+                <h2 id="sales-field-operations-title">Sales & GPS Tracking</h2>
 
                 <span className="dashboard-field-badge">
                   FIELD OPS
@@ -2548,7 +2574,10 @@ const DashboardBottomPanels = memo(function DashboardBottomPanels({
 
   return (
     <div className="dashboard-bottom-grid">
-      <div className="dashboard-list-panel">
+      <section
+        className="dashboard-list-panel"
+        aria-label="Recent announcements"
+      >
         <div className="dashboard-list-panel-header">
           <PanelHeading
             title="Recent Announcements"
@@ -2612,9 +2641,12 @@ const DashboardBottomPanels = memo(function DashboardBottomPanels({
             ))}
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="dashboard-list-panel">
+      <section
+        className="dashboard-list-panel"
+        aria-label="Upcoming holidays"
+      >
         <div className="dashboard-list-panel-header">
           <PanelHeading
             title="Upcoming Holidays"
@@ -2680,7 +2712,7 @@ const DashboardBottomPanels = memo(function DashboardBottomPanels({
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   )
 })
