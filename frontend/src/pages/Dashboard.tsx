@@ -558,6 +558,13 @@ function Dashboard() {
           </>
         )}
 
+        <DashboardHealthStrip
+          hasDashboardData={Boolean(dashboard)}
+          isContentLoading={isContentLoading}
+          hasContentError={Boolean(contentError)}
+          lastUpdated={lastUpdated}
+        />
+
         {role === "EMPLOYEE" && (
           <EmployeeDashboard
             personalName={personalName}
@@ -1586,6 +1593,81 @@ function AdminHrDashboard({
         isLoading={isContentLoading}
       />
     </>
+  )
+}
+
+function DashboardHealthStrip({
+  hasDashboardData,
+  isContentLoading,
+  hasContentError,
+  lastUpdated,
+}: {
+  hasDashboardData: boolean
+  isContentLoading: boolean
+  hasContentError: boolean
+  lastUpdated: Date | null
+}) {
+  const contentState = isContentLoading
+    ? "SYNCING"
+    : hasContentError
+      ? "ATTENTION"
+      : "READY"
+
+  const syncTime = lastUpdated
+    ? lastUpdated.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "Not available"
+
+  return (
+    <section
+      className="dashboard-health-strip"
+      aria-label="Dashboard data health"
+    >
+      <div className="dashboard-health-intro">
+        <span className="dashboard-health-kicker">DATA HEALTH</span>
+        <strong>Workspace synchronization</strong>
+      </div>
+
+      <div className="dashboard-health-items">
+        <div className="dashboard-health-item">
+          <span
+            className={`dashboard-health-dot ${
+              hasDashboardData ? "is-ready" : "is-syncing"
+            }`}
+          />
+          <div>
+            <small>WORKFORCE DATA</small>
+            <strong>{hasDashboardData ? "READY" : "PENDING"}</strong>
+          </div>
+        </div>
+
+        <div className="dashboard-health-item">
+          <span
+            className={`dashboard-health-dot ${
+              contentState === "READY"
+                ? "is-ready"
+                : contentState === "SYNCING"
+                  ? "is-syncing"
+                  : "is-attention"
+            }`}
+          />
+          <div>
+            <small>ORG CONTENT</small>
+            <strong>{contentState}</strong>
+          </div>
+        </div>
+
+        <div className="dashboard-health-item">
+          <span className="dashboard-health-dot is-info" />
+          <div>
+            <small>LAST DASHBOARD SYNC</small>
+            <strong>{syncTime}</strong>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -2886,6 +2968,109 @@ const dashboardStyles = `
     border-radius: 8px 8px 0 0;
     background: var(--accent-2);
     opacity: 0.14;
+  }
+
+  .dashboard-health-strip {
+    display: grid;
+    grid-template-columns: minmax(180px, 0.65fr) minmax(0, 1.35fr);
+    align-items: center;
+    gap: 14px;
+    margin: 0 0 18px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    background: var(--surface);
+  }
+
+  .dashboard-health-intro {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .dashboard-health-kicker {
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 850;
+    letter-spacing: 0.12em;
+  }
+
+  .dashboard-health-intro strong {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 9px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-health-items {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .dashboard-health-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    padding: 7px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+  }
+
+  .dashboard-health-dot {
+    flex: 0 0 6px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+
+  .dashboard-health-dot.is-ready {
+    background: var(--success);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 12%, transparent);
+  }
+
+  .dashboard-health-dot.is-syncing {
+    background: var(--warning);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 12%, transparent);
+  }
+
+  .dashboard-health-dot.is-attention {
+    background: var(--danger);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 12%, transparent);
+  }
+
+  .dashboard-health-dot.is-info {
+    background: var(--info);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--info) 12%, transparent);
+  }
+
+  .dashboard-health-item > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .dashboard-health-item small {
+    color: var(--muted);
+    font-size: 6px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+  }
+
+  .dashboard-health-item strong {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 8px;
+    font-weight: 850;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .dashboard-section-header {
@@ -5030,6 +5215,10 @@ const dashboardStyles = `
   }
 
   @media (max-width: 900px) {
+    .dashboard-health-strip {
+      grid-template-columns: 1fr;
+    }
+
     .dashboard-page-header {
       align-items: flex-start;
       flex-direction: column;
@@ -5088,6 +5277,10 @@ const dashboardStyles = `
   }
 
   @media (max-width: 700px) {
+    .dashboard-health-items {
+      grid-template-columns: 1fr;
+    }
+
     .dashboard-field-pipeline {
       grid-template-columns: 1fr;
     }
