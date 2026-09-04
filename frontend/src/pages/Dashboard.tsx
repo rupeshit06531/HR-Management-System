@@ -1467,6 +1467,8 @@ function AdminHrDashboard({
           meta="Organization workforce"
           icon="EM"
           tone="primary"
+          progress={totalEmployees > 0 ? 100 : 0}
+          progressLabel="Workforce tracked"
         />
 
         <MetricCard
@@ -1475,6 +1477,8 @@ function AdminHrDashboard({
           meta={`${activePercentage}% of workforce`}
           icon="AC"
           tone="success"
+          progress={activePercentage}
+          progressLabel="Active workforce"
         />
 
         <MetricCard
@@ -1483,6 +1487,12 @@ function AdminHrDashboard({
           meta="Currently inactive"
           icon="IN"
           tone="warning"
+          progress={
+            totalEmployees > 0
+              ? (inactiveEmployees / totalEmployees) * 100
+              : 0
+          }
+          progressLabel="Inactive workforce"
         />
 
         <MetricCard
@@ -1595,13 +1605,22 @@ function MetricCard({
   meta,
   icon,
   tone = "primary",
+  progress,
+  progressLabel,
 }: {
   label: string
   value: number
   meta: string
   icon: string
   tone?: "primary" | "success" | "warning" | "info" | "neutral"
+  progress?: number
+  progressLabel?: string
 }) {
+  const normalizedProgress =
+    typeof progress === "number"
+      ? Math.min(100, Math.max(0, progress))
+      : null
+
   return (
     <div className={`dashboard-kpi dashboard-kpi-${tone}`}>
       <div className="dashboard-kpi-top">
@@ -1610,7 +1629,7 @@ function MetricCard({
           <small>Workforce metric</small>
         </div>
 
-        <b>{icon}</b>
+        <b aria-hidden="true">{icon}</b>
       </div>
 
       <strong>{formatMetric(value)}</strong>
@@ -1618,6 +1637,28 @@ function MetricCard({
       <div className="dashboard-kpi-bottom">
         <small>{meta}</small>
       </div>
+
+      {normalizedProgress !== null && (
+        <div className="dashboard-kpi-progress">
+          <div
+            className="dashboard-kpi-progress-track"
+            role="progressbar"
+            aria-label={progressLabel ?? `${label} percentage`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(normalizedProgress)}
+          >
+            <span
+              className="dashboard-kpi-progress-fill"
+              style={{ width: `${normalizedProgress}%` }}
+            />
+          </div>
+
+          <span className="dashboard-kpi-progress-label">
+            {progressLabel ?? "Workforce share"}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -2859,6 +2900,55 @@ const dashboardStyles = `
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .dashboard-kpi-progress {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin-top: 11px;
+  }
+
+  .dashboard-kpi-progress-track {
+    position: relative;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--track);
+  }
+
+  .dashboard-kpi-progress-fill {
+    display: block;
+    height: 100%;
+    min-width: 0;
+    border-radius: inherit;
+    background: var(--accent);
+    transition: width 0.35s ease;
+  }
+
+  .dashboard-kpi-success .dashboard-kpi-progress-fill {
+    background: var(--success);
+  }
+
+  .dashboard-kpi-warning .dashboard-kpi-progress-fill {
+    background: var(--warning);
+  }
+
+  .dashboard-kpi-info .dashboard-kpi-progress-fill {
+    background: var(--info);
+  }
+
+  .dashboard-kpi-neutral .dashboard-kpi-progress-fill {
+    background: var(--muted);
+  }
+
+  .dashboard-kpi-progress-label {
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 750;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
 
   .dashboard-two-column {
     display: grid;
