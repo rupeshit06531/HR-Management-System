@@ -14,8 +14,8 @@ import {
   punchOutAttendance,
   type Attendance,
 } from "../api/attendance"
-import { getDashboard } from "../api/dashboard"
 import { getAnnouncements, type AnnouncementRecord } from "../api/announcements"
+import { getDashboard } from "../api/dashboard"
 import { getHolidays, type Holiday } from "../api/holidays"
 import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
@@ -143,6 +143,32 @@ function formatDate(value: string | null | undefined) {
   })
 }
 
+function formatDashboardDate(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })
+}
+
+function formatDashboardDay(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return ""
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    weekday: "short",
+  })
+}
+
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean)
 
@@ -157,6 +183,10 @@ function getInitials(name: string) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
+function formatMetric(value: number) {
+  return value.toLocaleString("en-IN")
+}
+
 function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -165,55 +195,93 @@ function Dashboard() {
   const [dashboard, setDashboard] = useState<
     Awaited<ReturnType<typeof getDashboard>> | null
   >(null)
+
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState("")
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const [announcements, setAnnouncements] = useState<AnnouncementRecord[]>([])
   const [holidays, setHolidays] = useState<Holiday[]>([])
   const [contentError, setContentError] = useState("")
+  const [isContentLoading, setIsContentLoading] = useState(true)
 
-  async function loadDashboard() {
+  async function loadDashboard(options?: { refresh?: boolean }) {
+    const refresh = options?.refresh ?? false
+
     try {
-      setIsLoading(true)
+      if (refresh) {
+        setIsRefreshing(true)
+      } else {
+        setIsLoading(true)
+      }
+
       setError("")
 
       const data = await getDashboard()
+
       setDashboard(data)
-    } catch {
+      setLastUpdated(new Date())
+    } catch (requestError) {
+      console.error("Failed to load dashboard:", requestError)
       setError("Unable to load dashboard information.")
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
     }
   }
 
   async function loadDashboardContent() {
     try {
+      setIsContentLoading(true)
       setContentError("")
 
-      const [announcementResponse, holidayResponse] =
-        await Promise.all([
-          getAnnouncements({
-            is_active: true,
-          }),
-          getHolidays({
-            is_active: true,
-          }),
-        ])
+      const [announcementResponse, holidayResponse] = await Promise.all([
+        getAnnouncements({
+          is_active: true,
+        }),
+        getHolidays({
+          is_active: true,
+        }),
+      ])
 
-      setAnnouncements(
-        announcementResponse.results.filter(
-          (announcement) => announcement.is_published,
-        ),
-      )
+      const publishedAnnouncements = announcementResponse.results
+        .filter((announcement) => announcement.is_published)
+        .sort(
+          (first, second) =>
+            new Date(second.publish_date).getTime() -
+            new Date(first.publish_date).getTime(),
+        )
 
-      setHolidays(
-        holidayResponse.results,
-      )
-    } catch {
-      setContentError(
-        "Unable to load announcements and holidays.",
-      )
+      const upcomingHolidays = holidayResponse.results
+        .filter((holiday) => {
+          const timestamp = new Date(holiday.date).getTime()
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+
+          return Number.isFinite(timestamp) && timestamp >= today.getTime()
+        })
+        .sort(
+          (first, second) =>
+            new Date(first.date).getTime() -
+            new Date(second.date).getTime(),
+        )
+
+      setAnnouncements(publishedAnnouncements)
+      setHolidays(upcomingHolidays)
+    } catch (requestError) {
+      console.error("Failed to load dashboard content:", requestError)
+      setContentError("Unable to load announcements and holidays.")
+    } finally {
+      setIsContentLoading(false)
     }
+  }
+
+  async function handleRefresh() {
+    await Promise.all([
+      loadDashboard({ refresh: true }),
+      loadDashboardContent(),
+    ])
   }
 
   useEffect(() => {
@@ -406,56 +474,88 @@ function Dashboard() {
     <DashboardLayout isDarkMode={isDarkMode}>
       <div className="dashboard-shell">
         {role !== "EMPLOYEE" && (
-          <header className="dashboard-page-header">
-            <div>
-              <p className="dashboard-eyebrow">HR MANAGEMENT SYSTEM</p>
-              <h1>Dashboard</h1>
-              <p>
-                Welcome back, {displayName}. Here is your workspace
-                overview.
-              </p>
-            </div>
+          <>
+            <header className="dashboard-page-header">
+              <div className="dashboard-page-heading">
+                <p className="dashboard-eyebrow">HR MANAGEMENT SYSTEM</p>
 
-            <button
-              type="button"
-              className="dashboard-refresh"
-              onClick={() => void loadDashboard()}
-            >
-              Refresh Data
-            </button>
-          </header>
-        )}
+                <div className="dashboard-title-row">
+                  <div>
+                    <h1>Dashboard</h1>
+                    <p>
+                      Welcome back, {displayName}. Here is your workspace
+                      overview.
+                    </p>
+                  </div>
 
-        {role !== "EMPLOYEE" && (
-          <section className="dashboard-welcome">
-            <div className="dashboard-welcome-copy">
-              <span className="dashboard-role-badge">
-                {currentRole}
-              </span>
-
-              <h2>Welcome back, {displayName}</h2>
-
-              <p>{roleDescription}</p>
-            </div>
-
-            <div className="dashboard-welcome-visual">
-              <div className="dashboard-visual-window">
-                <span />
-                <span />
-                <span />
-                <span />
+                  <span className="dashboard-header-role">
+                    {currentRole}
+                  </span>
+                </div>
               </div>
 
-              <div className="dashboard-visual-chart">
-                <i />
-                <i />
-                <i />
-                <i />
+              <div className="dashboard-header-actions">
+                {lastUpdated && (
+                  <span className="dashboard-last-updated">
+                    Updated {lastUpdated.toLocaleTimeString("en-IN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                )}
+
+                <button
+                  type="button"
+                  className="dashboard-refresh"
+                  onClick={() => void handleRefresh()}
+                  disabled={isRefreshing}
+                >
+                  <span className={isRefreshing ? "dashboard-refresh-icon is-spinning" : "dashboard-refresh-icon"}>
+                    ↻
+                  </span>
+                  {isRefreshing ? "Refreshing..." : "Refresh Data"}
+                </button>
+              </div>
+            </header>
+
+            <section className="dashboard-welcome">
+              <div className="dashboard-welcome-copy">
+                <div className="dashboard-welcome-meta">
+                  <span className="dashboard-role-badge">
+                    {currentRole}
+                  </span>
+
+                  <span className="dashboard-live-indicator">
+                    <i />
+                    Workspace Active
+                  </span>
+                </div>
+
+                <h2>Welcome back, {displayName}</h2>
+
+                <p>{roleDescription}</p>
               </div>
 
-              <div className="dashboard-visual-block" />
-            </div>
-          </section>
+              <div className="dashboard-welcome-visual" aria-hidden="true">
+                <div className="dashboard-visual-window">
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </div>
+
+                <div className="dashboard-visual-chart">
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                </div>
+
+                <div className="dashboard-visual-block" />
+              </div>
+            </section>
+          </>
         )}
 
         {role === "EMPLOYEE" && (
@@ -499,13 +599,16 @@ function Dashboard() {
             announcements={announcements}
             holidays={holidays}
             contentError={contentError}
+            isContentLoading={isContentLoading}
           />
         )}
 
         <footer className="dashboard-footer">
           <span>{personalName}</span>
-          <span>•</span>
+          <span className="dashboard-footer-dot">•</span>
           <span>{currentRole}</span>
+          <span className="dashboard-footer-dot">•</span>
+          <span>HRMS Workspace</span>
         </footer>
       </div>
     </DashboardLayout>
@@ -560,6 +663,29 @@ function EmployeeDashboard({
 
   return (
     <div className="dashboard-employee-content">
+      <section className="dashboard-employee-hero">
+        <div className="dashboard-employee-hero-copy">
+          <span className="dashboard-employee-kicker">
+            PERSONAL WORKSPACE
+          </span>
+
+          <h1>Good day, {personalName}</h1>
+
+          <p>
+            Manage your attendance, employment information and personal HR
+            services from one compact workspace.
+          </p>
+        </div>
+
+        <div className="dashboard-employee-hero-badge">
+          <span>{personalInitials}</span>
+          <div>
+            <strong>Employee</strong>
+            <small>Workspace ready</small>
+          </div>
+        </div>
+      </section>
+
       <SectionHeader
         title="My Employment Profile"
         description="Your current employment information."
@@ -572,16 +698,29 @@ function EmployeeDashboard({
           </div>
 
           <div className="dashboard-employee-person-copy">
+            <span className="dashboard-profile-overline">
+              EMPLOYEE
+            </span>
+
             <h3>{personalName}</h3>
+
             <p>Employee Workspace</p>
           </div>
 
           <div className="dashboard-person-status">
-            Active Employee
+            <i />
+            Profile Active
           </div>
         </div>
 
         <div className="dashboard-profile-card dashboard-employee-profile-card">
+          <div className="dashboard-profile-card-heading">
+            <div>
+              <span>EMPLOYMENT DETAILS</span>
+              <strong>Current profile information</strong>
+            </div>
+          </div>
+
           <div className="dashboard-profile-grid dashboard-employee-profile-grid">
             {personalProfileCards.map((card) => (
               <InfoCard
@@ -638,19 +777,13 @@ function EmployeeTodayAttendance() {
     const now = new Date()
 
     const year = now.getFullYear()
-    const month = String(
-      now.getMonth() + 1,
-    ).padStart(2, "0")
-    const day = String(
-      now.getDate(),
-    ).padStart(2, "0")
+    const month = String(now.getMonth() + 1).padStart(2, "0")
+    const day = String(now.getDate()).padStart(2, "0")
 
     return `${year}-${month}-${day}`
   }
 
-  const formatTime = (
-    value: string | null,
-  ) => {
+  const formatTime = (value: string | null) => {
     if (!value) {
       return "--"
     }
@@ -664,83 +797,142 @@ function EmployeeTodayAttendance() {
     const hours = Number(parts[0])
     const minutes = Number(parts[1])
 
-    if (
-      !Number.isFinite(hours) ||
-      !Number.isFinite(minutes)
-    ) {
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
       return value
     }
 
-    const period =
-      hours >= 12 ? "PM" : "AM"
+    const period = hours >= 12 ? "PM" : "AM"
+    const displayHours = hours % 12 || 12
 
-    const displayHours =
-      hours % 12 || 12
-
-    return `${displayHours}:${String(
-      minutes,
-    ).padStart(2, "0")} ${period}`
+    return `${displayHours}:${String(minutes).padStart(2, "0")} ${period}`
   }
 
-  const loadTodayAttendance =
-    async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
+  const loadTodayAttendance = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
 
-        const response =
-          await getAttendance()
+      const response = await getAttendance()
+      const today = getTodayDate()
 
-        const today =
-          getTodayDate()
+      const todayRecord =
+        response.results.find(
+          (record) => record.date === today,
+        ) ?? null
 
-        const todayRecord =
-          response.results.find(
-            (record) =>
-              record.date === today,
-          ) ?? null
+      setAttendance(todayRecord)
+    } catch (requestError) {
+      console.error(
+        "Failed to load today's attendance:",
+        requestError,
+      )
 
-        setAttendance(todayRecord)
-      } catch (requestError) {
-        console.error(
-          "Failed to load today's attendance:",
-          requestError,
-        )
-
-        setError(
-          "Unable to load today's attendance.",
-        )
-      } finally {
-        setIsLoading(false)
-      }
+      setError("Unable to load today's attendance.")
+    } finally {
+      setIsLoading(false)
     }
+  }
 
   useEffect(() => {
     void loadTodayAttendance()
   }, [])
 
-  const getCurrentLocation =
-    async () => {
-      if (!navigator.geolocation) {
-        throw new Error(
-          "Geolocation is not supported by this browser.",
-        )
+  useEffect(() => {
+    return () => {
+      if (selfiePreview) {
+        URL.revokeObjectURL(selfiePreview)
       }
+    }
+  }, [selfiePreview])
 
-      return new Promise<GeolocationPosition>(
-        (resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            resolve,
-            reject,
-            {
-              enableHighAccuracy: true,
-              timeout: 15000,
-              maximumAge: 0,
-            },
-          )
-        },
+  const getCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      throw new Error(
+        "Geolocation is not supported by this browser.",
       )
     }
+
+    return new Promise<GeolocationPosition>(
+      (resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0,
+          },
+        )
+      },
+    )
+  }
+
+  const getPunchErrorMessage = (punchError: unknown) => {
+    if (
+      typeof GeolocationPositionError !== "undefined" &&
+      punchError instanceof GeolocationPositionError
+    ) {
+      if (
+        punchError.code ===
+        GeolocationPositionError.PERMISSION_DENIED
+      ) {
+        return "Location permission was denied. Please allow location access and try again."
+      }
+
+      if (
+        punchError.code ===
+        GeolocationPositionError.POSITION_UNAVAILABLE
+      ) {
+        return "Unable to determine your current location."
+      }
+
+      return "Location request timed out. Please try again."
+    }
+
+    const axiosError = punchError as {
+      response?: {
+        data?: unknown
+      }
+    }
+
+    const responseData = axiosError.response?.data
+
+    if (
+      responseData &&
+      typeof responseData === "object"
+    ) {
+      const data =
+        responseData as Record<string, unknown>
+
+      if (typeof data.detail === "string") {
+        return data.detail
+      }
+
+      const messages =
+        Object.entries(data).flatMap(
+          ([field, value]) => {
+            if (Array.isArray(value)) {
+              return value.map(
+                (message) =>
+                  `${field}: ${String(message)}`,
+              )
+            }
+
+            if (typeof value === "string") {
+              return [`${field}: ${value}`]
+            }
+
+            return []
+          },
+        )
+
+      if (messages.length > 0) {
+        return messages.join(" | ")
+      }
+    }
+
+    return null
+  }
 
   const handlePunchIn = async () => {
     setError(null)
@@ -756,8 +948,7 @@ function EmployeeTodayAttendance() {
     try {
       setIsPunchingIn(true)
 
-      const position =
-        await getCurrentLocation()
+      const position = await getCurrentLocation()
 
       const latitude = Number(
         position.coords.latitude.toFixed(6),
@@ -768,9 +959,7 @@ function EmployeeTodayAttendance() {
       )
 
       const accuracy =
-        Number.isFinite(
-          position.coords.accuracy,
-        )
+        Number.isFinite(position.coords.accuracy)
           ? Number(
               Math.max(
                 0,
@@ -779,19 +968,16 @@ function EmployeeTodayAttendance() {
             )
           : null
 
-      const response =
-        await punchInAttendance({
-          latitude,
-          longitude,
-          accuracy,
-          selfie: selfieFile,
-        })
+      const response = await punchInAttendance({
+        latitude,
+        longitude,
+        accuracy,
+        selfie: selfieFile,
+      })
 
-      setAttendance(
-        response.attendance,
-      )
-
+      setAttendance(response.attendance)
       setSelfieFile(null)
+      setSelfiePreview(null)
 
       setSuccess(
         response.message ||
@@ -803,93 +989,9 @@ function EmployeeTodayAttendance() {
         punchError,
       )
 
-      if (
-        punchError instanceof
-        GeolocationPositionError
-      ) {
-        if (
-          punchError.code ===
-          GeolocationPositionError.PERMISSION_DENIED
-        ) {
-          setError(
-            "Location permission was denied. Please allow location access and try again.",
-          )
-        } else if (
-          punchError.code ===
-          GeolocationPositionError.POSITION_UNAVAILABLE
-        ) {
-          setError(
-            "Unable to determine your current location.",
-          )
-        } else {
-          setError(
-            "Location request timed out. Please try again.",
-          )
-        }
-
-        return
-      }
-
-      const axiosError =
-        punchError as {
-          response?: {
-            data?: unknown
-          }
-        }
-
-      const responseData =
-        axiosError.response?.data
-
-      if (
-        responseData &&
-        typeof responseData === "object"
-      ) {
-        const data =
-          responseData as Record<
-            string,
-            unknown
-          >
-
-        if (
-          typeof data.detail ===
-          "string"
-        ) {
-          setError(data.detail)
-          return
-        }
-
-        const messages =
-          Object.entries(data).flatMap(
-            ([field, value]) => {
-              if (Array.isArray(value)) {
-                return value.map(
-                  (message) =>
-                    `${field}: ${String(message)}`,
-                )
-              }
-
-              if (
-                typeof value === "string"
-              ) {
-                return [
-                  `${field}: ${value}`,
-                ]
-              }
-
-              return []
-            },
-          )
-
-        if (messages.length > 0) {
-          setError(
-            messages.join(" | "),
-          )
-          return
-        }
-      }
-
       setError(
-        "Unable to punch in attendance. Please try again.",
+        getPunchErrorMessage(punchError) ||
+          "Unable to punch in attendance. Please try again.",
       )
     } finally {
       setIsPunchingIn(false)
@@ -917,8 +1019,7 @@ function EmployeeTodayAttendance() {
     try {
       setIsPunchingOut(true)
 
-      const position =
-        await getCurrentLocation()
+      const position = await getCurrentLocation()
 
       const latitude = Number(
         position.coords.latitude.toFixed(6),
@@ -929,9 +1030,7 @@ function EmployeeTodayAttendance() {
       )
 
       const accuracy =
-        Number.isFinite(
-          position.coords.accuracy,
-        )
+        Number.isFinite(position.coords.accuracy)
           ? Number(
               Math.max(
                 0,
@@ -940,19 +1039,16 @@ function EmployeeTodayAttendance() {
             )
           : null
 
-      const response =
-        await punchOutAttendance({
-          latitude,
-          longitude,
-          accuracy,
-          selfie: selfieFile,
-        })
+      const response = await punchOutAttendance({
+        latitude,
+        longitude,
+        accuracy,
+        selfie: selfieFile,
+      })
 
-      setAttendance(
-        response.attendance,
-      )
-
+      setAttendance(response.attendance)
       setSelfieFile(null)
+      setSelfiePreview(null)
 
       setSuccess(
         response.message ||
@@ -964,93 +1060,9 @@ function EmployeeTodayAttendance() {
         punchError,
       )
 
-      if (
-        punchError instanceof
-        GeolocationPositionError
-      ) {
-        if (
-          punchError.code ===
-          GeolocationPositionError.PERMISSION_DENIED
-        ) {
-          setError(
-            "Location permission was denied. Please allow location access and try again.",
-          )
-        } else if (
-          punchError.code ===
-          GeolocationPositionError.POSITION_UNAVAILABLE
-        ) {
-          setError(
-            "Unable to determine your current location.",
-          )
-        } else {
-          setError(
-            "Location request timed out. Please try again.",
-          )
-        }
-
-        return
-      }
-
-      const axiosError =
-        punchError as {
-          response?: {
-            data?: unknown
-          }
-        }
-
-      const responseData =
-        axiosError.response?.data
-
-      if (
-        responseData &&
-        typeof responseData === "object"
-      ) {
-        const data =
-          responseData as Record<
-            string,
-            unknown
-          >
-
-        if (
-          typeof data.detail ===
-          "string"
-        ) {
-          setError(data.detail)
-          return
-        }
-
-        const messages =
-          Object.entries(data).flatMap(
-            ([field, value]) => {
-              if (Array.isArray(value)) {
-                return value.map(
-                  (message) =>
-                    `${field}: ${String(message)}`,
-                )
-              }
-
-              if (
-                typeof value === "string"
-              ) {
-                return [
-                  `${field}: ${value}`,
-                ]
-              }
-
-              return []
-            },
-          )
-
-        if (messages.length > 0) {
-          setError(
-            messages.join(" | "),
-          )
-          return
-        }
-      }
-
       setError(
-        "Unable to punch out attendance. Please try again.",
+        getPunchErrorMessage(punchError) ||
+          "Unable to punch out attendance. Please try again.",
       )
     } finally {
       setIsPunchingOut(false)
@@ -1090,62 +1102,87 @@ function EmployeeTodayAttendance() {
       return
     }
 
-    const previewUrl =
-      URL.createObjectURL(file)
+    if (selfiePreview) {
+      URL.revokeObjectURL(selfiePreview)
+    }
+
+    const previewUrl = URL.createObjectURL(file)
 
     setSelfieFile(file)
     setSelfiePreview(previewUrl)
   }
 
+  const attendanceStatus = attendance?.check_out
+    ? "Completed"
+    : attendance?.check_in
+      ? "Working"
+      : "Not Punched"
+
+  const attendanceStatusClass = attendance?.check_out
+    ? "is-completed"
+    : attendance?.check_in
+      ? "is-working"
+      : "is-pending"
+
   return (
     <section className="dashboard-panel dashboard-today-attendance">
-      <div className="dashboard-panel-heading">
+      <div className="dashboard-attendance-header">
         <div>
+          <span className="dashboard-panel-kicker">
+            DAILY ATTENDANCE
+          </span>
+
           <h2>Today's Attendance</h2>
+
           <p>
-            Your attendance status for today.
+            Verify your identity and location before recording attendance.
           </p>
         </div>
 
-        <span className="dashboard-role-badge">
-          {attendance?.check_out
-            ? "Completed"
-            : attendance?.check_in
-              ? "Working"
-              : "Not Punched"}
+        <span
+          className={`dashboard-attendance-status ${attendanceStatusClass}`}
+        >
+          <i />
+          {attendanceStatus}
         </span>
       </div>
 
       {isLoading ? (
-        <p>Loading attendance...</p>
+        <div className="dashboard-attendance-loading">
+          <div className="dashboard-mini-spinner" />
+          <span>Loading today's attendance...</span>
+        </div>
       ) : (
         <>
           <div className="dashboard-attendance-summary">
             <div>
               <span>Date</span>
-              <strong>
-                {getTodayDate()}
-              </strong>
+              <strong>{getTodayDate()}</strong>
+              <small>Current workday</small>
             </div>
 
             <div>
               <span>Punch In</span>
               <strong>
-                {formatTime(
-                  attendance?.check_in ??
-                    null,
-                )}
+                {formatTime(attendance?.check_in ?? null)}
               </strong>
+              <small>
+                {attendance?.check_in
+                  ? "Recorded"
+                  : "Not recorded"}
+              </small>
             </div>
 
             <div>
               <span>Punch Out</span>
               <strong>
-                {formatTime(
-                  attendance?.check_out ??
-                    null,
-                )}
+                {formatTime(attendance?.check_out ?? null)}
               </strong>
+              <small>
+                {attendance?.check_out
+                  ? "Recorded"
+                  : "Pending"}
+              </small>
             </div>
 
             <div>
@@ -1153,10 +1190,7 @@ function EmployeeTodayAttendance() {
               <strong>
                 {attendance?.status
                   ? attendance.status
-                      .replace(
-                        /_/g,
-                        " ",
-                      )
+                      .replace(/_/g, " ")
                       .replace(
                         /\b\w/g,
                         (character) =>
@@ -1164,12 +1198,20 @@ function EmployeeTodayAttendance() {
                       )
                   : "Not punched"}
               </strong>
+              <small>Attendance state</small>
             </div>
           </div>
 
           {!attendance?.check_out && (
             <div className="dashboard-attendance-actions">
               <div className="dashboard-selfie-box">
+                <div className="dashboard-selfie-copy">
+                  <span>Identity verification</span>
+                  <small>
+                    A selfie is required for attendance verification.
+                  </small>
+                </div>
+
                 <label className="dashboard-selfie-input">
                   <span>
                     {selfieFile
@@ -1195,6 +1237,10 @@ function EmployeeTodayAttendance() {
                     <button
                       type="button"
                       onClick={() => {
+                        if (selfiePreview) {
+                          URL.revokeObjectURL(selfiePreview)
+                        }
+
                         setSelfieFile(null)
                         setSelfiePreview(null)
                         setError(null)
@@ -1207,38 +1253,48 @@ function EmployeeTodayAttendance() {
                 )}
               </div>
 
-              {!attendance?.check_in && (
-                <button
-                  type="button"
-                  className="dashboard-attendance-button"
-                  onClick={() =>
-                    void handlePunchIn()
-                  }
-                  disabled={isPunchingIn}
-                >
-                  {isPunchingIn
-                    ? "Punching In..."
-                    : "Punch In"}
-                </button>
-              )}
-
-              {attendance?.check_in &&
-                !attendance?.check_out && (
+              <div className="dashboard-attendance-button-group">
+                {!attendance?.check_in && (
                   <button
                     type="button"
-                    className="dashboard-attendance-button"
-                    onClick={() =>
-                      void handlePunchOut()
-                    }
-                    disabled={
-                      isPunchingOut
-                    }
+                    className="dashboard-attendance-button dashboard-attendance-primary"
+                    onClick={() => void handlePunchIn()}
+                    disabled={isPunchingIn}
                   >
-                    {isPunchingOut
-                      ? "Punching Out..."
-                      : "Punch Out"}
+                    <span>◷</span>
+                    {isPunchingIn
+                      ? "Punching In..."
+                      : "Punch In"}
                   </button>
                 )}
+
+                {attendance?.check_in &&
+                  !attendance?.check_out && (
+                    <button
+                      type="button"
+                      className="dashboard-attendance-button dashboard-attendance-primary"
+                      onClick={() => void handlePunchOut()}
+                      disabled={isPunchingOut}
+                    >
+                      <span>◷</span>
+                      {isPunchingOut
+                        ? "Punching Out..."
+                        : "Punch Out"}
+                    </button>
+                  )}
+              </div>
+            </div>
+          )}
+
+          {attendance?.check_out && (
+            <div className="dashboard-attendance-complete">
+              <span>✓</span>
+              <div>
+                <strong>Attendance completed for today</strong>
+                <small>
+                  Your punch-in and punch-out records have been captured.
+                </small>
+              </div>
             </div>
           )}
 
@@ -1285,6 +1341,7 @@ function ManagerDashboard({
       <SectionHeader
         title="Team Overview"
         description="A focused view of your available workforce information."
+        badge="TEAM"
       />
 
       <div className="dashboard-kpi-grid">
@@ -1293,6 +1350,7 @@ function ManagerDashboard({
           value={totalEmployees}
           meta="Accessible team members"
           icon="TM"
+          tone="primary"
         />
 
         <MetricCard
@@ -1300,6 +1358,7 @@ function ManagerDashboard({
           value={activeEmployees}
           meta={`${activePercentage}% of team`}
           icon="AC"
+          tone="success"
         />
 
         <MetricCard
@@ -1307,6 +1366,7 @@ function ManagerDashboard({
           value={inactiveEmployees}
           meta="Currently inactive"
           icon="IN"
+          tone="warning"
         />
 
         <MetricCard
@@ -1314,6 +1374,7 @@ function ManagerDashboard({
           value={resignedEmployees}
           meta="Resigned employees"
           icon="RS"
+          tone="neutral"
         />
       </div>
 
@@ -1335,6 +1396,7 @@ function ManagerDashboard({
       <SectionHeader
         title="Manager Modules"
         description="All modules available to your role."
+        badge={`${visibleModules.length} MODULES`}
       />
 
       <ModuleGrid
@@ -1361,6 +1423,7 @@ function AdminHrDashboard({
   announcements,
   holidays,
   contentError,
+  isContentLoading,
 }: {
   role: string
   totalEmployees: number
@@ -1377,6 +1440,7 @@ function AdminHrDashboard({
   announcements: AnnouncementRecord[]
   holidays: Holiday[]
   contentError: string
+  isContentLoading: boolean
 }) {
   const isSuperAdmin = role === "SUPER_ADMIN"
 
@@ -1393,6 +1457,7 @@ function AdminHrDashboard({
             ? "Complete workforce and system visibility."
             : "Workforce information and operational HR visibility."
         }
+        badge={isSuperAdmin ? "ADMIN" : "HR"}
       />
 
       <div className="dashboard-kpi-grid">
@@ -1401,6 +1466,7 @@ function AdminHrDashboard({
           value={totalEmployees}
           meta="Organization workforce"
           icon="EM"
+          tone="primary"
         />
 
         <MetricCard
@@ -1408,6 +1474,7 @@ function AdminHrDashboard({
           value={activeEmployees}
           meta={`${activePercentage}% of workforce`}
           icon="AC"
+          tone="success"
         />
 
         <MetricCard
@@ -1415,6 +1482,7 @@ function AdminHrDashboard({
           value={inactiveEmployees}
           meta="Currently inactive"
           icon="IN"
+          tone="warning"
         />
 
         <MetricCard
@@ -1422,6 +1490,7 @@ function AdminHrDashboard({
           value={totalUsers}
           meta="Registered system users"
           icon="US"
+          tone="info"
         />
       </div>
 
@@ -1458,6 +1527,7 @@ function AdminHrDashboard({
             ? "Direct access to frequently used organization controls."
             : "Direct access to frequently used HR operations."
         }
+        badge={`${quickActions.length} ACTIONS`}
       />
 
       <div className="dashboard-action-grid">
@@ -1473,6 +1543,7 @@ function AdminHrDashboard({
       <SectionHeader
         title="HRMS Modules"
         description="Access all modules available to your role."
+        badge={`${visibleModules.length} MODULES`}
       />
 
       <ModuleGrid
@@ -1482,11 +1553,11 @@ function AdminHrDashboard({
 
       <FieldOperationsSection />
 
-
       <DashboardBottomPanels
         announcements={announcements}
         holidays={holidays}
         contentError={contentError}
+        isLoading={isContentLoading}
       />
     </>
   )
@@ -1495,16 +1566,25 @@ function AdminHrDashboard({
 function SectionHeader({
   title,
   description,
+  badge,
 }: {
   title: string
   description: string
+  badge?: string
 }) {
   return (
     <div className="dashboard-section-header">
       <div>
+        <span className="dashboard-section-kicker">WORKSPACE</span>
         <h2>{title}</h2>
         <p>{description}</p>
       </div>
+
+      {badge && (
+        <span className="dashboard-section-badge">
+          {badge}
+        </span>
+      )}
     </div>
   )
 }
@@ -1514,20 +1594,26 @@ function MetricCard({
   value,
   meta,
   icon,
+  tone = "primary",
 }: {
   label: string
   value: number
   meta: string
   icon: string
+  tone?: "primary" | "success" | "warning" | "info" | "neutral"
 }) {
   return (
-    <div className="dashboard-kpi">
+    <div className={`dashboard-kpi dashboard-kpi-${tone}`}>
       <div className="dashboard-kpi-top">
-        <span>{label}</span>
+        <div>
+          <span>{label}</span>
+          <small>Workforce metric</small>
+        </div>
+
         <b>{icon}</b>
       </div>
 
-      <strong>{value.toLocaleString("en-IN")}</strong>
+      <strong>{formatMetric(value)}</strong>
 
       <div className="dashboard-kpi-bottom">
         <small>{meta}</small>
@@ -1550,6 +1636,7 @@ function InfoCard({
   return (
     <div className="dashboard-info-card">
       <span>{label}</span>
+
       <strong className={muted ? "muted" : ""}>
         {value}
       </strong>
@@ -1572,71 +1659,109 @@ function WorkforcePanel({
       : 0
 
   return (
-    <div className="dashboard-panel">
+    <div className="dashboard-panel dashboard-workforce-panel">
       <PanelHeading
         title="Workforce Status"
         description="Current employee distribution by employment status."
+        badge="LIVE DATA"
       />
 
       <div className="dashboard-workforce">
-        <div
-          className="dashboard-donut"
-          style={
-            {
-              "--active-angle": `${activeAngle}deg`,
-            } as CSSProperties
-          }
-        >
-          <div className="dashboard-donut-center">
-            <strong>{activeEmployees}</strong>
-            <span>Active</span>
+        <div className="dashboard-workforce-visual">
+          <div
+            className="dashboard-donut"
+            role="img"
+            aria-label={`${formatMetric(activeEmployees)} active employees out of ${formatMetric(totalEmployees)}`}
+            style={
+              {
+                "--active-angle": `${activeAngle}deg`,
+              } as CSSProperties
+            }
+          >
+            <div className="dashboard-donut-center">
+              <span>ACTIVE</span>
+              <strong>{formatMetric(activeEmployees)}</strong>
+              <small>
+                {totalEmployees > 0
+                  ? `${Math.round(
+                      (activeEmployees / totalEmployees) * 100,
+                    )}% of workforce`
+                  : "0% of workforce"}
+              </small>
+            </div>
+          </div>
+
+          <div className="dashboard-workforce-visual-meta">
+            <span>WORKFORCE HEALTH</span>
+            <strong>
+              {totalEmployees > 0
+                ? `${Math.round((activeEmployees / totalEmployees) * 100)}% active`
+                : "No workforce data"}
+            </strong>
             <small>
               {totalEmployees > 0
-                ? `${Math.round(
-                    (activeEmployees / totalEmployees) * 100,
-                  )}%`
-                : "0%"}
+                ? `${formatMetric(totalEmployees)} employees tracked`
+                : "Awaiting employee data"}
             </small>
           </div>
         </div>
 
-        <div className="dashboard-status-list">
-          {workforceStatuses.map((status) => (
-            <div
-              className="dashboard-status"
-              key={status.label}
-            >
-              <div className="dashboard-status-top">
-                <span>
-                  <i className={`status-${status.label.toLowerCase()}`} />
-                  {status.label}
-                </span>
-                <strong>{status.value}</strong>
-              </div>
+        <div className="dashboard-workforce-details">
+          <div className="dashboard-workforce-segmented" aria-hidden="true">
+            {workforceStatuses.map((status) => (
+              <span
+                key={status.label}
+                className={`dashboard-workforce-segment segment-${status.label.toLowerCase()}`}
+                style={{
+                  width: `${Math.max(
+                    status.percentage > 0 ? status.percentage : 0,
+                    status.value > 0 ? 1 : 0,
+                  )}%`,
+                }}
+              />
+            ))}
+          </div>
 
-              <div className="dashboard-status-track">
-                <div
-                  className="dashboard-status-progress"
-                  style={{
-                    width: `${Math.min(
-                      status.percentage,
-                      100,
-                    )}%`,
-                  }}
-                />
-              </div>
+          <div className="dashboard-status-list">
+            {workforceStatuses.map((status) => (
+              <div
+                className="dashboard-status"
+                key={status.label}
+              >
+                <div className="dashboard-status-top">
+                  <span>
+                    <i
+                      className={`status-${status.label.toLowerCase()}`}
+                    />
+                    {status.label}
+                  </span>
 
-              <small>
-                {Math.round(status.percentage)}%
-              </small>
-            </div>
-          ))}
+                  <strong>
+                    {formatMetric(status.value)}
+                    <small>{Math.round(status.percentage)}%</small>
+                  </strong>
+                </div>
+
+                <div className="dashboard-status-track">
+                  <div
+                    className="dashboard-status-progress"
+                    style={{
+                      width: `${Math.min(
+                        status.percentage,
+                        100,
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="dashboard-panel-total">
-        <span>Total Employees</span>
-        <strong>{totalEmployees}</strong>
+        <span>Tracked Workforce</span>
+        <strong>{formatMetric(totalEmployees)} employees</strong>
       </div>
     </div>
   )
@@ -1654,6 +1779,7 @@ function RoleDistribution({
       <PanelHeading
         title="User Distribution by Role"
         description="System users grouped by assigned role."
+        badge="USERS"
       />
 
       {roleDistribution.length === 0 ? (
@@ -1661,43 +1787,67 @@ function RoleDistribution({
           No role distribution data available.
         </p>
       ) : (
-        <div className="dashboard-role-list">
-          {roleDistribution.map(([role, count]) => (
-            <div className="dashboard-role" key={role}>
-              <div className="dashboard-role-top">
-                <span>
-                  {roleLabels[role] || role}
-                </span>
-                <strong>
-                  {count}{" "}
-                  <small>
-                    {totalPercentage(count, roleDistribution)}%
-                  </small>
-                </strong>
-              </div>
-
-              <div className="dashboard-role-track">
-                <div
-                  className="dashboard-role-progress"
-                  style={{
-                    width: `${Math.min(
-                      (count / maxRoleCount) * 100,
-                      100,
-                    )}%`,
-                  }}
-                />
-              </div>
+        <>
+          <div className="dashboard-role-summary">
+            <div>
+              <span>ACTIVE ROLES</span>
+              <strong>{roleDistribution.length}</strong>
             </div>
-          ))}
-        </div>
+            <div>
+              <span>LARGEST ROLE</span>
+              <strong>
+                {roleLabels[roleDistribution[0][0]] ||
+                  roleDistribution[0][0]}
+              </strong>
+            </div>
+          </div>
+
+          <div className="dashboard-role-list">
+            {roleDistribution.map(([role, count], index) => (
+              <div className="dashboard-role" key={role}>
+                <div className="dashboard-role-top">
+                  <span>
+                    <i />
+                    <b className="dashboard-role-rank">
+                      {String(index + 1).padStart(2, "0")}
+                    </b>
+                    {roleLabels[role] || role}
+                  </span>
+
+                  <strong>
+                    {formatMetric(count)}
+                    <small>
+                      {totalPercentage(count, roleDistribution)}%
+                    </small>
+                  </strong>
+                </div>
+
+                <div className="dashboard-role-track">
+                  <div
+                    className="dashboard-role-progress"
+                    style={{
+                      width: `${Math.min(
+                        (count / maxRoleCount) * 100,
+                        100,
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       <div className="dashboard-panel-total">
         <span>Total Users</span>
+
         <strong>
-          {roleDistribution.reduce(
-            (sum, [, count]) => sum + count,
-            0,
+          {formatMetric(
+            roleDistribution.reduce(
+              (sum, [, count]) => sum + count,
+              0,
+            ),
           )}
         </strong>
       </div>
@@ -1735,6 +1885,7 @@ function QuickActionsPanel({
       <PanelHeading
         title={title}
         description={description}
+        badge="SHORTCUTS"
       />
 
       <div className="dashboard-quick-list">
@@ -1753,16 +1904,25 @@ function QuickActionsPanel({
 function PanelHeading({
   title,
   description,
+  badge,
 }: {
   title: string
   description: string
+  badge?: string
 }) {
   return (
     <div className="dashboard-panel-heading">
       <div>
+        <span className="dashboard-panel-kicker">OVERVIEW</span>
         <h2>{title}</h2>
         <p>{description}</p>
       </div>
+
+      {badge && (
+        <span className="dashboard-panel-badge">
+          {badge}
+        </span>
+      )}
     </div>
   )
 }
@@ -1786,7 +1946,7 @@ function QuickAction({
 
       <span className="dashboard-quick-copy">
         <strong>{item.label}</strong>
-        <small>Open module</small>
+        <small>{item.description}</small>
       </span>
 
       <span className="dashboard-quick-arrow">→</span>
@@ -1820,16 +1980,22 @@ function ModuleGrid({
           key={item.path}
           onClick={() => navigate(item.path)}
         >
-          <span className="dashboard-module-icon">
-            {item.icon}
-          </span>
+          <div className="dashboard-module-top">
+            <span className="dashboard-module-icon">
+              {item.icon}
+            </span>
+
+            <span className="dashboard-module-open">
+              →
+            </span>
+          </div>
 
           <strong>{item.label}</strong>
 
           <p>{item.description}</p>
 
           <span className="dashboard-module-link">
-            Open module →
+            Open module
           </span>
         </button>
       ))}
@@ -1838,33 +2004,6 @@ function ModuleGrid({
 }
 
 function FieldOperationsSection() {
-  const fieldMetrics = [
-    {
-      label: "Field Employees",
-      value: "0",
-      description: "Employees assigned to field work",
-      short: "FIELD",
-    },
-    {
-      label: "Active Visits",
-      value: "0",
-      description: "Currently active field visits",
-      short: "VISITS",
-    },
-    {
-      label: "Sales Today",
-      value: "0",
-      description: "Sales activities recorded today",
-      short: "SALES",
-    },
-    {
-      label: "GPS Active",
-      value: "0",
-      description: "Employees currently sharing location",
-      short: "GPS",
-    },
-  ]
-
   return (
     <section
       id="sales-field-operations"
@@ -1873,33 +2012,77 @@ function FieldOperationsSection() {
       <div className="dashboard-field-heading">
         <div>
           <div className="dashboard-field-title-row">
-            <h2>Sales & GPS Tracking</h2>
-
-            <span className="dashboard-field-badge">
-              FIELD OPS
+            <span className="dashboard-field-icon">
+              GPS
             </span>
-          </div>
 
-          <p>
-            Monitor field workforce activity, sales performance and
-            location tracking.
-          </p>
+            <div>
+              <div className="dashboard-field-title-line">
+                <h2>Sales & GPS Tracking</h2>
+
+                <span className="dashboard-field-badge">
+                  FIELD OPS
+                </span>
+              </div>
+
+              <p>
+                Monitor field workforce activity, sales performance and
+                location tracking.
+              </p>
+            </div>
+          </div>
         </div>
 
         <span className="dashboard-field-status">
-          Tracking Ready
+          Not connected
         </span>
       </div>
 
+      <div className="dashboard-field-notice">
+        <span>i</span>
+
+        <div>
+          <strong>Field operations data is not connected yet</strong>
+          <p>
+            This section is prepared for future field workforce, sales and
+            GPS integrations. No live activity is being simulated.
+          </p>
+        </div>
+      </div>
+
       <div className="dashboard-field-kpi-grid">
-        {fieldMetrics.map((metric) => (
+        {[
+          {
+            label: "Field Employees",
+            value: "--",
+            description: "Awaiting field workforce data",
+            short: "FIELD",
+          },
+          {
+            label: "Active Visits",
+            value: "--",
+            description: "Awaiting visit tracking data",
+            short: "VISITS",
+          },
+          {
+            label: "Sales Today",
+            value: "--",
+            description: "Awaiting sales activity data",
+            short: "SALES",
+          },
+          {
+            label: "GPS Active",
+            value: "--",
+            description: "Awaiting location tracking data",
+            short: "GPS",
+          },
+        ].map((metric) => (
           <div
             className="dashboard-field-kpi"
             key={metric.label}
           >
             <div className="dashboard-field-kpi-top">
               <span>{metric.label}</span>
-
               <b>{metric.short}</b>
             </div>
 
@@ -1915,29 +2098,26 @@ function FieldOperationsSection() {
           <div className="dashboard-field-panel-heading">
             <div>
               <h3>Field Activity</h3>
-
-              <p>
-                Today's field workforce activity
-              </p>
+              <p>Today's field workforce activity</p>
             </div>
 
-            <span>Today</span>
+            <span>NO DATA</span>
           </div>
 
           <div className="dashboard-field-activity-list">
             <div>
               <span>Check-ins</span>
-              <strong>0</strong>
+              <strong>--</strong>
             </div>
 
             <div>
               <span>Visits Completed</span>
-              <strong>0</strong>
+              <strong>--</strong>
             </div>
 
             <div>
               <span>Sales Logged</span>
-              <strong>0</strong>
+              <strong>--</strong>
             </div>
           </div>
         </div>
@@ -1946,10 +2126,7 @@ function FieldOperationsSection() {
           <div className="dashboard-field-panel-heading">
             <div>
               <h3>GPS Status</h3>
-
-              <p>
-                Location sharing overview
-              </p>
+              <p>Location sharing overview</p>
             </div>
 
             <span>GPS</span>
@@ -1961,11 +2138,11 @@ function FieldOperationsSection() {
             </div>
 
             <div>
-              <strong>No active tracking</strong>
+              <strong>Tracking integration pending</strong>
 
               <p>
-                GPS tracking data will appear here when field
-                employees are active.
+                GPS tracking data will appear here after the field
+                operations integration is connected.
               </p>
             </div>
           </div>
@@ -1979,10 +2156,12 @@ function DashboardBottomPanels({
   announcements,
   holidays,
   contentError,
+  isLoading,
 }: {
   announcements: AnnouncementRecord[]
   holidays: Holiday[]
   contentError: string
+  isLoading: boolean
 }) {
   return (
     <div className="dashboard-bottom-grid">
@@ -1990,15 +2169,20 @@ function DashboardBottomPanels({
         <PanelHeading
           title="Recent Announcements"
           description="Latest organization announcements."
+          badge={`${announcements.length}`}
         />
 
-        {contentError ? (
+        {isLoading ? (
+          <DashboardListLoading />
+        ) : contentError ? (
           <div className="dashboard-empty-state">
-            {contentError}
+            <strong>Content unavailable</strong>
+            <span>{contentError}</span>
           </div>
         ) : announcements.length === 0 ? (
           <div className="dashboard-empty-state">
-            No announcements available.
+            <strong>No announcements</strong>
+            <span>No published announcements are available right now.</span>
           </div>
         ) : (
           <div className="dashboard-list">
@@ -2020,41 +2204,43 @@ function DashboardBottomPanels({
         <PanelHeading
           title="Upcoming Holidays"
           description="Upcoming organization holidays."
+          badge={`${holidays.length}`}
         />
 
-        {contentError ? (
+        {isLoading ? (
+          <DashboardListLoading />
+        ) : contentError ? (
           <div className="dashboard-empty-state">
-            {contentError}
+            <strong>Content unavailable</strong>
+            <span>{contentError}</span>
           </div>
         ) : holidays.length === 0 ? (
           <div className="dashboard-empty-state">
-            No upcoming holidays available.
+            <strong>No upcoming holidays</strong>
+            <span>No upcoming organization holidays are available.</span>
           </div>
         ) : (
           <div className="dashboard-list">
-            {holidays
-              .filter(
-                (holiday) =>
-                  new Date(holiday.date).getTime() >=
-                  new Date().setHours(0, 0, 0, 0),
-              )
-              .sort(
-                (first, second) =>
-                  new Date(first.date).getTime() -
-                  new Date(second.date).getTime(),
-              )
-              .slice(0, 4)
-              .map((holiday) => (
-                <HolidayRow
-                  key={holiday.id}
-                  title={holiday.name}
-                  date={formatDashboardDate(holiday.date)}
-                  day={formatDashboardDay(holiday.date)}
-                />
-              ))}
+            {holidays.slice(0, 4).map((holiday) => (
+              <HolidayRow
+                key={holiday.id}
+                title={holiday.name}
+                date={formatDashboardDate(holiday.date)}
+                day={formatDashboardDay(holiday.date)}
+              />
+            ))}
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function DashboardListLoading() {
+  return (
+    <div className="dashboard-list-loading">
+      <div className="dashboard-mini-spinner" />
+      <span>Loading information...</span>
     </div>
   )
 }
@@ -2070,9 +2256,13 @@ function ListRow({
 }) {
   return (
     <div className="dashboard-list-row">
-      <div>
-        <strong>{title}</strong>
-        <span>{subtitle}</span>
+      <div className="dashboard-list-content">
+        <div className="dashboard-list-marker" />
+
+        <div>
+          <strong>{title}</strong>
+          <span>{subtitle}</span>
+        </div>
       </div>
 
       <div className="dashboard-list-date">
@@ -2081,32 +2271,6 @@ function ListRow({
       </div>
     </div>
   )
-}
-
-function formatDashboardDate(value: string) {
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })
-}
-
-function formatDashboardDay(value: string) {
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return ""
-  }
-
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-  })
 }
 
 function HolidayRow({
@@ -2120,7 +2284,16 @@ function HolidayRow({
 }) {
   return (
     <div className="dashboard-list-row">
-      <strong>{title}</strong>
+      <div className="dashboard-list-content">
+        <div className="dashboard-holiday-marker">
+          <span>★</span>
+        </div>
+
+        <div>
+          <strong>{title}</strong>
+          <span>Organization holiday</span>
+        </div>
+      </div>
 
       <div className="dashboard-holiday-date">
         <span>{date}</span>
@@ -2146,9 +2319,18 @@ function DashboardState({
   return (
     <div className="dashboard-state">
       <div className="dashboard-state-card">
-        {loading && <div className="dashboard-spinner" />}
+        {loading && (
+          <div className="dashboard-state-icon">
+            <div className="dashboard-spinner" />
+          </div>
+        )}
+
+        <span className="dashboard-state-kicker">
+          HRMS
+        </span>
 
         <h2>{title}</h2>
+
         <p>{text}</p>
 
         {actionLabel && onAction && (
@@ -2167,20 +2349,25 @@ function DashboardState({
 
 const dashboardStyles = `
   .dashboard-page {
-    --bg: #f5f7fb;
+    --bg: #f4f7fb;
     --card: #ffffff;
     --surface: #f8fafc;
+    --surface-strong: #f1f5f9;
     --text: #14213d;
     --muted: #687792;
+    --muted-strong: #4d5f7a;
     --border: #dfe6f0;
+    --border-strong: #cbd5e1;
     --accent: #ff6b00;
     --accent-2: #1769ff;
     --accent-soft: #fff1e8;
     --track: #e7edf5;
     --success: #0dbb63;
+    --warning: #f59e0b;
     --danger: #ef4b55;
+    --info: #1769ff;
     --shadow: 0 4px 18px rgba(25, 45, 80, 0.055);
-    --shadow-hover: 0 12px 30px rgba(25, 45, 80, 0.11);
+    --shadow-hover: 0 14px 32px rgba(25, 45, 80, 0.11);
 
     width: 100%;
     min-height: calc(100vh - 48px);
@@ -2194,17 +2381,22 @@ const dashboardStyles = `
     --bg: #08111f;
     --card: #0e1827;
     --surface: #111d2e;
+    --surface-strong: #172438;
     --text: #f5f8ff;
     --muted: #98a8bd;
+    --muted-strong: #b4c1d2;
     --border: #22334a;
+    --border-strong: #30435d;
     --accent: #ff6b00;
     --accent-2: #4c8dff;
     --accent-soft: #192941;
     --track: #26374e;
     --success: #0ed36b;
+    --warning: #fbbf24;
     --danger: #ff5360;
+    --info: #4c8dff;
     --shadow: 0 5px 22px rgba(0, 0, 0, 0.18);
-    --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 14px 34px rgba(0, 0, 0, 0.32);
   }
 
   .dashboard-shell {
@@ -2219,41 +2411,89 @@ const dashboardStyles = `
     align-items: flex-end;
     justify-content: space-between;
     gap: 24px;
-    padding: 4px 2px 18px;
+    padding: 4px 2px 16px;
     border-bottom: 1px solid var(--border);
   }
 
-  .dashboard-eyebrow {
-    margin: 0 0 6px;
+  .dashboard-page-heading {
+    min-width: 0;
+  }
+
+  .dashboard-eyebrow,
+  .dashboard-section-kicker,
+  .dashboard-panel-kicker,
+  .dashboard-profile-overline,
+  .dashboard-employee-kicker {
+    display: block;
+    margin: 0;
     color: var(--accent);
-    font-size: 10px;
-    font-weight: 800;
+    font-size: 9px;
+    font-weight: 850;
     letter-spacing: 0.12em;
+  }
+
+  .dashboard-eyebrow {
+    margin-bottom: 6px;
+  }
+
+  .dashboard-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
   .dashboard-page-header h1 {
     margin: 0;
     color: var(--text);
-    font-size: 28px;
-    font-weight: 800;
-    letter-spacing: -0.025em;
+    font-size: 27px;
+    font-weight: 850;
+    letter-spacing: -0.035em;
   }
 
   .dashboard-page-header p:last-child {
-    margin: 6px 0 0;
+    margin: 5px 0 0;
     color: var(--muted);
-    font-size: 13px;
+    font-size: 12px;
+  }
+
+  .dashboard-header-role {
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--muted-strong);
+    font-size: 9px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .dashboard-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex: 0 0 auto;
+  }
+
+  .dashboard-last-updated {
+    color: var(--muted);
+    font-size: 9px;
+    white-space: nowrap;
   }
 
   .dashboard-refresh,
   .dashboard-state-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 36px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 9px;
     background: var(--card);
     color: var(--text);
-    padding: 10px 15px;
-    font-size: 12px;
-    font-weight: 750;
+    padding: 8px 13px;
+    font-size: 10px;
+    font-weight: 800;
     cursor: pointer;
     transition: 0.2s ease;
   }
@@ -2265,17 +2505,33 @@ const dashboardStyles = `
     transform: translateY(-1px);
   }
 
+  .dashboard-refresh:disabled {
+    opacity: 0.65;
+    cursor: wait;
+    transform: none;
+  }
+
+  .dashboard-refresh-icon {
+    display: inline-block;
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .dashboard-refresh-icon.is-spinning {
+    animation: dashboard-spin 0.8s linear infinite;
+  }
+
   .dashboard-welcome {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 144px;
-    margin-top: 16px;
-    padding: 25px 30px;
+    min-height: 142px;
+    margin-top: 14px;
+    padding: 24px 28px;
     overflow: hidden;
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 15px;
     background:
       linear-gradient(
         135deg,
@@ -2285,54 +2541,94 @@ const dashboardStyles = `
     box-shadow: var(--shadow);
   }
 
+  .dashboard-welcome::after {
+    position: absolute;
+    right: -80px;
+    bottom: -130px;
+    width: 320px;
+    height: 250px;
+    content: "";
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.035;
+  }
+
   .dashboard-welcome-copy {
     position: relative;
     z-index: 2;
   }
 
+  .dashboard-welcome-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .dashboard-role-badge {
     display: inline-flex;
+    align-items: center;
     padding: 5px 9px;
     border-radius: 7px;
     background: var(--accent-soft);
     color: var(--accent);
-    font-size: 10px;
-    font-weight: 800;
+    font-size: 9px;
+    font-weight: 850;
+  }
+
+  .dashboard-live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted);
+    font-size: 8px;
+    font-weight: 700;
+  }
+
+  .dashboard-live-indicator i,
+  .dashboard-person-status i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 0 3px rgba(13, 187, 99, 0.1);
   }
 
   .dashboard-welcome h2 {
-    margin: 11px 0 5px;
+    margin: 10px 0 5px;
     color: var(--text);
-    font-size: 28px;
+    font-size: 27px;
     line-height: 1.15;
-    letter-spacing: -0.03em;
+    font-weight: 850;
+    letter-spacing: -0.035em;
   }
 
   .dashboard-welcome p {
+    max-width: 680px;
     margin: 0;
     color: var(--muted);
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.5;
   }
 
   .dashboard-welcome-visual {
     position: absolute;
-    right: 38px;
+    right: 34px;
     bottom: -4px;
-    width: 310px;
+    width: 315px;
     height: 145px;
-    opacity: 0.48;
+    opacity: 0.45;
   }
 
   .dashboard-visual-window {
     position: absolute;
     right: 20px;
-    top: 8px;
+    top: 7px;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    width: 102px;
-    height: 72px;
+    width: 105px;
+    height: 74px;
     border: 3px solid var(--accent-2);
-    opacity: 0.18;
+    opacity: 0.17;
   }
 
   .dashboard-visual-window span {
@@ -2341,13 +2637,13 @@ const dashboardStyles = `
 
   .dashboard-visual-chart {
     position: absolute;
-    left: 35px;
-    top: 55px;
+    left: 32px;
+    top: 51px;
     display: flex;
     align-items: flex-end;
     gap: 7px;
-    width: 62px;
-    height: 47px;
+    width: 72px;
+    height: 53px;
     opacity: 0.2;
   }
 
@@ -2359,64 +2655,118 @@ const dashboardStyles = `
   }
 
   .dashboard-visual-chart i:nth-child(1) {
-    height: 16px;
+    height: 15px;
   }
 
   .dashboard-visual-chart i:nth-child(2) {
-    height: 29px;
+    height: 27px;
   }
 
   .dashboard-visual-chart i:nth-child(3) {
-    height: 38px;
+    height: 39px;
   }
 
   .dashboard-visual-chart i:nth-child(4) {
-    height: 25px;
+    height: 29px;
+  }
+
+  .dashboard-visual-chart i:nth-child(5) {
+    height: 46px;
   }
 
   .dashboard-visual-block {
     position: absolute;
     left: 120px;
     bottom: 0;
-    width: 90px;
-    height: 58px;
+    width: 94px;
+    height: 59px;
     border-radius: 8px 8px 0 0;
     background: var(--accent-2);
-    opacity: 0.15;
+    opacity: 0.14;
   }
 
   .dashboard-section-header {
-    margin: 23px 0 11px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 15px;
+    margin: 21px 0 10px;
+  }
+
+  .dashboard-section-header > div {
+    min-width: 0;
   }
 
   .dashboard-section-header h2 {
-    margin: 0;
+    margin: 3px 0 0;
     color: var(--text);
-    font-size: 17px;
-    font-weight: 800;
-    letter-spacing: -0.015em;
+    font-size: 16px;
+    font-weight: 850;
+    letter-spacing: -0.02em;
   }
 
   .dashboard-section-header p {
     margin: 4px 0 0;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 10px;
+    line-height: 1.45;
+  }
+
+  .dashboard-section-badge {
+    padding: 4px 7px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 850;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
   }
 
   .dashboard-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
   }
 
   .dashboard-kpi {
+    position: relative;
     min-width: 0;
-    padding: 16px;
+    padding: 15px;
+    overflow: hidden;
     border: 1px solid var(--border);
-    border-radius: 13px;
+    border-radius: 12px;
     background: var(--card);
     box-shadow: var(--shadow);
     transition: 0.2s ease;
+  }
+
+  .dashboard-kpi::before {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    content: "";
+    background: var(--accent);
+    opacity: 0.8;
+  }
+
+  .dashboard-kpi-success::before {
+    background: var(--success);
+  }
+
+  .dashboard-kpi-warning::before {
+    background: var(--warning);
+  }
+
+  .dashboard-kpi-info::before {
+    background: var(--info);
+  }
+
+  .dashboard-kpi-neutral::before {
+    background: var(--muted);
   }
 
   .dashboard-kpi:hover {
@@ -2426,15 +2776,31 @@ const dashboardStyles = `
 
   .dashboard-kpi-top {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
   }
 
-  .dashboard-kpi-top > span {
+  .dashboard-kpi-top > div {
+    min-width: 0;
+  }
+
+  .dashboard-kpi-top > div > span {
+    display: block;
+    overflow: hidden;
     color: var(--muted);
-    font-size: 11px;
-    font-weight: 700;
+    font-size: 10px;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-kpi-top > div > small {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 7px;
+    opacity: 0.75;
   }
 
   .dashboard-kpi-top b,
@@ -2443,42 +2809,62 @@ const dashboardStyles = `
     display: grid;
     place-items: center;
     flex: 0 0 auto;
-    border-radius: 9px;
-    font-size: 9px;
+    border-radius: 8px;
+    font-size: 8px;
     font-weight: 850;
   }
 
   .dashboard-kpi-top b {
-    width: 34px;
-    height: 34px;
+    width: 33px;
+    height: 33px;
     background: var(--accent-soft);
     color: var(--accent);
   }
 
+  .dashboard-kpi-success .dashboard-kpi-top b {
+    background: rgba(13, 187, 99, 0.1);
+    color: var(--success);
+  }
+
+  .dashboard-kpi-warning .dashboard-kpi-top b {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+  }
+
+  .dashboard-kpi-info .dashboard-kpi-top b {
+    background: rgba(23, 105, 255, 0.1);
+    color: var(--info);
+  }
+
   .dashboard-kpi > strong {
     display: block;
-    margin-top: 15px;
+    margin-top: 14px;
     color: var(--text);
-    font-size: 28px;
+    font-size: 27px;
     line-height: 1;
     font-weight: 850;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.035em;
   }
 
   .dashboard-kpi-bottom {
-    margin-top: 9px;
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
   }
 
   .dashboard-kpi-bottom small {
+    overflow: hidden;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .dashboard-two-column {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
-    gap: 12px;
-    margin-top: 12px;
+    gap: 10px;
+    margin-top: 10px;
   }
 
   .dashboard-panel,
@@ -2487,45 +2873,141 @@ const dashboardStyles = `
   .dashboard-list-panel {
     min-width: 0;
     border: 1px solid var(--border);
-    border-radius: 13px;
+    border-radius: 12px;
     background: var(--card);
     box-shadow: var(--shadow);
   }
 
   .dashboard-panel,
   .dashboard-list-panel {
-    padding: 18px;
+    padding: 16px;
   }
 
   .dashboard-panel-heading {
-    margin-bottom: 17px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .dashboard-panel-heading > div {
+    min-width: 0;
   }
 
   .dashboard-panel-heading h2 {
-    margin: 0;
+    margin: 3px 0 0;
     color: var(--text);
-    font-size: 15px;
-    font-weight: 800;
+    font-size: 14px;
+    font-weight: 850;
   }
 
   .dashboard-panel-heading p {
     margin: 4px 0 0;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 9px;
     line-height: 1.5;
+  }
+
+  .dashboard-panel-badge {
+    padding: 4px 6px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 850;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
   }
 
   .dashboard-workforce {
     display: grid;
-    grid-template-columns: 175px minmax(0, 1fr);
+    grid-template-columns: 185px minmax(0, 1fr);
     align-items: center;
-    gap: 26px;
+    gap: 20px;
+  }
+
+  .dashboard-workforce-visual {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+  }
+
+  .dashboard-workforce-visual-meta {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 2px;
+    text-align: center;
+  }
+
+  .dashboard-workforce-visual-meta span {
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+  }
+
+  .dashboard-workforce-visual-meta strong {
+    color: var(--text);
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  .dashboard-workforce-visual-meta small {
+    color: var(--muted);
+    font-size: 7px;
+  }
+
+  .dashboard-workforce-details {
+    min-width: 0;
+  }
+
+  .dashboard-workforce-segmented {
+    display: flex;
+    width: 100%;
+    height: 7px;
+    overflow: hidden;
+    margin-bottom: 13px;
+    border-radius: 999px;
+    background: var(--track);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+
+  .dashboard-workforce-segment {
+    display: block;
+    min-width: 0;
+    height: 100%;
+    transition: width 0.35s ease;
+  }
+
+  .dashboard-workforce-segment + .dashboard-workforce-segment {
+    box-shadow: inset 1px 0 0 var(--card);
+  }
+
+  .dashboard-workforce-segment.segment-active {
+    background: var(--success);
+  }
+
+  .dashboard-workforce-segment.segment-inactive {
+    background: var(--warning);
+  }
+
+  .dashboard-workforce-segment.segment-resigned {
+    background: #7757ff;
+  }
+
+  .dashboard-workforce-segment.segment-terminated {
+    background: var(--danger);
   }
 
   .dashboard-donut {
     position: relative;
-    width: 156px;
-    height: 156px;
+    width: 148px;
+    height: 148px;
     margin: 0 auto;
     border-radius: 50%;
     background:
@@ -2539,7 +3021,7 @@ const dashboardStyles = `
 
   .dashboard-donut::after {
     position: absolute;
-    inset: 22px;
+    inset: 20px;
     content: "";
     border-radius: 50%;
     background: var(--card);
@@ -2555,30 +3037,69 @@ const dashboardStyles = `
     flex-direction: column;
   }
 
+  .dashboard-donut-center > span {
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+  }
+
   .dashboard-donut-center strong {
+    margin-top: 4px;
     color: var(--text);
-    font-size: 25px;
+    font-size: 24px;
     line-height: 1;
     font-weight: 850;
   }
 
-  .dashboard-donut-center span {
-    margin-top: 5px;
-    color: var(--muted);
-    font-size: 10px;
-  }
-
   .dashboard-donut-center small {
-    margin-top: 3px;
+    margin-top: 4px;
     color: var(--muted);
-    font-size: 9px;
+    font-size: 8px;
   }
 
   .dashboard-status-list,
   .dashboard-role-list {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
+  }
+
+  .dashboard-role-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    margin-bottom: 13px;
+  }
+
+  .dashboard-role-summary > div {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    padding: 8px 9px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+  }
+
+  .dashboard-role-summary span {
+    color: var(--muted);
+    font-size: 6px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+  }
+
+  .dashboard-role-summary strong {
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 9px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .dashboard-status-top,
@@ -2587,7 +3108,7 @@ const dashboardStyles = `
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
   }
 
   .dashboard-status-top span,
@@ -2596,8 +3117,8 @@ const dashboardStyles = `
     align-items: center;
     gap: 7px;
     color: var(--text);
-    font-size: 10px;
-    font-weight: 650;
+    font-size: 9px;
+    font-weight: 700;
   }
 
   .dashboard-status-top strong,
@@ -2606,7 +3127,8 @@ const dashboardStyles = `
     font-size: 10px;
   }
 
-  .dashboard-status-top i {
+  .dashboard-status-top i,
+  .dashboard-role-top i {
     width: 7px;
     height: 7px;
     border-radius: 50%;
@@ -2618,7 +3140,7 @@ const dashboardStyles = `
   }
 
   .dashboard-status-top i.status-inactive {
-    background: #ff8a18;
+    background: var(--warning);
   }
 
   .dashboard-status-top i.status-resigned {
@@ -2642,34 +3164,35 @@ const dashboardStyles = `
     height: 100%;
     border-radius: inherit;
     background: var(--accent-2);
+    transition: width 0.35s ease;
   }
 
   .dashboard-status small {
     display: block;
-    margin-top: 4px;
+    margin-top: 3px;
     color: var(--muted);
-    font-size: 9px;
+    font-size: 8px;
   }
 
   .dashboard-panel-total {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 16px;
-    padding: 10px 12px;
+    margin-top: 14px;
+    padding: 9px 11px;
     border: 1px solid var(--border);
-    border-radius: 9px;
+    border-radius: 8px;
     background: var(--surface);
   }
 
   .dashboard-panel-total span {
     color: var(--muted);
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .dashboard-panel-total strong {
     color: var(--text);
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .dashboard-role-top strong small {
@@ -2679,20 +3202,38 @@ const dashboardStyles = `
     font-weight: 600;
   }
 
+  .dashboard-role-rank {
+    min-width: 17px;
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .dashboard-role-progress {
+    background: var(--accent);
+  }
+
   .dashboard-action-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 9px;
+    gap: 8px;
+  }
+
+  .dashboard-quick-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
   }
 
   .dashboard-quick-action {
     display: flex;
     align-items: center;
     min-width: 0;
-    gap: 9px;
-    padding: 11px;
+    gap: 8px;
+    padding: 10px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 9px;
     background: var(--surface);
     color: var(--text);
     text-align: left;
@@ -2707,8 +3248,8 @@ const dashboardStyles = `
   }
 
   .dashboard-quick-icon {
-    width: 34px;
-    height: 34px;
+    width: 33px;
+    height: 33px;
     background: var(--accent-soft);
     color: var(--accent);
   }
@@ -2723,26 +3264,33 @@ const dashboardStyles = `
   .dashboard-quick-copy strong {
     overflow: hidden;
     color: var(--text);
-    font-size: 10px;
+    font-size: 9px;
+    font-weight: 800;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .dashboard-quick-copy small {
+    display: -webkit-box;
     margin-top: 3px;
+    overflow: hidden;
     color: var(--muted);
-    font-size: 8px;
+    font-size: 7px;
+    line-height: 1.35;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 
   .dashboard-quick-arrow {
+    flex: 0 0 auto;
     color: var(--accent-2);
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .dashboard-module-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
+    gap: 9px;
   }
 
   .dashboard-module {
@@ -2750,10 +3298,10 @@ const dashboardStyles = `
     flex-direction: column;
     align-items: flex-start;
     min-width: 0;
-    min-height: 150px;
-    padding: 14px;
+    min-height: 142px;
+    padding: 13px;
     border: 1px solid var(--border);
-    border-radius: 11px;
+    border-radius: 10px;
     background: var(--card);
     color: var(--text);
     text-align: left;
@@ -2768,39 +3316,62 @@ const dashboardStyles = `
     transform: translateY(-2px);
   }
 
+  .dashboard-module-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+
   .dashboard-module-icon {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     background: var(--accent-soft);
     color: var(--accent-2);
   }
 
+  .dashboard-module-open {
+    color: var(--muted);
+    font-size: 12px;
+    transition: 0.2s ease;
+  }
+
+  .dashboard-module:hover .dashboard-module-open {
+    color: var(--accent-2);
+    transform: translateX(2px);
+  }
+
   .dashboard-module strong {
-    margin-top: 13px;
+    margin-top: 11px;
     color: var(--text);
-    font-size: 11px;
-    font-weight: 800;
+    font-size: 10px;
+    font-weight: 850;
   }
 
   .dashboard-module p {
-    min-height: 34px;
-    margin: 5px 0 10px;
+    display: -webkit-box;
+    min-height: 30px;
+    margin: 5px 0 8px;
+    overflow: hidden;
     color: var(--muted);
-    font-size: 9px;
+    font-size: 8px;
     line-height: 1.45;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 
   .dashboard-module-link {
     margin-top: auto;
     color: var(--accent-2);
-    font-size: 9px;
-    font-weight: 800;
+    font-size: 8px;
+    font-weight: 850;
   }
 
   .dashboard-profile-layout {
     display: grid;
     grid-template-columns: 190px minmax(0, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
 
   .dashboard-person-card {
@@ -2808,77 +3379,109 @@ const dashboardStyles = `
     align-items: center;
     flex-direction: column;
     justify-content: center;
-    padding: 20px;
+    padding: 18px;
     text-align: center;
   }
 
   .dashboard-large-avatar {
     display: grid;
     place-items: center;
-    width: 64px;
-    height: 64px;
-    border-radius: 17px;
-    background: var(--accent);
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    background:
+      linear-gradient(
+        135deg,
+        var(--accent),
+        #d94801
+      );
     color: #fff;
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 850;
+    box-shadow: 0 9px 22px rgba(255, 107, 0, 0.2);
   }
 
   .dashboard-person-card h3 {
-    margin: 12px 0 3px;
+    margin: 10px 0 3px;
     color: var(--text);
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .dashboard-person-card p {
     margin: 0;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .dashboard-person-status {
-    margin-top: 13px;
-    padding: 5px 9px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 11px;
+    padding: 5px 8px;
     border-radius: 99px;
     background: rgba(13, 187, 99, 0.1);
     color: var(--success);
-    font-size: 9px;
-    font-weight: 800;
+    font-size: 8px;
+    font-weight: 850;
   }
 
   .dashboard-profile-card {
-    padding: 15px;
+    padding: 13px;
+  }
+
+  .dashboard-profile-card-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 9px;
+  }
+
+  .dashboard-profile-card-heading span {
+    display: block;
+    color: var(--accent);
+    font-size: 7px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+  }
+
+  .dashboard-profile-card-heading strong {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 600;
   }
 
   .dashboard-profile-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    gap: 7px;
   }
 
   .dashboard-info-card {
     min-width: 0;
-    padding: 13px;
+    padding: 11px;
     border: 1px solid var(--border);
-    border-radius: 9px;
+    border-radius: 8px;
     background: var(--surface);
   }
 
   .dashboard-info-card span {
     display: block;
     color: var(--muted);
-    font-size: 8px;
-    font-weight: 800;
+    font-size: 7px;
+    font-weight: 850;
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
 
   .dashboard-info-card strong {
     display: block;
-    margin-top: 6px;
+    margin-top: 5px;
     overflow: hidden;
     color: var(--text);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 750;
     line-height: 1.4;
     text-overflow: ellipsis;
@@ -2890,19 +3493,526 @@ const dashboardStyles = `
     font-weight: 600;
   }
 
-  .dashboard-quick-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+  .dashboard-employee-content {
+    width: 100%;
+    min-width: 0;
   }
 
-  /* Field operations */
+  .dashboard-employee-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    min-height: 112px;
+    margin-top: 7px;
+    padding: 20px 22px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background:
+      linear-gradient(
+        135deg,
+        var(--card),
+        var(--accent-soft)
+      );
+    box-shadow: var(--shadow);
+  }
+
+  .dashboard-employee-hero-copy {
+    min-width: 0;
+  }
+
+  .dashboard-employee-hero-copy h1 {
+    margin: 7px 0 4px;
+    color: var(--text);
+    font-size: 23px;
+    font-weight: 850;
+    letter-spacing: -0.03em;
+  }
+
+  .dashboard-employee-hero-copy p {
+    max-width: 650px;
+    margin: 0;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .dashboard-employee-hero-badge {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--card);
+  }
+
+  .dashboard-employee-hero-badge > span {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 850;
+  }
+
+  .dashboard-employee-hero-badge strong,
+  .dashboard-employee-hero-badge small {
+    display: block;
+  }
+
+  .dashboard-employee-hero-badge strong {
+    color: var(--text);
+    font-size: 9px;
+  }
+
+  .dashboard-employee-hero-badge small {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 7px;
+  }
+
+  .dashboard-employee-profile-layout {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr);
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
+    gap: 8px;
+    margin: 0 0 8px;
+  }
+
+  .dashboard-employee-person-card {
+    min-width: 0;
+    min-height: 184px;
+    box-sizing: border-box;
+    padding: 15px;
+  }
+
+  .dashboard-employee-person-copy {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-employee-person-copy h3 {
+    max-width: 100%;
+    overflow: hidden;
+    margin: 7px 0 2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-employee-profile-card {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 10px;
+  }
+
+  .dashboard-employee-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .dashboard-employee-profile-grid .dashboard-info-card {
+    min-width: 0;
+    width: 100%;
+    min-height: 70px;
+    box-sizing: border-box;
+    padding: 10px;
+  }
+
+  .dashboard-employee-profile-grid .dashboard-info-card strong {
+    max-width: 100%;
+  }
+
+  .dashboard-employee-content .dashboard-section-header {
+    margin-top: 14px;
+    margin-bottom: 7px;
+  }
+
+  .dashboard-employee-content .dashboard-module-grid {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .dashboard-employee-content .dashboard-module {
+    min-width: 0;
+    width: 100%;
+    min-height: 110px;
+    box-sizing: border-box;
+    padding: 10px;
+  }
+
+  .dashboard-employee-content .dashboard-module-icon {
+    width: 31px;
+    height: 31px;
+  }
+
+  .dashboard-employee-content .dashboard-module strong {
+    margin-top: 7px;
+  }
+
+  .dashboard-employee-content .dashboard-module p {
+    min-height: 25px;
+    margin: 4px 0 6px;
+  }
+
+  .dashboard-today-attendance {
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 8px;
+    padding: 13px;
+    box-sizing: border-box;
+  }
+
+  .dashboard-attendance-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .dashboard-attendance-header h2 {
+    margin: 3px 0 3px;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  .dashboard-attendance-header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 8px;
+  }
+
+  .dashboard-attendance-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 8px;
+    font-weight: 850;
+    white-space: nowrap;
+  }
+
+  .dashboard-attendance-status i {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+
+  .dashboard-attendance-status.is-working {
+    color: var(--success);
+  }
+
+  .dashboard-attendance-status.is-working i {
+    background: var(--success);
+  }
+
+  .dashboard-attendance-status.is-completed {
+    color: var(--accent-2);
+  }
+
+  .dashboard-attendance-status.is-completed i {
+    background: var(--accent-2);
+  }
+
+  .dashboard-attendance-status.is-pending {
+    color: var(--warning);
+  }
+
+  .dashboard-attendance-status.is-pending i {
+    background: var(--warning);
+  }
+
+  .dashboard-attendance-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0 0 8px;
+  }
+
+  .dashboard-attendance-summary > div {
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  .dashboard-attendance-summary span {
+    display: block;
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .dashboard-attendance-summary strong {
+    display: block;
+    margin-top: 4px;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 850;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-attendance-summary small {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 7px;
+  }
+
+  .dashboard-attendance-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .dashboard-selfie-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .dashboard-selfie-copy {
+    min-width: 120px;
+  }
+
+  .dashboard-selfie-copy span,
+  .dashboard-selfie-copy small {
+    display: block;
+  }
+
+  .dashboard-selfie-copy span {
+    color: var(--text);
+    font-size: 8px;
+    font-weight: 800;
+  }
+
+  .dashboard-selfie-copy small {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 7px;
+  }
+
+  .dashboard-selfie-input {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 135px;
+    min-height: 35px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 9px;
+    font-weight: 800;
+    cursor: pointer;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  .dashboard-selfie-input:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .dashboard-selfie-input span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-selfie-input input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .dashboard-selfie-preview {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .dashboard-selfie-preview img {
+    display: block;
+    width: 38px;
+    height: 38px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+  }
+
+  .dashboard-selfie-preview button {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 7px;
+    background: var(--card);
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 750;
+    cursor: pointer;
+  }
+
+  .dashboard-selfie-preview button:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .dashboard-attendance-button-group {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .dashboard-attendance-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 116px;
+    min-height: 35px;
+    padding: 7px 11px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 850;
+    cursor: pointer;
+    box-shadow: 0 6px 14px rgba(255, 107, 0, 0.16);
+    transition: 0.2s ease;
+  }
+
+  .dashboard-attendance-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(255, 107, 0, 0.22);
+  }
+
+  .dashboard-attendance-button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+    transform: none;
+  }
+
+  .dashboard-attendance-button span {
+    font-size: 11px;
+  }
+
+  .dashboard-attendance-loading,
+  .dashboard-list-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 55px;
+    color: var(--muted);
+    font-size: 8px;
+  }
+
+  .dashboard-mini-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--track);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: dashboard-spin 0.8s linear infinite;
+  }
+
+  .dashboard-attendance-complete {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 11px;
+    border: 1px solid rgba(13, 187, 99, 0.2);
+    border-radius: 8px;
+    background: rgba(13, 187, 99, 0.07);
+  }
+
+  .dashboard-attendance-complete > span {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    background: rgba(13, 187, 99, 0.13);
+    color: var(--success);
+    font-size: 10px;
+    font-weight: 850;
+  }
+
+  .dashboard-attendance-complete strong,
+  .dashboard-attendance-complete small {
+    display: block;
+  }
+
+  .dashboard-attendance-complete strong {
+    color: var(--text);
+    font-size: 8px;
+  }
+
+  .dashboard-attendance-complete small {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 7px;
+  }
+
+  .dashboard-state-error,
+  .dashboard-state-success {
+    margin: 8px 0 0;
+    padding: 7px 9px;
+    border-radius: 7px;
+    font-size: 8px;
+    line-height: 1.45;
+  }
+
+  .dashboard-state-error {
+    border: 1px solid rgba(239, 75, 85, 0.2);
+    background: rgba(239, 75, 85, 0.07);
+    color: var(--danger);
+  }
+
+  .dashboard-state-success {
+    border: 1px solid rgba(13, 187, 99, 0.2);
+    background: rgba(13, 187, 99, 0.07);
+    color: var(--success);
+  }
 
   .dashboard-field-operations {
-    margin-top: 18px;
-    padding: 20px;
+    margin-top: 15px;
+    padding: 17px;
     border: 1px solid var(--border);
-    border-radius: 13px;
+    border-radius: 12px;
     background: var(--card);
     box-shadow: var(--shadow);
   }
@@ -2912,30 +4022,45 @@ const dashboardStyles = `
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 14px;
+    margin-bottom: 11px;
   }
 
   .dashboard-field-title-row {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    align-items: flex-start;
+    gap: 9px;
   }
 
-  .dashboard-field-title-row h2 {
+  .dashboard-field-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 33px;
+    height: 33px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent-2);
+    font-size: 7px;
+    font-weight: 850;
+  }
+
+  .dashboard-field-title-line {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .dashboard-field-title-line h2 {
     margin: 0;
     color: var(--text);
-    font-size: 15px;
-    font-weight: 800;
+    font-size: 14px;
+    font-weight: 850;
   }
 
-  .dashboard-field-title-row p {
-    margin: 0;
-  }
-
-  .dashboard-field-heading > div > p {
+  .dashboard-field-heading p {
     margin: 4px 0 0;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 8px;
     line-height: 1.5;
   }
 
@@ -2944,13 +4069,13 @@ const dashboardStyles = `
     display: inline-flex;
     align-items: center;
     border-radius: 5px;
-    font-size: 8px;
-    font-weight: 800;
+    font-size: 7px;
+    font-weight: 850;
     letter-spacing: 0.04em;
   }
 
   .dashboard-field-badge {
-    padding: 3px 7px;
+    padding: 3px 6px;
     background: #eff6ff;
     color: #2563eb;
   }
@@ -2959,21 +4084,58 @@ const dashboardStyles = `
     padding: 5px 8px;
     border: 1px solid var(--border);
     background: var(--surface);
-    color: var(--success);
+    color: var(--muted);
     white-space: nowrap;
+  }
+
+  .dashboard-field-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 9px;
+    padding: 8px 10px;
+    border: 1px dashed var(--border-strong);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  .dashboard-field-notice > span {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 9px;
+    font-weight: 850;
+  }
+
+  .dashboard-field-notice strong {
+    display: block;
+    color: var(--text);
+    font-size: 8px;
+  }
+
+  .dashboard-field-notice p {
+    margin: 3px 0 0;
+    color: var(--muted);
+    font-size: 7px;
+    line-height: 1.4;
   }
 
   .dashboard-field-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 9px;
+    gap: 8px;
   }
 
   .dashboard-field-kpi {
     min-width: 0;
-    padding: 13px;
+    padding: 11px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 9px;
     background: var(--surface);
   }
 
@@ -2981,14 +4143,14 @@ const dashboardStyles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 7px;
   }
 
   .dashboard-field-kpi-top span {
     min-width: 0;
     overflow: hidden;
     color: var(--muted);
-    font-size: 9px;
+    font-size: 8px;
     font-weight: 750;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2997,45 +4159,45 @@ const dashboardStyles = `
   .dashboard-field-kpi-top b {
     display: grid;
     place-items: center;
-    min-width: 34px;
-    height: 24px;
-    padding: 0 5px;
-    border-radius: 6px;
+    min-width: 30px;
+    height: 22px;
+    padding: 0 4px;
+    border-radius: 5px;
     background: var(--accent-soft);
     color: var(--accent);
-    font-size: 7px;
+    font-size: 6px;
     font-weight: 850;
   }
 
   .dashboard-field-kpi > strong {
     display: block;
-    margin-top: 12px;
+    margin-top: 10px;
     color: var(--text);
-    font-size: 23px;
+    font-size: 20px;
     line-height: 1;
     font-weight: 850;
   }
 
   .dashboard-field-kpi > small {
     display: block;
-    margin-top: 7px;
+    margin-top: 6px;
     color: var(--muted);
-    font-size: 8px;
+    font-size: 7px;
     line-height: 1.4;
   }
 
   .dashboard-field-panel-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 9px;
-    margin-top: 9px;
+    gap: 8px;
+    margin-top: 8px;
   }
 
   .dashboard-field-panel {
     min-width: 0;
-    padding: 14px;
+    padding: 12px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 9px;
     background: var(--surface);
   }
 
@@ -3043,44 +4205,44 @@ const dashboardStyles = `
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 9px;
   }
 
   .dashboard-field-panel-heading h3 {
     margin: 0;
     color: var(--text);
-    font-size: 11px;
-    font-weight: 750;
+    font-size: 10px;
+    font-weight: 800;
   }
 
   .dashboard-field-panel-heading p {
-    margin: 4px 0 0;
+    margin: 3px 0 0;
     color: var(--muted);
-    font-size: 8px;
+    font-size: 7px;
   }
 
   .dashboard-field-panel-heading > span {
-    padding: 3px 6px;
-    border-radius: 5px;
+    padding: 3px 5px;
+    border-radius: 4px;
     background: var(--accent-soft);
     color: var(--accent);
-    font-size: 7px;
-    font-weight: 800;
+    font-size: 6px;
+    font-weight: 850;
   }
 
   .dashboard-field-activity-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 7px;
+    gap: 6px;
   }
 
   .dashboard-field-activity-list > div {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
-    padding: 9px;
+    gap: 5px;
+    padding: 8px;
     border: 1px solid var(--border);
     border-radius: 7px;
     background: var(--card);
@@ -3088,22 +4250,22 @@ const dashboardStyles = `
 
   .dashboard-field-activity-list span {
     color: var(--muted);
-    font-size: 8px;
+    font-size: 7px;
   }
 
   .dashboard-field-activity-list strong {
-    color: var(--text);
-    font-size: 11px;
+    color: var(--muted);
+    font-size: 10px;
   }
 
   .dashboard-gps-empty {
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-height: 72px;
-    padding: 8px;
+    gap: 9px;
+    min-height: 61px;
+    padding: 7px;
     border: 1px dashed var(--border);
-    border-radius: 8px;
+    border-radius: 7px;
     background: var(--card);
   }
 
@@ -3111,60 +4273,32 @@ const dashboardStyles = `
     display: grid;
     place-items: center;
     flex: 0 0 auto;
-    width: 38px;
-    height: 38px;
-    border-radius: 9px;
+    width: 35px;
+    height: 35px;
+    border-radius: 8px;
     background: var(--accent-soft);
     color: var(--accent-2);
-    font-size: 7px;
+    font-size: 6px;
     font-weight: 850;
   }
 
   .dashboard-gps-empty strong {
     color: var(--text);
-    font-size: 10px;
+    font-size: 8px;
   }
 
   .dashboard-gps-empty p {
-    margin: 4px 0 0;
+    margin: 3px 0 0;
     color: var(--muted);
-    font-size: 8px;
-    line-height: 1.45;
-  }
-
-  @media (max-width: 900px) {
-    .dashboard-field-kpi-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .dashboard-field-panel-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .dashboard-field-operations {
-      padding: 14px;
-    }
-
-    .dashboard-field-heading {
-      flex-direction: column;
-    }
-
-    .dashboard-field-kpi-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .dashboard-field-activity-list {
-      grid-template-columns: 1fr;
-    }
+    font-size: 7px;
+    line-height: 1.4;
   }
 
   .dashboard-bottom-grid {
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
-    gap: 12px;
-    margin-top: 12px;
+    gap: 10px;
+    margin-top: 10px;
   }
 
   .dashboard-list {
@@ -3175,52 +4309,93 @@ const dashboardStyles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 15px;
-    min-height: 54px;
-    padding: 8px 2px;
+    gap: 12px;
+    min-height: 51px;
+    padding: 7px 1px;
     border-bottom: 1px solid var(--border);
   }
 
-  .dashboard-list-row > div:first-child {
+  .dashboard-list-content {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .dashboard-list-content > div:last-child {
     display: flex;
     flex-direction: column;
     min-width: 0;
   }
 
+  .dashboard-list-marker {
+    flex: 0 0 auto;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-2);
+  }
+
   .dashboard-list-row strong {
+    overflow: hidden;
     color: var(--text);
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .dashboard-list-row span {
-    margin-top: 4px;
+    display: -webkit-box;
+    margin-top: 3px;
+    overflow: hidden;
     color: var(--muted);
-    font-size: 9px;
+    font-size: 7px;
+    line-height: 1.35;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
   }
 
   .dashboard-list-date {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 7px;
     flex: 0 0 auto;
   }
 
   .dashboard-list-date span {
     margin: 0;
+    white-space: nowrap;
   }
 
   .dashboard-list-date i {
-    width: 7px;
-    height: 7px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background: var(--accent-2);
   }
 
+  .dashboard-holiday-marker {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 25px;
+    height: 25px;
+    border-radius: 7px;
+    background: var(--accent-soft);
+  }
+
+  .dashboard-holiday-marker span {
+    margin: 0;
+    color: var(--accent);
+    font-size: 8px;
+  }
+
   .dashboard-holiday-date {
     display: flex;
-    align-items: center;
-    gap: 22px;
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 2px;
     flex: 0 0 auto;
   }
 
@@ -3228,30 +4403,65 @@ const dashboardStyles = `
   .dashboard-holiday-date small {
     margin: 0;
     color: var(--muted);
-    font-size: 9px;
+    font-size: 7px;
+  }
+
+  .dashboard-holiday-date span {
+    color: var(--text);
+    font-weight: 750;
   }
 
   .dashboard-empty-text {
     margin: 0;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 9px;
+  }
+
+  .dashboard-empty-state {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 90px;
+    padding: 14px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    text-align: center;
+  }
+
+  .dashboard-empty-state strong {
+    color: var(--text);
+    font-size: 9px;
+  }
+
+  .dashboard-empty-state span {
+    max-width: 320px;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 7px;
+    line-height: 1.45;
   }
 
   .dashboard-footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    margin-top: 18px;
-    padding-top: 15px;
+    gap: 7px;
+    margin-top: 16px;
+    padding-top: 13px;
     border-top: 1px solid var(--border);
     color: var(--muted);
-    font-size: 9px;
+    font-size: 8px;
   }
 
   .dashboard-footer span:first-child {
     color: var(--text);
-    font-weight: 700;
+    font-weight: 750;
+  }
+
+  .dashboard-footer-dot {
+    opacity: 0.45;
   }
 
   .dashboard-state {
@@ -3263,7 +4473,7 @@ const dashboardStyles = `
 
   .dashboard-state-card {
     width: min(430px, 100%);
-    padding: 30px;
+    padding: 28px;
     border: 1px solid var(--border);
     border-radius: 14px;
     background: var(--card);
@@ -3271,23 +4481,41 @@ const dashboardStyles = `
     text-align: center;
   }
 
+  .dashboard-state-icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto;
+    border-radius: 13px;
+    background: var(--accent-soft);
+  }
+
+  .dashboard-state-kicker {
+    display: block;
+    margin-top: 14px;
+    color: var(--accent);
+    font-size: 8px;
+    font-weight: 850;
+    letter-spacing: 0.12em;
+  }
+
   .dashboard-state-card h2 {
-    margin: 17px 0 7px;
+    margin: 7px 0 6px;
     color: var(--text);
-    font-size: 19px;
+    font-size: 18px;
   }
 
   .dashboard-state-card p {
-    margin: 0 0 18px;
+    margin: 0 0 17px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.6;
   }
 
   .dashboard-spinner {
-    width: 32px;
-    height: 32px;
-    margin: 0 auto;
+    width: 25px;
+    height: 25px;
     border: 3px solid var(--track);
     border-top-color: var(--accent);
     border-radius: 50%;
@@ -3305,20 +4533,38 @@ const dashboardStyles = `
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .dashboard-profile-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .dashboard-profile-grid,
+    .dashboard-employee-profile-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .dashboard-employee-profile-layout {
+      grid-template-columns: 195px minmax(0, 1fr);
+    }
+
+    .dashboard-employee-content .dashboard-module-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 
   @media (max-width: 900px) {
-    .dashboard-kpi-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .dashboard-page-header {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .dashboard-header-actions {
+      width: 100%;
+      justify-content: space-between;
     }
 
     .dashboard-two-column,
-    .dashboard-bottom-grid,
-    .dashboard-profile-layout {
+    .dashboard-bottom-grid {
       grid-template-columns: 1fr;
+    }
+
+    .dashboard-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .dashboard-module-grid {
@@ -3329,19 +4575,57 @@ const dashboardStyles = `
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .dashboard-workforce {
+      grid-template-columns: 170px minmax(0, 1fr);
+    }
+
     .dashboard-welcome-visual {
       right: -20px;
-      opacity: 0.25;
+      opacity: 0.22;
+    }
+
+    .dashboard-employee-profile-layout {
+      grid-template-columns: 170px minmax(0, 1fr);
+    }
+
+    .dashboard-employee-profile-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-employee-content .dashboard-module-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .dashboard-field-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-field-panel-grid {
+      grid-template-columns: 1fr;
     }
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: 700px) {
     .dashboard-page {
       border-radius: 10px;
     }
 
+    .dashboard-shell {
+      padding-bottom: 16px;
+    }
+
     .dashboard-page-header {
+      padding-bottom: 13px;
+    }
+
+    .dashboard-title-row {
       align-items: flex-start;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .dashboard-header-actions {
+      align-items: stretch;
       flex-direction: column;
     }
 
@@ -3349,12 +4633,32 @@ const dashboardStyles = `
       width: 100%;
     }
 
+    .dashboard-last-updated {
+      text-align: right;
+    }
+
     .dashboard-welcome {
-      padding: 20px;
+      align-items: flex-start;
+      min-height: 0;
+      padding: 19px;
     }
 
     .dashboard-welcome h2 {
-      font-size: 23px;
+      font-size: 22px;
+    }
+
+    .dashboard-welcome p {
+      max-width: 100%;
+    }
+
+    .dashboard-welcome-visual {
+      display: none;
+    }
+
+    .dashboard-section-header {
+      align-items: flex-start;
+      flex-direction: column;
+      margin-top: 17px;
     }
 
     .dashboard-kpi-grid,
@@ -3368,9 +4672,13 @@ const dashboardStyles = `
       grid-template-columns: 1fr;
     }
 
+    .dashboard-workforce-visual {
+      align-items: center;
+    }
+
     .dashboard-donut {
-      width: 145px;
-      height: 145px;
+      width: 140px;
+      height: 140px;
     }
 
     .dashboard-quick-list {
@@ -3381,477 +4689,129 @@ const dashboardStyles = `
     .dashboard-list-panel,
     .dashboard-profile-card,
     .dashboard-person-card {
-      padding: 14px;
+      padding: 13px;
     }
 
-    .dashboard-holiday-date {
-      gap: 10px;
-    }
-  }
-
-  /* Employee dashboard top-level spacing */
-
-  .dashboard-page.dashboard-compact
-    .dashboard-shell
-    > .dashboard-employee-content {
-    margin-top: 0 !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-shell
-    > .dashboard-employee-content
-    > .dashboard-section-header:first-child {
-    margin-top: 8px !important;
-    margin-bottom: 7px !important;
-  }
-
-  /* Employee selfie upload */
-
-  .dashboard-page.dashboard-compact
-    .dashboard-selfie-box {
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    min-width: 0 !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-selfie-input {
-    position: relative !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    min-width: 150px !important;
-    min-height: 38px !important;
-    padding: 8px 12px !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 9px !important;
-    background: var(--surface) !important;
-    color: var(--text) !important;
-    font-size: 10px !important;
-    font-weight: 750 !important;
-    cursor: pointer !important;
-    overflow: hidden !important;
-    box-sizing: border-box !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-selfie-input:hover {
-    border-color: var(--accent) !important;
-    color: var(--accent) !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-selfie-input span {
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-selfie-input input {
-    position: absolute !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    opacity: 0 !important;
-    cursor: pointer !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-selfie-preview {
-    display: flex !important;
-    align-items: center !important;
-    gap: 7px !important;
-    min-width: 0 !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-selfie-preview img {
-    display: block !important;
-    width: 42px !important;
-    height: 42px !important;
-    object-fit: cover !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 8px !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-selfie-preview button {
-    border: 1px solid var(--border) !important;
-    border-radius: 7px !important;
-    padding: 6px 8px !important;
-    background: var(--card) !important;
-    color: var(--muted) !important;
-    font-size: 9px !important;
-    font-weight: 700 !important;
-    cursor: pointer !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-selfie-preview button:hover {
-    border-color: var(--danger) !important;
-    color: var(--danger) !important;
-  }
-
-  @media (max-width: 700px) {
-    .dashboard-page.dashboard-compact
-      .dashboard-selfie-box {
-      align-items: stretch !important;
-      flex-direction: column !important;
+    .dashboard-employee-hero {
+      align-items: flex-start;
+      flex-direction: column;
+      padding: 17px;
     }
 
-    .dashboard-page.dashboard-compact
-      .dashboard-selfie-input {
-      width: 100% !important;
+    .dashboard-employee-hero-badge {
+      width: 100%;
+      box-sizing: border-box;
     }
-  }
 
-  /* Employee dashboard section spacing */
-
-.dashboard-page.dashboard-compact
-  .dashboard-employee-content
-  > .dashboard-section-header {
-  margin-top: 8px !important;
-  margin-bottom: 7px !important;
-}
-
-.dashboard-page.dashboard-compact
-  .dashboard-employee-content
-  .dashboard-employee-profile-layout {
-  margin-bottom: 8px !important;
-}
-
-.dashboard-page.dashboard-compact
-  .dashboard-employee-content
-  .dashboard-today-attendance {
-  margin-bottom: 8px !important;
-}
-
-.dashboard-page.dashboard-compact
-  .dashboard-employee-content
-  .dashboard-module-grid {
-  margin-top: 0 !important;
-  gap: 7px !important;
-}
-
-.dashboard-page.dashboard-compact
-  .dashboard-employee-content
-  .dashboard-module-card {
-  min-height: 0 !important;
-}
-
-@media (max-width: 700px) {
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-content
     .dashboard-employee-profile-layout {
-    margin-bottom: 7px !important;
-  }
+      grid-template-columns: 1fr;
+    }
 
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-content
-    .dashboard-today-attendance {
-    margin-bottom: 7px !important;
-  }
-}
-
-  /* Employee attendance compact polish */
-
-.dashboard-page.dashboard-compact
-  .dashboard-today-attendance {
-  width: 100% !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-  padding: 10px !important;
-  box-sizing: border-box !important;
-}
-
-.dashboard-page.dashboard-compact
-  .dashboard-today-attendance
-  .dashboard-section-header {
-  margin: 0 0 7px !important;
-}
-
-.dashboard-page.dashboard-compact
-  .dashboard-today-attendance
-  .dashboard-section-title {
-  font-size: 13px !important;
-  line-height: 1.2 !important;
-}
-
-.dashboard-page.dashboard-compact
-  .dashboard-today-attendance
-  .dashboard-section-subtitle {
-  font-size: 9px !important;
-  line-height: 1.3 !important;
-}
-
-.dashboard-page.dashboard-compact
-  .dashboard-today-attendance
-  .dashboard-attendance-summary {
-  gap: 6px !important;
-  margin: 0 0 8px !important;
-}
-
-.dashboard-page.dashboard-compact
-  .dashboard-today-attendance
-  .dashboard-attendance-summary > * {
-  min-width: 0 !important;
-}
-
-.dashboard-page.dashboard-compact
-  .dashboard-today-attendance
-  .dashboard-attendance-actions {
-  gap: 7px !important;
-  margin-top: 8px !important;
-}
-
-.dashboard-page.dashboard-compact
-  .dashboard-today-attendance
-  .dashboard-attendance-actions button {
-  min-height: 36px !important;
-  padding: 7px 11px !important;
-  font-size: 10px !important;
-}
-
-@media (max-width: 700px) {
-  .dashboard-page.dashboard-compact
-    .dashboard-today-attendance {
-    padding: 9px !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-today-attendance
-    .dashboard-attendance-actions {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-  /* Employee dashboard stabilization */
-
-  .dashboard-page.dashboard-compact .dashboard-employee-content {
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-profile-layout {
-    display: grid !important;
-    grid-template-columns: 220px minmax(0, 1fr) !important;
-    align-items: stretch !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    gap: 8px !important;
-    margin: 0 !important;
-  }
-
-  .dashboard-page.dashboard-compact
     .dashboard-employee-person-card {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    min-height: 190px !important;
-    box-sizing: border-box !important;
-    padding: 16px !important;
-  }
+      min-height: 145px;
+    }
 
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-person-card
-    .dashboard-large-avatar {
-    width: 58px !important;
-    height: 58px !important;
-    flex: 0 0 auto !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-person-copy {
-    width: 100% !important;
-    min-width: 0 !important;
-    text-align: center !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-person-card
-    h3 {
-    max-width: 100% !important;
-    overflow: hidden !important;
-    margin: 9px 0 2px !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-person-card
-    p {
-    margin: 0 !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-person-card
-    .dashboard-person-status {
-    margin-top: 9px !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-profile-card {
-    width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-    padding: 10px !important;
-  }
-
-  .dashboard-page.dashboard-compact
     .dashboard-employee-profile-grid {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    gap: 6px !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-profile-grid
-    .dashboard-info-card {
-    min-width: 0 !important;
-    width: 100% !important;
-    min-height: 70px !important;
-    box-sizing: border-box !important;
-    padding: 10px !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-profile-grid
-    .dashboard-info-card
-    strong {
-    max-width: 100% !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-content
-    .dashboard-section-header {
-    margin-top: 14px !important;
-    margin-bottom: 7px !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-content
-    .dashboard-section-header:first-child {
-    margin-top: 14px !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-content
-    .dashboard-module-grid {
-    width: 100% !important;
-    min-width: 0 !important;
-    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-    gap: 7px !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-content
-    .dashboard-module {
-    min-width: 0 !important;
-    width: 100% !important;
-    min-height: 112px !important;
-    box-sizing: border-box !important;
-    padding: 11px !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-content
-    .dashboard-module-icon {
-    width: 32px !important;
-    height: 32px !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-content
-    .dashboard-module
-    strong {
-    margin-top: 8px !important;
-  }
-
-  .dashboard-page.dashboard-compact
-    .dashboard-employee-content
-    .dashboard-module
-    p {
-    min-height: 26px !important;
-    margin: 4px 0 7px !important;
-  }
-
-  @media (max-width: 1180px) {
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-profile-layout {
-      grid-template-columns: 200px minmax(0, 1fr) !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-profile-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    .dashboard-employee-content .dashboard-module-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-content
-      .dashboard-module-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    }
-  }
-
-  @media (max-width: 900px) {
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-profile-layout {
-      grid-template-columns: 170px minmax(0, 1fr) !important;
+    .dashboard-attendance-header {
+      align-items: flex-start;
+      flex-direction: column;
     }
 
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-profile-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    .dashboard-attendance-summary {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-content
-      .dashboard-module-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    }
-  }
-
-  @media (max-width: 700px) {
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-profile-layout {
-      grid-template-columns: 1fr !important;
+    .dashboard-attendance-actions {
+      grid-template-columns: 1fr;
     }
 
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-person-card {
-      min-height: 150px !important;
+    .dashboard-selfie-box {
+      align-items: stretch;
+      flex-direction: column;
     }
 
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-profile-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    .dashboard-selfie-copy {
+      min-width: 0;
     }
 
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-content
-      .dashboard-module-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    .dashboard-selfie-input {
+      width: 100%;
+    }
+
+    .dashboard-attendance-button-group {
+      justify-content: stretch;
+    }
+
+    .dashboard-attendance-button {
+      width: 100%;
+    }
+
+    .dashboard-field-operations {
+      padding: 13px;
+    }
+
+    .dashboard-field-heading {
+      flex-direction: column;
+    }
+
+    .dashboard-field-status {
+      align-self: flex-start;
+    }
+
+    .dashboard-field-title-line {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .dashboard-field-kpi-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-field-activity-list {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-list-row {
+      align-items: flex-start;
+    }
+
+    .dashboard-list-date {
+      align-items: flex-end;
+      flex-direction: column;
     }
   }
 
   @media (max-width: 430px) {
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-profile-grid {
-      grid-template-columns: 1fr !important;
+    .dashboard-employee-profile-grid,
+    .dashboard-employee-content .dashboard-module-grid {
+      grid-template-columns: 1fr;
     }
 
-    .dashboard-page.dashboard-compact
-      .dashboard-employee-content
-      .dashboard-module-grid {
-      grid-template-columns: 1fr !important;
+    .dashboard-attendance-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-footer {
+      flex-wrap: wrap;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dashboard-page *,
+    .dashboard-page *::before,
+    .dashboard-page *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
     }
   }
 `
