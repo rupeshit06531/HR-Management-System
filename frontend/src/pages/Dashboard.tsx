@@ -58,56 +58,56 @@ const moduleItems: ModuleItem[] = [
     path: "/employees",
     description: "Manage employee records and workforce information.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER"],
-    icon: "♟",
+    icon: "\u265F",
   },
   {
     label: "Departments",
     path: "/departments",
     description: "Manage departments and organizational structure.",
     roles: ["SUPER_ADMIN", "HR"],
-    icon: "▦",
+    icon: "\u25A6",
   },
   {
     label: "Attendance",
     path: "/attendance",
     description: "Track attendance and daily workforce presence.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
-    icon: "◷",
+    icon: "\u25F7",
   },
   {
     label: "Leave",
     path: "/leave",
     description: "Manage leave requests and approvals.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
-    icon: "▣",
+    icon: "\u25A3",
   },
   {
     label: "Payroll",
     path: "/payroll",
     description: "Access payroll and compensation information.",
     roles: ["SUPER_ADMIN", "HR", "EMPLOYEE"],
-    icon: "₹",
+    icon: "\u20B9",
   },
   {
     label: "Performance",
     path: "/performance",
     description: "Review performance and development information.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
-    icon: "↗",
+    icon: "\u2197",
   },
   {
     label: "Recruitment",
     path: "/recruitment",
     description: "Manage recruitment and candidate information.",
     roles: ["SUPER_ADMIN", "HR"],
-    icon: "◎",
+    icon: "\u25CE",
   },
   {
     label: "Documents",
     path: "/documents",
     description: "Access important HR documents.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
-    icon: "▤",
+    icon: "\u25A4",
   },
   {
     label: "Announcements",
@@ -121,7 +121,7 @@ const moduleItems: ModuleItem[] = [
     path: "/holidays",
     description: "View upcoming organization holidays.",
     roles: ["SUPER_ADMIN", "HR", "MANAGER", "EMPLOYEE"],
-    icon: "★",
+    icon: "\u2605",
   },
 ]
 
@@ -511,7 +511,7 @@ function Dashboard() {
                   disabled={isRefreshing}
                 >
                   <span className={isRefreshing ? "dashboard-refresh-icon is-spinning" : "dashboard-refresh-icon"}>
-                    ↻
+                    \u21BB
                   </span>
                   {isRefreshing ? "Refreshing..." : "Refresh Data"}
                 </button>
@@ -605,9 +605,9 @@ function Dashboard() {
 
         <footer className="dashboard-footer">
           <span>{personalName}</span>
-          <span className="dashboard-footer-dot">•</span>
+          <span className="dashboard-footer-dot">\u2022</span>
           <span>{currentRole}</span>
-          <span className="dashboard-footer-dot">•</span>
+          <span className="dashboard-footer-dot">\u2022</span>
           <span>HRMS Workspace</span>
         </footer>
       </div>
@@ -1261,7 +1261,7 @@ function EmployeeTodayAttendance() {
                     onClick={() => void handlePunchIn()}
                     disabled={isPunchingIn}
                   >
-                    <span>◷</span>
+                    <span>\u25F7</span>
                     {isPunchingIn
                       ? "Punching In..."
                       : "Punch In"}
@@ -1276,7 +1276,7 @@ function EmployeeTodayAttendance() {
                       onClick={() => void handlePunchOut()}
                       disabled={isPunchingOut}
                     >
-                      <span>◷</span>
+                      <span>\u25F7</span>
                       {isPunchingOut
                         ? "Punching Out..."
                         : "Punch Out"}
@@ -1288,7 +1288,7 @@ function EmployeeTodayAttendance() {
 
           {attendance?.check_out && (
             <div className="dashboard-attendance-complete">
-              <span>✓</span>
+              <span>\u2713</span>
               <div>
                 <strong>Attendance completed for today</strong>
                 <small>
@@ -1949,7 +1949,7 @@ function QuickAction({
         <small>{item.description}</small>
       </span>
 
-      <span className="dashboard-quick-arrow">→</span>
+      <span className="dashboard-quick-arrow">\u2192</span>
     </button>
   )
 }
@@ -1986,7 +1986,7 @@ function ModuleGrid({
             </span>
 
             <span className="dashboard-module-open">
-              →
+              \u2192
             </span>
           </div>
 
@@ -2286,7 +2286,7 @@ function HolidayRow({
     <div className="dashboard-list-row">
       <div className="dashboard-list-content">
         <div className="dashboard-holiday-marker">
-          <span>★</span>
+          <span>\u2605</span>
         </div>
 
         <div>
