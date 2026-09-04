@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react"
@@ -90,8 +91,13 @@ export function AuthProvider({
   const [isLoading, setIsLoading] =
     useState(true)
 
+  const authOperationRef =
+    useRef(0)
+
   useEffect(() => {
     let isMounted = true
+    const operationId =
+      authOperationRef.current
 
     const initializeAuth = async () => {
       const storedAccessToken =
@@ -100,11 +106,16 @@ export function AuthProvider({
       const storedRefreshToken =
         getStoredRefreshToken()
 
+      const isCurrentOperation = () =>
+        isMounted &&
+        authOperationRef.current ===
+          operationId
+
       if (
         !storedAccessToken &&
         !storedRefreshToken
       ) {
-        if (isMounted) {
+        if (isCurrentOperation()) {
           setAccessToken(null)
           setUser(null)
           setIsLoading(false)
@@ -119,7 +130,7 @@ export function AuthProvider({
             const currentUser =
               await getCurrentUser()
 
-            if (!isMounted) {
+            if (!isCurrentOperation()) {
               return
             }
 
@@ -127,12 +138,17 @@ export function AuthProvider({
               storedAccessToken,
             )
             setUser(currentUser)
+            setIsLoading(false)
 
             return
           } catch {
             // Access token may have expired.
             // Continue with refresh-token recovery.
           }
+        }
+
+        if (!isCurrentOperation()) {
+          return
         }
 
         const latestRefreshToken =
@@ -150,14 +166,14 @@ export function AuthProvider({
               latestRefreshToken,
           })
 
+        if (!isCurrentOperation()) {
+          return
+        }
+
         storeTokens(
           response.access,
           response.refresh,
         )
-
-        if (!isMounted) {
-          return
-        }
 
         setAccessToken(
           response.access,
@@ -166,20 +182,21 @@ export function AuthProvider({
         const currentUser =
           await getCurrentUser()
 
-        if (!isMounted) {
+        if (!isCurrentOperation()) {
           return
         }
 
         setUser(currentUser)
       } catch {
-        clearStoredTokens()
-
-        if (isMounted) {
-          setAccessToken(null)
-          setUser(null)
+        if (!isCurrentOperation()) {
+          return
         }
+
+        clearStoredTokens()
+        setAccessToken(null)
+        setUser(null)
       } finally {
-        if (isMounted) {
+        if (isCurrentOperation()) {
           setIsLoading(false)
         }
       }
@@ -195,8 +212,18 @@ export function AuthProvider({
   const login = async (
     credentials: LoginRequest,
   ): Promise<void> => {
+    const operationId =
+      ++authOperationRef.current
+
     const response =
       await loginApi(credentials)
+
+    if (
+      authOperationRef.current !==
+      operationId
+    ) {
+      return
+    }
 
     storeTokens(
       response.access,
@@ -207,9 +234,13 @@ export function AuthProvider({
       response.access,
     )
     setUser(response.user)
+    setIsLoading(false)
   }
 
   const logout = async (): Promise<void> => {
+    const operationId =
+      ++authOperationRef.current
+
     const storedRefreshToken =
       getStoredRefreshToken()
 
@@ -221,10 +252,18 @@ export function AuthProvider({
         })
       }
     } finally {
+      if (
+        authOperationRef.current !==
+        operationId
+      ) {
+        return
+      }
+
       clearStoredTokens()
 
       setAccessToken(null)
       setUser(null)
+      setIsLoading(false)
     }
   }
 
