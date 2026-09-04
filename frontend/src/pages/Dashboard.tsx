@@ -1,4 +1,5 @@
 import {
+  memo,
   useEffect,
   useMemo,
   useState,
@@ -1783,7 +1784,7 @@ function InfoCard({
   )
 }
 
-function WorkforcePanel({
+const WorkforcePanel = memo(function WorkforcePanel({
   totalEmployees,
   activeEmployees,
   workforceStatuses,
@@ -1904,9 +1905,9 @@ function WorkforcePanel({
       </div>
     </div>
   )
-}
+})
 
-function RoleDistribution({
+const RoleDistribution = memo(function RoleDistribution({
   roleDistribution,
   maxRoleCount,
 }: {
@@ -1992,7 +1993,7 @@ function RoleDistribution({
       </div>
     </div>
   )
-}
+})
 
 function totalPercentage(
   count: number,
@@ -2008,7 +2009,7 @@ function totalPercentage(
     : 0
 }
 
-function QuickActionsPanel({
+const QuickActionsPanel = memo(function QuickActionsPanel({
   title,
   description,
   actions,
@@ -2038,7 +2039,7 @@ function QuickActionsPanel({
       </div>
     </div>
   )
-}
+})
 
 function PanelHeading({
   title,
@@ -2093,7 +2094,7 @@ function QuickAction({
   )
 }
 
-function ModuleGrid({
+const ModuleGrid = memo(function ModuleGrid({
   modules,
   navigate,
 }: {
@@ -2212,7 +2213,7 @@ function ModuleGrid({
       )}
     </div>
   )
-}
+})
 
 function FieldOperationsSection() {
   return (
@@ -2408,7 +2409,7 @@ function FieldOperationsSection() {
   )
 }
 
-function DashboardBottomPanels({
+const DashboardBottomPanels = memo(function DashboardBottomPanels({
   announcements,
   holidays,
   contentError,
@@ -2546,7 +2547,7 @@ function DashboardBottomPanels({
       </div>
     </div>
   )
-}
+})
 
 function getDaysUntilDate(value: string) {
   const target = new Date(`${value}T00:00:00`)
