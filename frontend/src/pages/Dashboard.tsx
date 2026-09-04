@@ -1351,6 +1351,8 @@ function ManagerDashboard({
           meta="Accessible team members"
           icon="TM"
           tone="primary"
+          progress={totalEmployees > 0 ? 100 : 0}
+          progressLabel="Team workforce tracked"
         />
 
         <MetricCard
@@ -1359,6 +1361,8 @@ function ManagerDashboard({
           meta={`${activePercentage}% of team`}
           icon="AC"
           tone="success"
+          progress={activePercentage}
+          progressLabel="Active team"
         />
 
         <MetricCard
@@ -1367,6 +1371,12 @@ function ManagerDashboard({
           meta="Currently inactive"
           icon="IN"
           tone="warning"
+          progress={
+            totalEmployees > 0
+              ? (inactiveEmployees / totalEmployees) * 100
+              : 0
+          }
+          progressLabel="Inactive team"
         />
 
         <MetricCard
@@ -1375,6 +1385,12 @@ function ManagerDashboard({
           meta="Resigned employees"
           icon="RS"
           tone="neutral"
+          progress={
+            totalEmployees > 0
+              ? (resignedEmployees / totalEmployees) * 100
+              : 0
+          }
+          progressLabel="Resigned team"
         />
       </div>
 
