@@ -2265,6 +2265,7 @@ function DashboardBottomPanels({
   contentError: string
   isLoading: boolean
 }) {
+  const navigate = useNavigate()
   const nextHoliday = holidays[0]
   const holidayLead = nextHoliday
     ? getDaysUntilDate(nextHoliday.date)
@@ -2273,11 +2274,23 @@ function DashboardBottomPanels({
   return (
     <div className="dashboard-bottom-grid">
       <div className="dashboard-list-panel">
-        <PanelHeading
-          title="Recent Announcements"
-          description="Latest organization announcements."
-          badge={`${announcements.length}`}
-        />
+        <div className="dashboard-list-panel-header">
+          <PanelHeading
+            title="Recent Announcements"
+            description="Latest organization announcements."
+            badge={`${announcements.length}`}
+          />
+
+          <button
+            type="button"
+            className="dashboard-list-panel-action"
+            onClick={() => navigate("/announcements")}
+            aria-label="Open all announcements"
+          >
+            <span>View all</span>
+            <span aria-hidden="true">\u2192</span>
+          </button>
+        </div>
 
         {!isLoading && !contentError && announcements.length > 0 && (
           <div className="dashboard-content-summary">
@@ -2319,11 +2332,23 @@ function DashboardBottomPanels({
       </div>
 
       <div className="dashboard-list-panel">
-        <PanelHeading
-          title="Upcoming Holidays"
-          description="Upcoming organization holidays."
-          badge={`${holidays.length}`}
-        />
+        <div className="dashboard-list-panel-header">
+          <PanelHeading
+            title="Upcoming Holidays"
+            description="Upcoming organization holidays."
+            badge={`${holidays.length}`}
+          />
+
+          <button
+            type="button"
+            className="dashboard-list-panel-action"
+            onClick={() => navigate("/holidays")}
+            aria-label="Open all holidays"
+          >
+            <span>View all</span>
+            <span aria-hidden="true">\u2192</span>
+          </button>
+        </div>
 
         {!isLoading && !contentError && nextHoliday && (
           <div className="dashboard-content-summary dashboard-content-summary-holiday">
@@ -2350,7 +2375,7 @@ function DashboardBottomPanels({
         ) : holidays.length === 0 ? (
           <div className="dashboard-empty-state">
             <strong>No upcoming holidays</strong>
-            <span>No upcoming organization holidays are available.</span>
+            <span>No upcoming organization holidays are available right now.</span>
           </div>
         ) : (
           <div className="dashboard-list">
@@ -3091,6 +3116,52 @@ const dashboardStyles = `
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 14px;
+  }
+
+  .dashboard-list-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .dashboard-list-panel-header .dashboard-panel-heading {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dashboard-list-panel-action {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+    padding: 5px 7px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--muted-strong);
+    font-size: 7px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      color 0.18s ease,
+      border-color 0.18s ease,
+      background 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .dashboard-list-panel-action:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-strong);
+    color: var(--text);
+    transform: translateY(-1px);
+  }
+
+  .dashboard-list-panel-action:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   .dashboard-panel-heading > div {
@@ -5125,6 +5196,14 @@ const dashboardStyles = `
   }
 
   @media (max-width: 430px) {
+    .dashboard-list-panel-header {
+      align-items: center;
+    }
+
+    .dashboard-list-panel-action span:first-child {
+      display: none;
+    }
+
     .dashboard-employee-profile-grid,
     .dashboard-employee-content .dashboard-module-grid {
       grid-template-columns: 1fr;
