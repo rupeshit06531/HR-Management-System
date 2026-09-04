@@ -41,9 +41,18 @@ export interface DashboardData {
   users?: DashboardUsers
 }
 
-export async function getDashboard(): Promise<DashboardData> {
+export interface DashboardRequestOptions {
+  signal?: AbortSignal
+}
+
+export async function getDashboard(
+  options: DashboardRequestOptions = {},
+): Promise<DashboardData> {
   const response = await apiClient.get<DashboardData>(
     "/dashboard/",
+    {
+      signal: options.signal,
+    },
   )
 
   return response.data
