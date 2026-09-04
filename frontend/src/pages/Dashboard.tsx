@@ -5829,6 +5829,199 @@ const dashboardStyles = `
     }
   }
 
+  /* Step 20: touch-first responsive refinements */
+  @media (max-width: 700px) {
+    .dashboard-shell {
+      padding-right: 0;
+      padding-left: 0;
+    }
+
+    .dashboard-page-header,
+    .dashboard-section-header,
+    .dashboard-panel-header,
+    .dashboard-list-panel-header,
+    .dashboard-field-heading,
+    .dashboard-attendance-header {
+      min-width: 0;
+    }
+
+    .dashboard-page-header h1,
+    .dashboard-section-header h2,
+    .dashboard-panel-heading h2,
+    .dashboard-field-heading h2,
+    .dashboard-employee-hero h2 {
+      overflow-wrap: anywhere;
+    }
+
+    .dashboard-header-actions,
+    .dashboard-action-grid,
+    .dashboard-quick-list {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .dashboard-refresh,
+    .dashboard-list-panel-action,
+    .dashboard-quick-action,
+    .dashboard-attendance-button,
+    .dashboard-selfie-input {
+      min-height: 40px;
+    }
+
+    .dashboard-refresh,
+    .dashboard-list-panel-action,
+    .dashboard-quick-action,
+    .dashboard-attendance-button {
+      touch-action: manipulation;
+    }
+
+    .dashboard-list-panel-action {
+      padding: 8px 10px;
+    }
+
+    .dashboard-list-panel-action span:first-child {
+      display: inline;
+    }
+
+    .dashboard-quick-action {
+      padding: 10px 11px;
+    }
+
+    .dashboard-quick-icon {
+      flex: 0 0 32px;
+      width: 32px;
+      height: 32px;
+    }
+
+    .dashboard-quick-copy {
+      min-width: 0;
+    }
+
+    .dashboard-quick-copy strong,
+    .dashboard-quick-copy small {
+      overflow-wrap: anywhere;
+    }
+
+    .dashboard-attendance-summary {
+      gap: 6px;
+    }
+
+    .dashboard-attendance-summary > div {
+      min-width: 0;
+    }
+
+    .dashboard-attendance-summary strong,
+    .dashboard-attendance-summary span {
+      overflow-wrap: anywhere;
+    }
+
+    .dashboard-field-panel,
+    .dashboard-list-panel,
+    .dashboard-panel,
+    .dashboard-profile-card,
+    .dashboard-person-card,
+    .dashboard-employee-person-card,
+    .dashboard-employee-profile-card {
+      min-width: 0;
+    }
+
+    .dashboard-list-row,
+    .dashboard-field-activity-list > div,
+    .dashboard-field-pipeline-step,
+    .dashboard-field-gps-metric {
+      min-width: 0;
+    }
+
+    .dashboard-list-row > *,
+    .dashboard-field-activity-list > div > *,
+    .dashboard-field-pipeline-step > div,
+    .dashboard-field-gps-metric > * {
+      min-width: 0;
+    }
+
+    .dashboard-list-row strong,
+    .dashboard-list-row p,
+    .dashboard-field-activity-list strong,
+    .dashboard-field-activity-list span,
+    .dashboard-field-pipeline-step strong,
+    .dashboard-field-pipeline-step small,
+    .dashboard-field-gps-metric strong {
+      overflow-wrap: anywhere;
+    }
+  }
+
+  @media (max-width: 430px) {
+    .dashboard-page {
+      border-radius: 8px;
+    }
+
+    .dashboard-shell {
+      padding-bottom: 10px;
+    }
+
+    .dashboard-page-header {
+      gap: 12px;
+      padding-bottom: 11px;
+    }
+
+    .dashboard-header-actions {
+      gap: 7px;
+    }
+
+    .dashboard-refresh {
+      min-height: 42px;
+    }
+
+    .dashboard-welcome,
+    .dashboard-field-operations,
+    .dashboard-employee-hero {
+      padding: 14px;
+    }
+
+    .dashboard-welcome h2 {
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .dashboard-section-header {
+      gap: 5px;
+      margin-top: 14px;
+    }
+
+    .dashboard-panel,
+    .dashboard-list-panel,
+    .dashboard-profile-card,
+    .dashboard-person-card {
+      padding: 11px;
+    }
+
+    .dashboard-list-panel-header {
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .dashboard-list-panel-action {
+      min-width: 40px;
+      padding: 8px;
+    }
+
+    .dashboard-list-panel-action span:first-child {
+      display: none;
+    }
+
+    .dashboard-quick-action {
+      min-height: 44px;
+    }
+
+    .dashboard-field-kpi {
+      padding: 10px;
+    }
+
+    .dashboard-field-kpi-top {
+      align-items: flex-start;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .dashboard-page *,
     .dashboard-page *::before,
