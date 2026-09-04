@@ -233,3 +233,13 @@ export const recordAttendanceLocation =
 
     return response.data
   }
+
+export const getAttendanceLocations =
+  async (): Promise<AttendanceLocationStop[]> => {
+    const response =
+      await apiClient.get<AttendanceLocationStop[]>(
+        "/attendance/locations/",
+      )
+
+    return response.data
+  }
