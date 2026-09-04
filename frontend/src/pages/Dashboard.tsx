@@ -2,6 +2,7 @@ import {
   memo,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type CSSProperties,
@@ -206,9 +207,15 @@ function Dashboard() {
   const [holidays, setHolidays] = useState<Holiday[]>([])
   const [contentError, setContentError] = useState("")
   const [isContentLoading, setIsContentLoading] = useState(true)
+  const dashboardRequestControllerRef = useRef<AbortController | null>(null)
 
   async function loadDashboard(options?: { refresh?: boolean }) {
     const refresh = options?.refresh ?? false
+    const previousController = dashboardRequestControllerRef.current
+    previousController?.abort()
+
+    const controller = new AbortController()
+    dashboardRequestControllerRef.current = controller
 
     try {
       if (refresh) {
@@ -219,16 +226,29 @@ function Dashboard() {
 
       setError("")
 
-      const data = await getDashboard()
+      const data = await getDashboard({
+        signal: controller.signal,
+      })
+
+      if (controller.signal.aborted) {
+        return
+      }
 
       setDashboard(data)
       setLastUpdated(new Date())
     } catch (requestError) {
+      if (controller.signal.aborted) {
+        return
+      }
+
       console.error("Failed to load dashboard:", requestError)
       setError("Unable to load dashboard information.")
     } finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
+      if (dashboardRequestControllerRef.current === controller) {
+        dashboardRequestControllerRef.current = null
+        setIsLoading(false)
+        setIsRefreshing(false)
+      }
     }
   }
 
@@ -288,6 +308,11 @@ function Dashboard() {
   useEffect(() => {
     void loadDashboard()
     void loadDashboardContent()
+
+    return () => {
+      dashboardRequestControllerRef.current?.abort()
+      dashboardRequestControllerRef.current = null
+    }
   }, [])
 
   const role = user?.role ?? ""
