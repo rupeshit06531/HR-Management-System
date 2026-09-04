@@ -436,82 +436,101 @@ function Dashboard() {
     return moduleItems.filter((item) => item.roles.includes(role))
   }, [role])
 
-  const quickActionNames =
-    role === "SUPER_ADMIN" || role === "HR"
-      ? [
-          "Employees",
-          "Departments",
-          "Attendance",
-          "Leave",
-          "Recruitment",
-          "Documents",
-        ]
-      : role === "MANAGER"
+  const quickActions = useMemo(() => {
+    const quickActionNames =
+      role === "SUPER_ADMIN" || role === "HR"
         ? [
             "Employees",
+            "Departments",
             "Attendance",
             "Leave",
-            "Performance",
+            "Recruitment",
             "Documents",
-            "Announcements",
           ]
-        : [
-            "Attendance",
-            "Leave",
-            "Payroll",
-            "Performance",
-            "Documents",
-            "Holidays",
-          ]
+        : role === "MANAGER"
+          ? [
+              "Employees",
+              "Attendance",
+              "Leave",
+              "Performance",
+              "Documents",
+              "Announcements",
+            ]
+          : [
+              "Attendance",
+              "Leave",
+              "Payroll",
+              "Performance",
+              "Documents",
+              "Holidays",
+            ]
 
-  const quickActions = quickActionNames
-    .map((name) =>
-      visibleModules.find((item) => item.label === name),
-    )
-    .filter((item): item is ModuleItem => Boolean(item))
+    return quickActionNames
+      .map((name) =>
+        visibleModules.find((item) => item.label === name),
+      )
+      .filter((item): item is ModuleItem => Boolean(item))
+  }, [role, visibleModules])
 
-  const workforceStatuses: WorkforceStatus[] = [
-    {
-      label: "Active",
-      value: activeEmployees,
-      percentage:
-        totalEmployees > 0
-          ? (activeEmployees / totalEmployees) * 100
-          : 0,
-    },
-    {
-      label: "Inactive",
-      value: inactiveEmployees,
-      percentage:
-        totalEmployees > 0
-          ? (inactiveEmployees / totalEmployees) * 100
-          : 0,
-    },
-    {
-      label: "Resigned",
-      value: resignedEmployees,
-      percentage:
-        totalEmployees > 0
-          ? (resignedEmployees / totalEmployees) * 100
-          : 0,
-    },
-    {
-      label: "Terminated",
-      value: terminatedEmployees,
-      percentage:
-        totalEmployees > 0
-          ? (terminatedEmployees / totalEmployees) * 100
-          : 0,
-    },
-  ]
+  const workforceStatuses = useMemo<WorkforceStatus[]>(
+    () => [
+      {
+        label: "Active",
+        value: activeEmployees,
+        percentage:
+          totalEmployees > 0
+            ? (activeEmployees / totalEmployees) * 100
+            : 0,
+      },
+      {
+        label: "Inactive",
+        value: inactiveEmployees,
+        percentage:
+          totalEmployees > 0
+            ? (inactiveEmployees / totalEmployees) * 100
+            : 0,
+      },
+      {
+        label: "Resigned",
+        value: resignedEmployees,
+        percentage:
+          totalEmployees > 0
+            ? (resignedEmployees / totalEmployees) * 100
+            : 0,
+      },
+      {
+        label: "Terminated",
+        value: terminatedEmployees,
+        percentage:
+          totalEmployees > 0
+            ? (terminatedEmployees / totalEmployees) * 100
+            : 0,
+      },
+    ],
+    [
+      activeEmployees,
+      inactiveEmployees,
+      resignedEmployees,
+      terminatedEmployees,
+      totalEmployees,
+    ],
+  )
 
-  const roleDistribution = Object.entries(
-    userMetrics?.roles ?? {},
-  ).sort(([, first], [, second]) => second - first)
+  const roleDistribution = useMemo(
+    () =>
+      Object.entries(userMetrics?.roles ?? {}).sort(
+        ([, first], [, second]) => second - first,
+      ),
+    [userMetrics?.roles],
+  )
 
-  const maxRoleCount = Math.max(
-    ...roleDistribution.map(([, count]) => count),
-    1,
+  const maxRoleCount = useMemo(
+    () =>
+      Math.max(
+        ...roleDistribution.map(([, count]) => count),
+        1,
+      ),
+    [roleDistribution],
   )
 
   const personalName =
@@ -519,7 +538,8 @@ function Dashboard() {
 
   const personalInitials = getInitials(personalName)
 
-  const personalProfileCards = [
+  const personalProfileCards = useMemo(
+    () => [
     {
       label: "Employee ID",
       value:
@@ -558,7 +578,9 @@ function Dashboard() {
         user?.email ||
         "Not available",
     },
-  ]
+    ],
+    [employeeProfile, user?.employee_id, user?.email],
+  )
 
   if (isLoading) {
     return (
