@@ -195,10 +195,10 @@ export function AuthProvider({
         clearStoredTokens()
         setAccessToken(null)
         setUser(null)
-      } finally {
-        if (isCurrentOperation()) {
-          setIsLoading(false)
-        }
+      }
+
+      if (isCurrentOperation()) {
+        setIsLoading(false)
       }
     }
 
@@ -244,6 +244,8 @@ export function AuthProvider({
     const storedRefreshToken =
       getStoredRefreshToken()
 
+    let logoutCompleted = false
+
     try {
       if (storedRefreshToken) {
         await logoutApi({
@@ -251,19 +253,20 @@ export function AuthProvider({
             storedRefreshToken,
         })
       }
+
+      logoutCompleted = true
     } finally {
       if (
-        authOperationRef.current !==
-        operationId
+        logoutCompleted &&
+        authOperationRef.current ===
+          operationId
       ) {
-        return
+        clearStoredTokens()
+
+        setAccessToken(null)
+        setUser(null)
+        setIsLoading(false)
       }
-
-      clearStoredTokens()
-
-      setAccessToken(null)
-      setUser(null)
-      setIsLoading(false)
     }
   }
 
