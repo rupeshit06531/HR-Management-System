@@ -2265,6 +2265,11 @@ function DashboardBottomPanels({
   contentError: string
   isLoading: boolean
 }) {
+  const nextHoliday = holidays[0]
+  const holidayLead = nextHoliday
+    ? getDaysUntilDate(nextHoliday.date)
+    : null
+
   return (
     <div className="dashboard-bottom-grid">
       <div className="dashboard-list-panel">
@@ -2273,6 +2278,17 @@ function DashboardBottomPanels({
           description="Latest organization announcements."
           badge={`${announcements.length}`}
         />
+
+        {!isLoading && !contentError && announcements.length > 0 && (
+          <div className="dashboard-content-summary">
+            <span className="dashboard-content-summary-dot" />
+            <span>
+              {announcements.length === 1
+                ? "1 published update available"
+                : `${announcements.length} published updates available`}
+            </span>
+          </div>
+        )}
 
         {isLoading ? (
           <DashboardListLoading />
@@ -2309,6 +2325,21 @@ function DashboardBottomPanels({
           badge={`${holidays.length}`}
         />
 
+        {!isLoading && !contentError && nextHoliday && (
+          <div className="dashboard-content-summary dashboard-content-summary-holiday">
+            <span className="dashboard-content-summary-icon">
+              ★
+            </span>
+            <span>
+              {holidayLead === 0
+                ? "Next holiday is today"
+                : holidayLead === 1
+                  ? "Next holiday is tomorrow"
+                  : `Next holiday in ${holidayLead} days`}
+            </span>
+          </div>
+        )}
+
         {isLoading ? (
           <DashboardListLoading />
         ) : contentError ? (
@@ -2335,6 +2366,26 @@ function DashboardBottomPanels({
         )}
       </div>
     </div>
+  )
+}
+
+function getDaysUntilDate(value: string) {
+  const target = new Date(`${value}T00:00:00`)
+  if (Number.isNaN(target.getTime())) return 0
+
+  const now = new Date()
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  )
+
+  return Math.max(
+    0,
+    Math.ceil(
+      (target.getTime() - today.getTime()) /
+        (1000 * 60 * 60 * 24),
+    ),
   )
 }
 
@@ -3071,6 +3122,46 @@ const dashboardStyles = `
     letter-spacing: 0.05em;
     white-space: nowrap;
   }
+  .dashboard-content-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 25px;
+    margin: -3px 0 7px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--muted-strong);
+    font-size: 7px;
+    font-weight: 750;
+  }
+
+  .dashboard-content-summary-dot {
+    width: 5px;
+    height: 5px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 12%, transparent);
+  }
+
+  .dashboard-content-summary-holiday {
+    border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  }
+
+  .dashboard-content-summary-icon {
+    display: grid;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 5px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 7px;
+  }
+
 
   .dashboard-workforce {
     display: grid;
@@ -4542,8 +4633,17 @@ const dashboardStyles = `
     justify-content: space-between;
     gap: 12px;
     min-height: 51px;
-    padding: 7px 1px;
+    padding: 7px 8px;
     border-bottom: 1px solid var(--border);
+    border-radius: 7px;
+    transition:
+      background 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .dashboard-list-row:hover {
+    background: var(--surface);
+    transform: translateX(2px);
   }
 
   .dashboard-list-content {
