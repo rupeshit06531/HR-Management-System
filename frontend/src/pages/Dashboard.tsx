@@ -2029,33 +2029,58 @@ function ModuleGrid({
   }
 
   return (
-    <div className="dashboard-module-grid">
-      {modules.map((item) => (
-        <button
-          type="button"
-          className="dashboard-module"
-          key={item.path}
-          onClick={() => navigate(item.path)}
-        >
-          <div className="dashboard-module-top">
-            <span className="dashboard-module-icon">
-              {item.icon}
-            </span>
-
-            <span className="dashboard-module-open">
-              \u2192
-            </span>
-          </div>
-
-          <strong>{item.label}</strong>
-
-          <p>{item.description}</p>
-
-          <span className="dashboard-module-link">
-            Open module
+    <div className="dashboard-module-area">
+      <div className="dashboard-module-summary">
+        <div>
+          <span className="dashboard-module-summary-kicker">
+            MODULE ACCESS
           </span>
-        </button>
-      ))}
+          <strong>
+            {modules.length} {modules.length === 1 ? "module" : "modules"} available
+          </strong>
+        </div>
+
+        <span className="dashboard-module-summary-status">
+          ROLE BASED
+        </span>
+      </div>
+
+      <div
+        className="dashboard-module-grid"
+        aria-label="Available HRMS modules"
+      >
+        {modules.map((item, index) => (
+          <button
+            type="button"
+            className="dashboard-module"
+            key={item.path}
+            onClick={() => navigate(item.path)}
+            aria-label={`Open ${item.label} module`}
+          >
+            <div className="dashboard-module-top">
+              <span className="dashboard-module-icon">
+                {item.icon}
+              </span>
+
+              <span className="dashboard-module-rank">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+
+              <span className="dashboard-module-open" aria-hidden="true">
+                \u2192
+              </span>
+            </div>
+
+            <strong>{item.label}</strong>
+
+            <p>{item.description}</p>
+
+            <span className="dashboard-module-link">
+              Open module
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -3600,6 +3625,53 @@ const dashboardStyles = `
     font-size: 14px;
   }
 
+  .dashboard-module-area {
+    display: grid;
+    gap: 9px;
+  }
+
+  .dashboard-module-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface);
+  }
+
+  .dashboard-module-summary > div {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .dashboard-module-summary-kicker {
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+  }
+
+  .dashboard-module-summary strong {
+    color: var(--text);
+    font-size: 9px;
+    font-weight: 800;
+  }
+
+  .dashboard-module-summary-status {
+    flex: 0 0 auto;
+    padding: 4px 6px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted-strong);
+    font-size: 6px;
+    font-weight: 850;
+    letter-spacing: 0.07em;
+  }
+
   .dashboard-module-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3642,6 +3714,14 @@ const dashboardStyles = `
     height: 34px;
     background: var(--accent-soft);
     color: var(--accent-2);
+  }
+
+  .dashboard-module-rank {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 7px;
+    font-weight: 850;
+    letter-spacing: 0.05em;
   }
 
   .dashboard-module-open {
