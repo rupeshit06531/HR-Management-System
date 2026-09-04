@@ -208,6 +208,8 @@ function Dashboard() {
   const [contentError, setContentError] = useState("")
   const [isContentLoading, setIsContentLoading] = useState(true)
   const dashboardRequestControllerRef = useRef<AbortController | null>(null)
+  const dashboardContentRequestIdRef = useRef(0)
+  const dashboardMountedRef = useRef(true)
 
   async function loadDashboard(options?: { refresh?: boolean }) {
     const refresh = options?.refresh ?? false
@@ -253,6 +255,9 @@ function Dashboard() {
   }
 
   async function loadDashboardContent() {
+    const requestId = dashboardContentRequestIdRef.current + 1
+    dashboardContentRequestIdRef.current = requestId
+
     try {
       setIsContentLoading(true)
       setContentError("")
@@ -265,6 +270,13 @@ function Dashboard() {
           is_active: true,
         }),
       ])
+
+      if (
+        !dashboardMountedRef.current ||
+        dashboardContentRequestIdRef.current !== requestId
+      ) {
+        return
+      }
 
       const publishedAnnouncements = announcementResponse.results
         .filter((announcement) => announcement.is_published)
@@ -291,10 +303,22 @@ function Dashboard() {
       setAnnouncements(publishedAnnouncements)
       setHolidays(upcomingHolidays)
     } catch (requestError) {
+      if (
+        !dashboardMountedRef.current ||
+        dashboardContentRequestIdRef.current !== requestId
+      ) {
+        return
+      }
+
       console.error("Failed to load dashboard content:", requestError)
       setContentError("Unable to load announcements and holidays.")
     } finally {
-      setIsContentLoading(false)
+      if (
+        dashboardMountedRef.current &&
+        dashboardContentRequestIdRef.current === requestId
+      ) {
+        setIsContentLoading(false)
+      }
     }
   }
 
@@ -306,12 +330,16 @@ function Dashboard() {
   }
 
   useEffect(() => {
+    dashboardMountedRef.current = true
+
     void loadDashboard()
     void loadDashboardContent()
 
     return () => {
+      dashboardMountedRef.current = false
       dashboardRequestControllerRef.current?.abort()
       dashboardRequestControllerRef.current = null
+      dashboardContentRequestIdRef.current += 1
     }
   }, [])
 
