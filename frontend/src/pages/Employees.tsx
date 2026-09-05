@@ -2298,7 +2298,12 @@ function Employees() {
               max-width: 100%;
             }
 
-            main > section > section:nth-child(4) > div {
+            main > section > section:first-of-type {
+              grid-template-columns:
+                repeat(3, minmax(0, 1fr)) !important;
+            }
+
+            main > section > section:nth-of-type(2) > div {
               grid-template-columns:
                 repeat(3, minmax(0, 1fr)) !important;
             }
@@ -2309,12 +2314,12 @@ function Employees() {
               padding: 16px !important;
             }
 
-            main > section > section:nth-child(2) {
+            main > section > section:first-of-type {
               grid-template-columns:
                 1fr !important;
             }
 
-            main > section > section:nth-child(4) > div {
+            main > section > section:nth-of-type(2) > div {
               grid-template-columns:
                 repeat(2, minmax(0, 1fr)) !important;
             }
@@ -2330,7 +2335,7 @@ function Employees() {
               padding: 12px !important;
             }
 
-            main > section > section:nth-child(4) > div {
+            main > section > section:nth-of-type(2) > div {
               grid-template-columns:
                 1fr !important;
             }
