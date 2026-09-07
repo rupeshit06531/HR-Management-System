@@ -3,9 +3,21 @@ import {
   Outlet,
   useNavigate,
 } from "react-router-dom"
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react"
 
 import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
+import {
+  getNotifications,
+  getUnreadNotificationCount,
+  markAllNotificationsRead,
+  markNotificationRead,
+  type NotificationRecord,
+} from "../api/notifications"
 
 interface NavigationItem {
   label: string
@@ -150,6 +162,78 @@ const roleLabels: Record<string, string> = {
   EMPLOYEE: "Employee",
 }
 
+function formatNotificationTime(
+  value: string,
+): string {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return ""
+  }
+
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMinutes = Math.floor(
+    diffMs / (1000 * 60),
+  )
+
+  if (diffMinutes < 1) {
+    return "Just now"
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`
+  }
+
+  const diffHours = Math.floor(
+    diffMinutes / 60,
+  )
+
+  if (diffHours < 24) {
+    return `${diffHours}h ago`
+  }
+
+  const diffDays = Math.floor(
+    diffHours / 24,
+  )
+
+  if (diffDays < 7) {
+    return `${diffDays}d ago`
+  }
+
+  return date.toLocaleDateString(
+    undefined,
+    {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    },
+  )
+}
+
+function getNotificationShortCode(
+  notificationType: string,
+): string {
+  switch (notificationType) {
+    case "ANNOUNCEMENT":
+      return "AN"
+    case "LEAVE":
+      return "LV"
+    case "ATTENDANCE":
+      return "AT"
+    case "PAYROLL":
+      return "PR"
+    case "PERFORMANCE":
+      return "PF"
+    case "RECRUITMENT":
+      return "RC"
+    case "DOCUMENT":
+      return "DC"
+    default:
+      return "SY"
+  }
+}
+
 function AppLayout() {
   const navigate = useNavigate()
 
@@ -162,6 +246,216 @@ function AppLayout() {
     isDarkMode,
     toggleDarkMode,
   } = useTheme()
+
+  const [
+    notifications,
+    setNotifications,
+  ] = useState<NotificationRecord[]>([])
+
+  const [
+    unreadNotificationCount,
+    setUnreadNotificationCount,
+  ] = useState(0)
+
+  const [
+    isNotificationOpen,
+    setIsNotificationOpen,
+  ] = useState(false)
+
+  const [
+    isNotificationLoading,
+    setIsNotificationLoading,
+  ] = useState(false)
+
+  const [
+    isMarkingAllRead,
+    setIsMarkingAllRead,
+  ] = useState(false)
+
+  const notificationRef =
+    useRef<HTMLDivElement | null>(null)
+
+  const loadNotificationCount =
+    async () => {
+      if (!user) {
+        setUnreadNotificationCount(0)
+        return
+      }
+
+      try {
+        const count =
+          await getUnreadNotificationCount()
+
+        setUnreadNotificationCount(count)
+      } catch {
+        // Notification failures should never
+        // break the main application layout.
+      }
+    }
+
+  const loadNotifications =
+    async () => {
+      if (!user) {
+        setNotifications([])
+        setUnreadNotificationCount(0)
+        return
+      }
+
+      setIsNotificationLoading(true)
+
+      try {
+        const response =
+          await getNotifications({
+            page_size: 8,
+            ordering: "-created_at",
+          })
+
+        setNotifications(
+          response.results.slice(0, 8),
+        )
+
+        const count =
+          await getUnreadNotificationCount()
+
+        setUnreadNotificationCount(count)
+      } catch {
+        // Keep the existing notification state
+        // when the request fails.
+      } finally {
+        setIsNotificationLoading(false)
+      }
+    }
+
+  useEffect(() => {
+    void loadNotificationCount()
+
+    const intervalId =
+      window.setInterval(() => {
+        void loadNotificationCount()
+      }, 30000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [user])
+
+  useEffect(() => {
+    const handleDocumentClick = (
+      event: MouseEvent,
+    ) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(
+          event.target as Node,
+        )
+      ) {
+        setIsNotificationOpen(false)
+      }
+    }
+
+    document.addEventListener(
+      "mousedown",
+      handleDocumentClick,
+    )
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleDocumentClick,
+      )
+    }
+  }, [])
+
+  const handleNotificationToggle =
+    async () => {
+      const nextOpen =
+        !isNotificationOpen
+
+      setIsNotificationOpen(nextOpen)
+
+      if (nextOpen) {
+        await loadNotifications()
+      }
+    }
+
+  const handleNotificationClick =
+    async (
+      notification: NotificationRecord,
+    ) => {
+      if (!notification.is_read) {
+        try {
+          const updated =
+            await markNotificationRead(
+              notification.id,
+            )
+
+          setNotifications((current) =>
+            current.map((item) =>
+              item.id === updated.id
+                ? updated
+                : item,
+            ),
+          )
+
+          setUnreadNotificationCount(
+            (current) =>
+              Math.max(0, current - 1),
+          )
+        } catch {
+          // Navigation should still work even
+          // if marking the notification fails.
+        }
+      }
+
+      setIsNotificationOpen(false)
+
+      if (notification.action_url) {
+        if (
+          notification.action_url.startsWith(
+            "http://",
+          ) ||
+          notification.action_url.startsWith(
+            "https://",
+          )
+        ) {
+          window.location.href =
+            notification.action_url
+        } else {
+          navigate(
+            notification.action_url,
+          )
+        }
+      }
+    }
+
+  const handleMarkAllRead =
+    async () => {
+      if (
+        isMarkingAllRead ||
+        unreadNotificationCount === 0
+      ) {
+        return
+      }
+
+      setIsMarkingAllRead(true)
+
+      try {
+        await markAllNotificationsRead()
+
+        setNotifications((current) =>
+          current.map((item) => ({
+            ...item,
+            is_read: true,
+          })),
+        )
+
+        setUnreadNotificationCount(0)
+      } catch {
+        // Keep current state when request fails.
+      } finally {
+        setIsMarkingAllRead(false)
+      }
+    }
 
   const handleLogout = async () => {
     try {
@@ -208,7 +502,9 @@ function AppLayout() {
         background: isDarkMode
           ? "linear-gradient(180deg, #071018 0%, #0f172a 100%)"
           : "linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)",
-        color: isDarkMode ? "#f8fafc" : "#111827",
+        color: isDarkMode
+          ? "#f8fafc"
+          : "#111827",
         fontFamily:
           '"Inter", "Segoe UI", Arial, sans-serif',
       }}
@@ -240,7 +536,7 @@ function AppLayout() {
           style={{
             padding: "21px 20px 20px",
             borderBottom:
-              `1px solid var(--border)`,
+              "1px solid var(--border)",
           }}
         >
           <button
@@ -288,7 +584,9 @@ function AppLayout() {
               <div>
                 <div
                   style={{
-                    color: isDarkMode ? "#f8fafc" : "#0f172a",
+                    color: isDarkMode
+                      ? "#f8fafc"
+                      : "#0f172a",
                     fontSize: "16px",
                     lineHeight: 1.2,
                     fontWeight: 800,
@@ -301,7 +599,9 @@ function AppLayout() {
                 <div
                   style={{
                     marginTop: "3px",
-                    color: isDarkMode ? "#94a3b8" : "#64748b",
+                    color: isDarkMode
+                      ? "#94a3b8"
+                      : "#64748b",
                     fontSize: "10px",
                     fontWeight: 500,
                   }}
@@ -323,7 +623,9 @@ function AppLayout() {
             style={{
               padding:
                 "0 10px 9px",
-              color: isDarkMode ? "#94a3b8" : "#64748b",
+              color: isDarkMode
+                ? "#94a3b8"
+                : "#64748b",
               fontSize: "10px",
               fontWeight: 800,
               letterSpacing: "0.08em",
@@ -363,7 +665,9 @@ function AppLayout() {
                       : "transparent",
                     textDecoration: "none",
                     fontSize: "12px",
-                    fontWeight: isActive ? 700 : 600,
+                    fontWeight: isActive
+                      ? 700
+                      : 600,
                     boxSizing: "border-box",
                     border: isActive
                       ? "1px solid rgba(251,146,60,0.5)"
@@ -382,11 +686,12 @@ function AppLayout() {
                           width: "30px",
                           height: "30px",
                           borderRadius: "7px",
-                          background: isActive
-                            ? "rgba(249,115,22,0.14)"
-                            : isDarkMode
-                              ? "rgba(148,163,184,0.08)"
-                              : "#f1f5f9",
+                          background:
+                            isActive
+                              ? "rgba(249,115,22,0.14)"
+                              : isDarkMode
+                                ? "rgba(148,163,184,0.08)"
+                                : "#f1f5f9",
                           color: isActive
                             ? "#ea580c"
                             : isDarkMode
@@ -420,7 +725,7 @@ function AppLayout() {
           style={{
             padding: "13px 12px",
             borderTop:
-              `1px solid var(--border)`,
+              "1px solid var(--border)",
           }}
         >
           <button
@@ -434,12 +739,15 @@ function AppLayout() {
               alignItems: "center",
               gap: "10px",
               padding: "10px 12px",
-              border: "1px solid rgba(148,163,184,0.14)",
+              border:
+                "1px solid rgba(148,163,184,0.14)",
               borderRadius: "10px",
               background: isDarkMode
                 ? "linear-gradient(180deg, rgba(15,23,42,0.9), rgba(15,23,42,0.7))"
                 : "linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)",
-              color: isDarkMode ? "#e2e8f0" : "#0f172a",
+              color: isDarkMode
+                ? "#e2e8f0"
+                : "#0f172a",
               cursor: "pointer",
               textAlign: "left",
               fontSize: "12px",
@@ -461,7 +769,8 @@ function AppLayout() {
                 fontSize: "9px",
                 fontWeight: 800,
                 color: "#fdba74",
-                border: "1px solid rgba(251,146,60,0.3)",
+                border:
+                  "1px solid rgba(251,146,60,0.3)",
               }}
             >
               OUT
@@ -510,7 +819,9 @@ function AppLayout() {
               style={{
                 fontSize: "16px",
                 fontWeight: 750,
-                color: isDarkMode ? "#f8fafc" : "#0f172a",
+                color: isDarkMode
+                  ? "#f8fafc"
+                  : "#0f172a",
               }}
             >
               Human Resources
@@ -520,7 +831,9 @@ function AppLayout() {
               style={{
                 marginTop: "2px",
                 fontSize: "11px",
-                color: isDarkMode ? "#94a3b8" : "#64748b",
+                color: isDarkMode
+                  ? "#94a3b8"
+                  : "#64748b",
               }}
             >
               Workforce management
@@ -535,6 +848,446 @@ function AppLayout() {
               gap: "12px",
             }}
           >
+            <div
+              ref={notificationRef}
+              style={{
+                position: "relative",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  void handleNotificationToggle()
+                }}
+                aria-label="Notifications"
+                aria-expanded={
+                  isNotificationOpen
+                }
+                title="Notifications"
+                style={{
+                  position: "relative",
+                  width: "42px",
+                  height: "42px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: isDarkMode
+                    ? "1px solid rgba(148,163,184,0.18)"
+                    : "1px solid #e2e8f0",
+                  borderRadius: "11px",
+                  background: isDarkMode
+                    ? "rgba(15,23,42,0.72)"
+                    : "#ffffff",
+                  color: isDarkMode
+                    ? "#e2e8f0"
+                    : "#334155",
+                  cursor: "pointer",
+                  fontSize: "19px",
+                  transition:
+                    "all 0.2s ease",
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    lineHeight: 1,
+                  }}
+                >
+                  ♢
+                </span>
+
+                {unreadNotificationCount >
+                  0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: "-4px",
+                      right: "-4px",
+                      minWidth: "18px",
+                      height: "18px",
+                      padding: "0 5px",
+                      borderRadius: "999px",
+                      background:
+                        "linear-gradient(135deg, #ef4444, #dc2626)",
+                      color: "#ffffff",
+                      border:
+                        "2px solid var(--app-bg, #ffffff)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "9px",
+                      fontWeight: 800,
+                      lineHeight: 1,
+                      boxSizing:
+                        "border-box",
+                    }}
+                  >
+                    {unreadNotificationCount >
+                    99
+                      ? "99+"
+                      : unreadNotificationCount}
+                  </span>
+                )}
+              </button>
+
+              {isNotificationOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "52px",
+                    right: 0,
+                    width: "370px",
+                    maxWidth:
+                      "calc(100vw - 30px)",
+                    borderRadius: "14px",
+                    border: isDarkMode
+                      ? "1px solid rgba(148,163,184,0.2)"
+                      : "1px solid #e2e8f0",
+                    background: isDarkMode
+                      ? "linear-gradient(180deg, #111827, #0f172a)"
+                      : "#ffffff",
+                    boxShadow: isDarkMode
+                      ? "0 24px 60px rgba(0,0,0,0.45)"
+                      : "0 24px 60px rgba(15,23,42,0.18)",
+                    overflow: "hidden",
+                    zIndex: 100,
+                  }}
+                >
+                  <div
+                    style={{
+                      padding:
+                        "14px 15px",
+                      display: "flex",
+                      alignItems:
+                        "center",
+                      justifyContent:
+                        "space-between",
+                      gap: "10px",
+                      borderBottom:
+                        isDarkMode
+                          ? "1px solid rgba(148,163,184,0.14)"
+                          : "1px solid #e2e8f0",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 800,
+                          color:
+                            isDarkMode
+                              ? "#f8fafc"
+                              : "#0f172a",
+                        }}
+                      >
+                        Notifications
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: "3px",
+                          fontSize: "10px",
+                          color:
+                            isDarkMode
+                              ? "#94a3b8"
+                              : "#64748b",
+                        }}
+                      >
+                        {unreadNotificationCount}{" "}
+                        unread
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleMarkAllRead()
+                      }}
+                      disabled={
+                        isMarkingAllRead ||
+                        unreadNotificationCount ===
+                          0
+                      }
+                      style={{
+                        border: "none",
+                        background:
+                          "transparent",
+                        color:
+                          unreadNotificationCount >
+                          0
+                            ? "#ea580c"
+                            : isDarkMode
+                              ? "#64748b"
+                              : "#94a3b8",
+                        cursor:
+                          unreadNotificationCount >
+                            0 &&
+                          !isMarkingAllRead
+                            ? "pointer"
+                            : "default",
+                        fontSize: "10px",
+                        fontWeight: 750,
+                        padding: "5px 2px",
+                      }}
+                    >
+                      {isMarkingAllRead
+                        ? "Updating..."
+                        : "Mark all read"}
+                    </button>
+                  </div>
+
+                  <div
+                    style={{
+                      maxHeight: "430px",
+                      overflowY: "auto",
+                    }}
+                  >
+                    {isNotificationLoading ? (
+                      <div
+                        style={{
+                          padding:
+                            "34px 20px",
+                          textAlign: "center",
+                          color:
+                            isDarkMode
+                              ? "#94a3b8"
+                              : "#64748b",
+                          fontSize: "11px",
+                        }}
+                      >
+                        Loading notifications...
+                      </div>
+                    ) : notifications.length ===
+                      0 ? (
+                      <div
+                        style={{
+                          padding:
+                            "38px 20px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "26px",
+                            marginBottom: "9px",
+                            opacity: 0.7,
+                          }}
+                        >
+                          ✓
+                        </div>
+
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 750,
+                            color:
+                              isDarkMode
+                                ? "#e2e8f0"
+                                : "#334155",
+                          }}
+                        >
+                          You're all caught up
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: "4px",
+                            fontSize: "10px",
+                            color:
+                              isDarkMode
+                                ? "#64748b"
+                                : "#94a3b8",
+                          }}
+                        >
+                          No notifications to show.
+                        </div>
+                      </div>
+                    ) : (
+                      notifications.map(
+                        (notification) => (
+                          <button
+                            key={
+                              notification.id
+                            }
+                            type="button"
+                            onClick={() => {
+                              void handleNotificationClick(
+                                notification,
+                              )
+                            }}
+                            style={{
+                              width: "100%",
+                              display: "flex",
+                              alignItems:
+                                "flex-start",
+                              gap: "10px",
+                              padding:
+                                "12px 14px",
+                              border: "none",
+                              borderBottom:
+                                isDarkMode
+                                  ? "1px solid rgba(148,163,184,0.08)"
+                                  : "1px solid #f1f5f9",
+                              background:
+                                notification.is_read
+                                  ? "transparent"
+                                  : isDarkMode
+                                    ? "rgba(249,115,22,0.07)"
+                                    : "#fff7ed",
+                              color:
+                                "inherit",
+                              cursor:
+                                "pointer",
+                              textAlign:
+                                "left",
+                              boxSizing:
+                                "border-box",
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: "31px",
+                                height: "31px",
+                                minWidth:
+                                  "31px",
+                                borderRadius:
+                                  "9px",
+                                display: "flex",
+                                alignItems:
+                                  "center",
+                                justifyContent:
+                                  "center",
+                                background:
+                                  notification.is_read
+                                    ? isDarkMode
+                                      ? "rgba(148,163,184,0.1)"
+                                      : "#f1f5f9"
+                                    : "rgba(249,115,22,0.14)",
+                                color:
+                                  notification.is_read
+                                    ? isDarkMode
+                                      ? "#94a3b8"
+                                      : "#64748b"
+                                    : "#ea580c",
+                                fontSize: "8px",
+                                fontWeight: 850,
+                              }}
+                            >
+                              {getNotificationShortCode(
+                                notification.notification_type,
+                              )}
+                            </span>
+
+                            <span
+                              style={{
+                                minWidth: 0,
+                                flex: 1,
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display:
+                                    "flex",
+                                  alignItems:
+                                    "center",
+                                  justifyContent:
+                                    "space-between",
+                                  gap: "8px",
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    minWidth:
+                                      0,
+                                    overflow:
+                                      "hidden",
+                                    textOverflow:
+                                      "ellipsis",
+                                    whiteSpace:
+                                      "nowrap",
+                                    fontSize:
+                                      "11px",
+                                    fontWeight:
+                                      notification.is_read
+                                        ? 650
+                                        : 800,
+                                    color:
+                                      isDarkMode
+                                        ? "#f1f5f9"
+                                        : "#0f172a",
+                                  }}
+                                >
+                                  {
+                                    notification.title
+                                  }
+                                </span>
+
+                                {!notification.is_read && (
+                                  <span
+                                    style={{
+                                      width:
+                                        "6px",
+                                      height:
+                                        "6px",
+                                      minWidth:
+                                        "6px",
+                                      borderRadius:
+                                        "50%",
+                                      background:
+                                        "#f97316",
+                                    }}
+                                  />
+                                )}
+                              </span>
+
+                              <span
+                                style={{
+                                  marginTop: "4px",
+                                  fontSize: "10px",
+                                  lineHeight: 1.45,
+                                  color: isDarkMode
+                                    ? "#94a3b8"
+                                    : "#64748b",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  display: "-webkit-box",
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: "vertical",
+                                }}
+                              >
+                                {
+                                  notification.message
+                                }
+                              </span>
+
+                              <span
+                                style={{
+                                  display:
+                                    "block",
+                                  marginTop:
+                                    "5px",
+                                  fontSize:
+                                    "9px",
+                                  color:
+                                    isDarkMode
+                                      ? "#64748b"
+                                      : "#94a3b8",
+                                }}
+                              >
+                                {formatNotificationTime(
+                                  notification.created_at,
+                                )}
+                              </span>
+                            </span>
+                          </button>
+                        ),
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               type="button"
               onClick={toggleDarkMode}
@@ -564,13 +1317,16 @@ function AppLayout() {
                 boxShadow: isDarkMode
                   ? "0 10px 24px rgba(249,115,22,0.2)"
                   : "inset 0 1px 0 rgba(255,255,255,0.04)",
-                transition: "all 0.25s ease",
+                transition:
+                  "all 0.25s ease",
               }}
             >
               <span aria-hidden="true">
-                {isDarkMode ? "☀️" : "🌙"}
+                {isDarkMode ? "☀" : "🌙"}
               </span>
-              <span>{isDarkMode ? "Light" : "Dark"}</span>
+              <span>
+                {isDarkMode ? "Light" : "Dark"}
+              </span>
             </button>
 
             <div
@@ -578,9 +1334,12 @@ function AppLayout() {
                 width: "34px",
                 height: "34px",
                 borderRadius: "50%",
-                background: "var(--app-primary-soft)",
-                border: "1px solid var(--app-border)",
-                color: "var(--app-primary)",
+                background:
+                  "var(--app-primary-soft)",
+                border:
+                  "1px solid var(--app-border)",
+                color:
+                  "var(--app-primary)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -600,7 +1359,8 @@ function AppLayout() {
                 style={{
                   fontSize: "12px",
                   fontWeight: 700,
-                  color: "var(--app-text)",
+                  color:
+                    "var(--app-text)",
                 }}
               >
                 {displayName}
@@ -610,7 +1370,8 @@ function AppLayout() {
                 style={{
                   marginTop: "2px",
                   fontSize: "10px",
-                  color: "var(--app-text-muted)",
+                  color:
+                    "var(--app-text-muted)",
                 }}
               >
                 {currentRole}
