@@ -1,7 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Announcement
+from .models import Announcement, Notification
 
 
 class AnnouncementSerializer(serializers.ModelSerializer):
@@ -174,3 +174,88 @@ class AnnouncementSerializer(serializers.ModelSerializer):
             )
 
         return attrs
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    recipient_name = serializers.SerializerMethodField()
+
+    notification_type_display = serializers.CharField(
+        source="get_notification_type_display",
+        read_only=True,
+    )
+
+    class Meta:
+        model = Notification
+
+        fields = [
+            "id",
+            "recipient",
+            "recipient_name",
+            "title",
+            "message",
+            "notification_type",
+            "notification_type_display",
+            "is_read",
+            "action_url",
+            "created_at",
+            "updated_at",
+        ]
+
+        read_only_fields = [
+            "id",
+            "recipient_name",
+            "notification_type_display",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_recipient_name(self, obj):
+        if not obj.recipient:
+            return None
+
+        full_name = obj.recipient.get_full_name().strip()
+
+        return full_name or obj.recipient.username
+
+    def validate_title(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError(
+                "Notification title cannot be empty."
+            )
+
+        if len(value) > 200:
+            raise serializers.ValidationError(
+                "Notification title cannot exceed 200 characters."
+            )
+
+        return value
+
+    def validate_message(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError(
+                "Notification message cannot be empty."
+            )
+
+        return value
+
+    def validate_notification_type(self, value):
+        value = value.strip().upper()
+
+        valid_types = {
+            choice[0]
+            for choice in Notification.NotificationType.choices
+        }
+
+        if value not in valid_types:
+            raise serializers.ValidationError(
+                "Invalid notification type."
+            )
+
+        return value
+
+    def validate_action_url(self, value):
+        return value.strip()

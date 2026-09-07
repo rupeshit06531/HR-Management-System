@@ -1,4 +1,3 @@
-
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
@@ -117,6 +116,100 @@ class Announcement(models.Model):
                     "-created_at",
                 ],
                 name="announcements_publish_date_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return self.title
+
+
+class Notification(models.Model):
+
+    class NotificationType(models.TextChoices):
+        SYSTEM = "SYSTEM", "System"
+        ANNOUNCEMENT = "ANNOUNCEMENT", "Announcement"
+        LEAVE = "LEAVE", "Leave"
+        ATTENDANCE = "ATTENDANCE", "Attendance"
+        PAYROLL = "PAYROLL", "Payroll"
+        PERFORMANCE = "PERFORMANCE", "Performance"
+        RECRUITMENT = "RECRUITMENT", "Recruitment"
+        DOCUMENT = "DOCUMENT", "Document"
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+
+    title = models.CharField(
+        max_length=200,
+    )
+
+    message = models.TextField()
+
+    notification_type = models.CharField(
+        max_length=20,
+        choices=NotificationType.choices,
+        default=NotificationType.SYSTEM,
+    )
+
+    is_read = models.BooleanField(
+        default=False,
+    )
+
+    action_url = models.CharField(
+        max_length=500,
+        blank=True,
+        default="",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        ordering = [
+            "-created_at",
+            "-id",
+        ]
+
+        indexes = [
+            models.Index(
+                fields=[
+                    "recipient",
+                    "is_read",
+                    "-created_at",
+                ],
+                name="notif_recipient_read_idx",
+            ),
+            models.Index(
+                fields=[
+                    "recipient",
+                    "-created_at",
+                ],
+                name="notif_recipient_date_idx",
+            ),
+            models.Index(
+                fields=[
+                    "notification_type",
+                    "-created_at",
+                ],
+                name="notif_type_date_idx",
+            ),
+        ]
+
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(title=""),
+                name="notifications_title_not_empty",
+            ),
+            models.CheckConstraint(
+                condition=~Q(message=""),
+                name="notifications_message_not_empty",
             ),
         ]
 
