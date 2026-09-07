@@ -279,6 +279,150 @@ class DashboardAPITestCase(APITestCase):
             1,
         )
 
+    def test_analytics_requires_authentication(self):
+        self.client.force_authenticate(user=None)
+
+        response = self.client.get(
+            reverse("analytics"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_super_admin_can_access_global_analytics(self):
+        self.authenticate(self.admin)
+
+        Employee.objects.create(
+            user=User.objects.create_user(
+                username="part_time_dashboard_employee",
+                password="DashboardPass123!",
+                role=User.Role.EMPLOYEE,
+            ),
+            employee_id="EMP-DASH-005",
+            department=self.department,
+            designation=self.designation,
+            joining_date=date(2026, 5, 1),
+            employment_type=Employee.EmploymentType.PART_TIME,
+            employment_status=Employee.EmploymentStatus.ACTIVE,
+        )
+
+        response = self.client.get(
+            reverse("analytics"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["employees"]["total"],
+            4,
+        )
+
+        self.assertEqual(
+            response.data["employees"]["active"],
+            4,
+        )
+
+        self.assertEqual(
+            response.data["employees"]["by_department"],
+            [
+                {
+                    "department": "Engineering",
+                    "total": 4,
+                },
+            ],
+        )
+
+        employment_types = {
+            item["employment_type"]: item["total"]
+            for item in response.data["employees"]["by_employment_type"]
+        }
+
+        self.assertEqual(
+            employment_types["FULL_TIME"],
+            3,
+        )
+
+        self.assertEqual(
+            employment_types["PART_TIME"],
+            1,
+        )
+
+    def test_hr_can_access_global_analytics(self):
+        self.authenticate(self.hr)
+
+        response = self.client.get(
+            reverse("analytics"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["employees"]["total"],
+            3,
+        )
+
+    def test_manager_only_sees_team_analytics(self):
+        self.authenticate(self.manager)
+
+        response = self.client.get(
+            reverse("analytics"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["employees"]["total"],
+            1,
+        )
+
+        self.assertEqual(
+            response.data["employees"]["by_department"],
+            [
+                {
+                    "department": "Engineering",
+                    "total": 1,
+                },
+            ],
+        )
+
+    def test_employee_only_sees_own_analytics(self):
+        self.authenticate(self.employee)
+
+        response = self.client.get(
+            reverse("analytics"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["employees"]["total"],
+            1,
+        )
+
+        self.assertEqual(
+            response.data["employees"]["by_employment_type"],
+            [
+                {
+                    "employment_type": "FULL_TIME",
+                    "total": 1,
+                },
+            ],
+        )
+
     def test_global_search_requires_authentication(self):
         self.client.force_authenticate(user=None)
 

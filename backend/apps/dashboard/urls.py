@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import DashboardView, GlobalSearchView
+from .views import AnalyticsView, DashboardView, GlobalSearchView
 
 
 urlpatterns = [
@@ -13,5 +13,10 @@ urlpatterns = [
         "search/",
         GlobalSearchView.as_view(),
         name="global-search",
+    ),
+    path(
+        "analytics/",
+        AnalyticsView.as_view(),
+        name="analytics",
     ),
 ]

@@ -241,3 +241,114 @@ class GlobalSearchView(APIView):
                 "results": results,
             }
         )
+
+class AnalyticsView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def get(self, request):
+        user = request.user
+
+        employee_queryset = Employee.objects.all()
+
+        if user.role in {
+            User.Role.SUPER_ADMIN,
+            User.Role.HR,
+        }:
+            pass
+
+        elif user.role == User.Role.MANAGER:
+            try:
+                manager_profile = user.employee_profile
+            except Employee.DoesNotExist:
+                employee_queryset = employee_queryset.none()
+            else:
+                employee_queryset = employee_queryset.filter(
+                    manager=manager_profile,
+                )
+
+        elif user.role == User.Role.EMPLOYEE:
+            try:
+                employee_profile = user.employee_profile
+            except Employee.DoesNotExist:
+                employee_queryset = employee_queryset.none()
+            else:
+                employee_queryset = employee_queryset.filter(
+                    id=employee_profile.id,
+                )
+
+        else:
+            employee_queryset = employee_queryset.none()
+
+        employee_metrics = employee_queryset.aggregate(
+            total=Count("id"),
+            active=Count(
+                "id",
+                filter=Q(
+                    employment_status=(
+                        Employee.EmploymentStatus.ACTIVE
+                    ),
+                ),
+            ),
+            inactive=Count(
+                "id",
+                filter=Q(
+                    employment_status=(
+                        Employee.EmploymentStatus.INACTIVE
+                    ),
+                ),
+            ),
+            resigned=Count(
+                "id",
+                filter=Q(
+                    employment_status=(
+                        Employee.EmploymentStatus.RESIGNED
+                    ),
+                ),
+            ),
+            terminated=Count(
+                "id",
+                filter=Q(
+                    employment_status=(
+                        Employee.EmploymentStatus.TERMINATED
+                    ),
+                ),
+            ),
+        )
+
+        by_department = list(
+            employee_queryset
+            .values("department__name")
+            .annotate(total=Count("id"))
+            .order_by("department__name")
+        )
+
+        by_employment_type = list(
+            employee_queryset
+            .values("employment_type")
+            .annotate(total=Count("id"))
+            .order_by("employment_type")
+        )
+
+        dashboard_data = {
+            "employees": {
+                **employee_metrics,
+                "by_department": [
+                    {
+                        "department": item["department__name"],
+                        "total": item["total"],
+                    }
+                    for item in by_department
+                ],
+                "by_employment_type": [
+                    {
+                        "employment_type": item["employment_type"],
+                        "total": item["total"],
+                    }
+                    for item in by_employment_type
+                ],
+            },
+        }
+
+        return Response(dashboard_data)
