@@ -25,7 +25,6 @@ class LeaveSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "employee",
-            "status",
             "applied_at",
             "updated_at",
         ]
@@ -64,6 +63,35 @@ class LeaveSerializer(serializers.ModelSerializer):
             "employee",
             getattr(self.instance, "employee", None),
         )
+
+        # New leaves must always start as pending.
+        if self.instance is None:
+            attrs["status"] = "pending"
+
+        # Status can only be changed while the leave is pending.
+        if self.instance is not None and "status" in attrs:
+            current_status = self.instance.status
+            new_status = attrs["status"]
+
+            if current_status != "pending":
+                raise serializers.ValidationError(
+                    {
+                        "status": (
+                            "Only pending leave requests can "
+                            "change status."
+                        )
+                    }
+                )
+
+            if new_status not in {"approved", "rejected"}:
+                raise serializers.ValidationError(
+                    {
+                        "status": (
+                            "Leave status can only be changed "
+                            "to approved or rejected."
+                        )
+                    }
+                )
 
         # Employee users can only create leave for themselves.
         if (

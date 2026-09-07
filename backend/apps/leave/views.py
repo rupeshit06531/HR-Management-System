@@ -197,6 +197,72 @@ class LeaveViewSet(viewsets.ModelViewSet):
         )
 
     @transaction.atomic
+    def perform_update(self, serializer):
+        """
+        Update an existing leave record.
+
+        Only HR / Super Admin can update leave records.
+
+        When a pending leave request changes to approved
+        or rejected, notify the affected employee.
+        """
+
+        leave = self.get_object()
+        previous_status = leave.status
+
+        updated_leave = serializer.save()
+
+        new_status = updated_leave.status
+
+        if (
+            previous_status == "pending"
+            and new_status in {
+                "approved",
+                "rejected",
+            }
+            and previous_status != new_status
+        ):
+            employee = updated_leave.employee
+
+            if employee and employee.user:
+                employee_name = (
+                    employee.user.get_full_name().strip()
+                    or employee.user.username
+                )
+
+                leave_type = (
+                    updated_leave.get_leave_type_display()
+                )
+
+                status_label = (
+                    "Approved"
+                    if new_status == "approved"
+                    else "Rejected"
+                )
+
+                Notification.objects.create(
+                    recipient=employee.user,
+                    title=(
+                        f"Leave Application "
+                        f"{status_label}"
+                    ),
+                    message=(
+                        f"Your {leave_type.lower()} leave "
+                        f"request from "
+                        f"{updated_leave.start_date:%d %b %Y} "
+                        f"to "
+                        f"{updated_leave.end_date:%d %b %Y} "
+                        f"has been {new_status}."
+                    ),
+                    notification_type=(
+                        Notification.NotificationType.LEAVE
+                    ),
+                    action_url=(
+                        f"/leave?leave={updated_leave.id}"
+                    ),
+                )
+
+    @transaction.atomic
     def perform_create(self, serializer):
         """
         Automatically assign the logged-in employee

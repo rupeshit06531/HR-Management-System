@@ -610,6 +610,164 @@ class LeaveAPITestCase(APITestCase):
             "Updated by admin",
         )
 
+    def test_hr_can_approve_pending_leave_and_notify_employee(self):
+        self.authenticate(self.hr_user)
+
+        leave = self.create_leave(
+            self.employee,
+            start_date="2027-04-20",
+            end_date="2027-04-22",
+            status_value="pending",
+            reason="Approval test",
+        )
+
+        response = self.client.patch(
+            reverse(
+                "leave-detail",
+                kwargs={"pk": leave.id},
+            ),
+            {
+                "status": "approved",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        leave.refresh_from_db()
+
+        self.assertEqual(
+            leave.status,
+            "approved",
+        )
+
+        notification = Notification.objects.filter(
+            recipient=self.employee_user,
+            notification_type=Notification.NotificationType.LEAVE,
+        ).first()
+
+        self.assertIsNotNone(notification)
+        self.assertEqual(
+            notification.title,
+            "Leave Application Approved",
+        )
+
+    def test_super_admin_can_reject_pending_leave_and_notify_employee(self):
+        self.authenticate(self.admin_user)
+
+        leave = self.create_leave(
+            self.employee,
+            start_date="2027-04-25",
+            end_date="2027-04-27",
+            status_value="pending",
+            reason="Rejection test",
+        )
+
+        response = self.client.patch(
+            reverse(
+                "leave-detail",
+                kwargs={"pk": leave.id},
+            ),
+            {
+                "status": "rejected",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        leave.refresh_from_db()
+
+        self.assertEqual(
+            leave.status,
+            "rejected",
+        )
+
+        notification = Notification.objects.filter(
+            recipient=self.employee_user,
+            notification_type=Notification.NotificationType.LEAVE,
+        ).first()
+
+        self.assertIsNotNone(notification)
+        self.assertEqual(
+            notification.title,
+            "Leave Application Rejected",
+        )
+
+    def test_approved_leave_status_cannot_be_changed_again(self):
+        self.authenticate(self.hr_user)
+
+        leave = self.create_leave(
+            self.employee,
+            start_date="2027-05-01",
+            end_date="2027-05-03",
+            status_value="approved",
+            reason="Already approved",
+        )
+
+        response = self.client.patch(
+            reverse(
+                "leave-detail",
+                kwargs={"pk": leave.id},
+            ),
+            {
+                "status": "rejected",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
+
+        leave.refresh_from_db()
+
+        self.assertEqual(
+            leave.status,
+            "approved",
+        )
+
+    def test_employee_cannot_change_leave_status(self):
+        self.authenticate(self.employee_user)
+
+        leave = self.create_leave(
+            self.employee,
+            start_date="2027-05-05",
+            end_date="2027-05-07",
+            status_value="pending",
+            reason="Employee status test",
+        )
+
+        response = self.client.patch(
+            reverse(
+                "leave-detail",
+                kwargs={"pk": leave.id},
+            ),
+            {
+                "status": "approved",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        leave.refresh_from_db()
+
+        self.assertEqual(
+            leave.status,
+            "pending",
+        )
+
     def test_manager_cannot_update_leave(self):
         self.authenticate(self.manager_user)
 
