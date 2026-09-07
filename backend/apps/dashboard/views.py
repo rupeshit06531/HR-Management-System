@@ -2,6 +2,7 @@ from django.db.models import Count, Q
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 
 from apps.accounts.models import User
 from apps.employees.models import Employee
@@ -136,3 +137,107 @@ class DashboardView(APIView):
             }
 
         return Response(dashboard_data)
+
+
+class GlobalSearchView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def get(self, request):
+        query = request.query_params.get("q", "").strip()
+
+        if not query:
+            return Response(
+                {
+                    "query": query,
+                    "total": 0,
+                    "results": [],
+                    "detail": "Search query is required.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+
+        employee_queryset = Employee.objects.select_related(
+            "user",
+            "department",
+            "designation",
+            "manager__user",
+        )
+
+        if user.role in {
+            User.Role.SUPER_ADMIN,
+            User.Role.HR,
+        }:
+            pass
+
+        elif user.role == User.Role.MANAGER:
+            try:
+                manager_profile = user.employee_profile
+            except Employee.DoesNotExist:
+                employee_queryset = employee_queryset.none()
+            else:
+                employee_queryset = employee_queryset.filter(
+                    manager=manager_profile,
+                )
+
+        elif user.role == User.Role.EMPLOYEE:
+            try:
+                employee_profile = user.employee_profile
+            except Employee.DoesNotExist:
+                employee_queryset = employee_queryset.none()
+            else:
+                employee_queryset = employee_queryset.filter(
+                    id=employee_profile.id,
+                )
+
+        else:
+            employee_queryset = employee_queryset.none()
+
+        employee_queryset = employee_queryset.filter(
+            Q(employee_id__icontains=query)
+            | Q(user__username__icontains=query)
+            | Q(user__first_name__icontains=query)
+            | Q(user__last_name__icontains=query)
+            | Q(user__email__icontains=query)
+            | Q(department__name__icontains=query)
+            | Q(designation__name__icontains=query)
+        ).order_by(
+            "user__first_name",
+            "user__last_name",
+            "employee_id",
+        )
+
+        results = [
+            {
+                "id": employee.id,
+                "type": "employee",
+                "employee_id": employee.employee_id,
+                "full_name": employee.user.get_full_name(),
+                "email": employee.user.email,
+                "department": (
+                    employee.department.name
+                    if employee.department
+                    else None
+                ),
+                "designation": (
+                    employee.designation.name
+                    if employee.designation
+                    else None
+                ),
+                "employment_status": (
+                    employee.get_employment_status_display()
+                ),
+            }
+            for employee in employee_queryset
+        ]
+
+        return Response(
+            {
+                "query": query,
+                "total": len(results),
+                "results": results,
+            }
+        )

@@ -278,3 +278,170 @@ class DashboardAPITestCase(APITestCase):
             response.data["employees"]["active"],
             1,
         )
+
+    def test_global_search_requires_authentication(self):
+        self.client.force_authenticate(user=None)
+
+        response = self.client.get(
+            reverse("global-search"),
+            {"q": "EMP-DASH-001"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_super_admin_can_search_all_employees(self):
+        self.authenticate(self.admin)
+
+        response = self.client.get(
+            reverse("global-search"),
+            {"q": "dashboard"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["query"],
+            "dashboard",
+        )
+
+        self.assertEqual(
+            response.data["total"],
+            3,
+        )
+
+        employee_ids = {
+            item["employee_id"]
+            for item in response.data["results"]
+        }
+
+        self.assertEqual(
+            employee_ids,
+            {
+                "EMP-DASH-MGR",
+                "EMP-DASH-001",
+                "EMP-DASH-HR",
+            },
+        )
+
+    def test_hr_can_search_by_employee_id(self):
+        self.authenticate(self.hr)
+
+        response = self.client.get(
+            reverse("global-search"),
+            {"q": "EMP-DASH-001"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["total"],
+            1,
+        )
+
+        self.assertEqual(
+            response.data["results"][0]["employee_id"],
+            "EMP-DASH-001",
+        )
+
+    def test_manager_only_searches_reporting_team(self):
+        self.authenticate(self.manager)
+
+        response = self.client.get(
+            reverse("global-search"),
+            {"q": "dashboard"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["total"],
+            1,
+        )
+
+        self.assertEqual(
+            response.data["results"][0]["employee_id"],
+            "EMP-DASH-001",
+        )
+
+    def test_employee_only_searches_own_record(self):
+        self.authenticate(self.employee)
+
+        response = self.client.get(
+            reverse("global-search"),
+            {"q": "dashboard"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["total"],
+            1,
+        )
+
+        self.assertEqual(
+            response.data["results"][0]["employee_id"],
+            "EMP-DASH-001",
+        )
+
+    def test_global_search_can_match_department(self):
+        self.authenticate(self.admin)
+
+        response = self.client.get(
+            reverse("global-search"),
+            {"q": "Engineering"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["total"],
+            3,
+        )
+
+    def test_global_search_can_match_designation(self):
+        self.authenticate(self.admin)
+
+        response = self.client.get(
+            reverse("global-search"),
+            {"q": "Software Engineer"},
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertEqual(
+            response.data["total"],
+            3,
+        )
+
+    def test_global_search_empty_query_returns_bad_request(self):
+        self.authenticate(self.admin)
+
+        response = self.client.get(
+            reverse("global-search"),
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_400_BAD_REQUEST,
+        )
