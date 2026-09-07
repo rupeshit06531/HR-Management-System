@@ -9,8 +9,14 @@ import {
   useState,
 } from "react"
 
+import {
+  globalSearch,
+  type GlobalSearchResult,
+} from "../api/search"
+
 import { useAuth } from "../context/AuthContext"
 import { useTheme } from "../context/ThemeContext"
+
 import {
   getNotifications,
   getUnreadNotificationCount,
@@ -172,7 +178,9 @@ function formatNotificationTime(
   }
 
   const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
+  const diffMs =
+    now.getTime() - date.getTime()
+
   const diffMinutes = Math.floor(
     diffMs / (1000 * 60),
   )
@@ -275,6 +283,36 @@ function AppLayout() {
   const notificationRef =
     useRef<HTMLDivElement | null>(null)
 
+  /*
+   * Global Search
+   */
+
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("")
+
+  const [
+    searchResults,
+    setSearchResults,
+  ] = useState<GlobalSearchResult[]>([])
+
+  const [
+    isSearchOpen,
+    setIsSearchOpen,
+  ] = useState(false)
+
+  const [
+    isSearchLoading,
+    setIsSearchLoading,
+  ] = useState(false)
+
+  const searchRef =
+    useRef<HTMLDivElement | null>(null)
+
+  const searchTimeoutRef =
+    useRef<number | null>(null)
+
   const loadNotificationCount =
     async () => {
       if (!user) {
@@ -366,6 +404,89 @@ function AppLayout() {
     }
   }, [])
 
+  /*
+   * Close global search when clicking outside.
+   */
+
+  useEffect(() => {
+    const handleSearchOutsideClick = (
+      event: MouseEvent,
+    ) => {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(
+          event.target as Node,
+        )
+      ) {
+        setIsSearchOpen(false)
+      }
+    }
+
+    document.addEventListener(
+      "mousedown",
+      handleSearchOutsideClick,
+    )
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleSearchOutsideClick,
+      )
+    }
+  }, [])
+
+  /*
+   * Debounced global employee search.
+   */
+
+  useEffect(() => {
+    if (searchTimeoutRef.current !== null) {
+      window.clearTimeout(
+        searchTimeoutRef.current,
+      )
+    }
+
+    const trimmedQuery =
+      searchQuery.trim()
+
+    if (trimmedQuery.length < 2) {
+      setSearchResults([])
+      setIsSearchLoading(false)
+      return
+    }
+
+    setIsSearchLoading(true)
+    setIsSearchOpen(true)
+
+    searchTimeoutRef.current =
+      window.setTimeout(async () => {
+        try {
+          const response =
+            await globalSearch(
+              trimmedQuery,
+            )
+
+          setSearchResults(
+            response.results,
+          )
+        } catch {
+          setSearchResults([])
+        } finally {
+          setIsSearchLoading(false)
+        }
+      }, 300)
+
+    return () => {
+      if (
+        searchTimeoutRef.current !== null
+      ) {
+        window.clearTimeout(
+          searchTimeoutRef.current,
+        )
+      }
+    }
+  }, [searchQuery])
+
   const handleNotificationToggle =
     async () => {
       const nextOpen =
@@ -456,6 +577,18 @@ function AppLayout() {
         setIsMarkingAllRead(false)
       }
     }
+
+  const handleSearchResultClick = (
+    result: GlobalSearchResult,
+  ) => {
+    setSearchQuery("")
+    setSearchResults([])
+    setIsSearchOpen(false)
+
+    navigate(
+      `/employees?employee=${result.id}`,
+    )
+  }
 
   const handleLogout = async () => {
     try {
@@ -839,6 +972,246 @@ function AppLayout() {
               Workforce management
               platform
             </div>
+          </div>
+
+          <div
+            ref={searchRef}
+            style={{
+              position: "relative",
+              flex: 1,
+              maxWidth: "430px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "9px",
+                height: "42px",
+                padding: "0 13px",
+                border: isDarkMode
+                  ? "1px solid rgba(148,163,184,0.18)"
+                  : "1px solid #e2e8f0",
+                borderRadius: "11px",
+                background: isDarkMode
+                  ? "rgba(15,23,42,0.72)"
+                  : "#ffffff",
+                boxSizing: "border-box",
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  fontSize: "15px",
+                  color: isDarkMode
+                    ? "#94a3b8"
+                    : "#64748b",
+                  lineHeight: 1,
+                }}
+              >
+                ⌕
+              </span>
+
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => {
+                  const value =
+                    event.target.value
+
+                  setSearchQuery(value)
+
+                  setIsSearchOpen(
+                    value.trim().length >= 2,
+                  )
+                }}
+                onFocus={() => {
+                  if (
+                    searchQuery.trim()
+                      .length >= 2
+                  ) {
+                    setIsSearchOpen(true)
+                  }
+                }}
+                placeholder="Search employees..."
+                aria-label="Search employees"
+                style={{
+                  width: "100%",
+                  minWidth: 0,
+                  border: "none",
+                  outline: "none",
+                  background: "transparent",
+                  color: isDarkMode
+                    ? "#f8fafc"
+                    : "#0f172a",
+                  fontSize: "11px",
+                  fontFamily:
+                    "inherit",
+                }}
+              />
+            </div>
+
+            {isSearchOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "50px",
+                  left: 0,
+                  right: 0,
+                  borderRadius: "14px",
+                  border: isDarkMode
+                    ? "1px solid rgba(148,163,184,0.2)"
+                    : "1px solid #e2e8f0",
+                  background: isDarkMode
+                    ? "linear-gradient(180deg, #111827, #0f172a)"
+                    : "#ffffff",
+                  boxShadow: isDarkMode
+                    ? "0 24px 60px rgba(0,0,0,0.45)"
+                    : "0 24px 60px rgba(15,23,42,0.18)",
+                  overflow: "hidden",
+                  zIndex: 100,
+                }}
+              >
+                {isSearchLoading ? (
+                  <div
+                    style={{
+                      padding: "20px",
+                      textAlign: "center",
+                      color: isDarkMode
+                        ? "#94a3b8"
+                        : "#64748b",
+                      fontSize: "11px",
+                    }}
+                  >
+                    Searching...
+                  </div>
+                ) : searchResults.length ===
+                  0 ? (
+                  <div
+                    style={{
+                      padding: "20px",
+                      textAlign: "center",
+                      color: isDarkMode
+                        ? "#94a3b8"
+                        : "#64748b",
+                      fontSize: "11px",
+                    }}
+                  >
+                    No employees found.
+                  </div>
+                ) : (
+                  searchResults.map(
+                    (result) => (
+                      <button
+                        key={result.id}
+                        type="button"
+                        onClick={() =>
+                          handleSearchResultClick(
+                            result,
+                          )
+                        }
+                        style={{
+                          width: "100%",
+                          display: "flex",
+                          alignItems:
+                            "center",
+                          gap: "10px",
+                          padding:
+                            "11px 13px",
+                          border: "none",
+                          borderBottom:
+                            isDarkMode
+                              ? "1px solid rgba(148,163,184,0.08)"
+                              : "1px solid #f1f5f9",
+                          background:
+                            "transparent",
+                          color: "inherit",
+                          cursor: "pointer",
+                          textAlign: "left",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            minWidth: "32px",
+                            borderRadius: "9px",
+                            display: "flex",
+                            alignItems:
+                              "center",
+                            justifyContent:
+                              "center",
+                            background:
+                              "rgba(249,115,22,0.12)",
+                            color:
+                              "#ea580c",
+                            fontSize: "9px",
+                            fontWeight: 800,
+                          }}
+                        >
+                          EM
+                        </span>
+
+                        <span
+                          style={{
+                            minWidth: 0,
+                            flex: 1,
+                          }}
+                        >
+                          <span
+                            style={{
+                              display:
+                                "block",
+                              overflow:
+                                "hidden",
+                              textOverflow:
+                                "ellipsis",
+                              whiteSpace:
+                                "nowrap",
+                              fontSize: "11px",
+                              fontWeight: 750,
+                              color:
+                                isDarkMode
+                                  ? "#f1f5f9"
+                                  : "#0f172a",
+                            }}
+                          >
+                            {result.full_name ||
+                              result.employee_id}
+                          </span>
+
+                          <span
+                            style={{
+                              display:
+                                "block",
+                              marginTop:
+                                "3px",
+                              overflow:
+                                "hidden",
+                              textOverflow:
+                                "ellipsis",
+                              whiteSpace:
+                                "nowrap",
+                              fontSize: "9px",
+                              color:
+                                isDarkMode
+                                  ? "#94a3b8"
+                                  : "#64748b",
+                            }}
+                          >
+                            {result.employee_id}
+                            {" · "}
+                            {result.designation ||
+                              result.department ||
+                              "Employee"}
+                          </span>
+                        </span>
+                      </button>
+                    ),
+                  )
+                )}
+              </div>
+            )}
           </div>
 
           <div
@@ -1324,6 +1697,7 @@ function AppLayout() {
               <span aria-hidden="true">
                 {isDarkMode ? "☀" : "🌙"}
               </span>
+
               <span>
                 {isDarkMode ? "Light" : "Dark"}
               </span>
