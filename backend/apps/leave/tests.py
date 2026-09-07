@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.accounts.models import User
+from apps.announcements.models import Notification
 from apps.departments.models import Department, Designation
 from apps.employees.models import Employee
 
@@ -382,6 +383,122 @@ class LeaveAPITestCase(APITestCase):
                 employee=self.employee,
                 start_date=date(2026, 9, 15),
             ).exists()
+        )
+
+    def test_employee_leave_creation_notifies_hr_and_super_admin(self):
+        self.authenticate(self.employee_user)
+
+        payload = {
+            "leave_type": "casual",
+            "start_date": "2027-04-01",
+            "end_date": "2027-04-03",
+            "reason": "Family function",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        notifications = Notification.objects.filter(
+            notification_type=Notification.NotificationType.LEAVE,
+        )
+
+        self.assertEqual(
+            notifications.count(),
+            2,
+        )
+
+        self.assertTrue(
+            notifications.filter(
+                recipient=self.hr_user,
+                title="New Leave Application",
+            ).exists()
+        )
+
+        self.assertTrue(
+            notifications.filter(
+                recipient=self.admin_user,
+                title="New Leave Application",
+            ).exists()
+        )
+
+    def test_hr_leave_creation_notifies_super_admin_and_hr(self):
+        self.authenticate(self.hr_user)
+
+        payload = {
+            "employee": self.employee.id,
+            "leave_type": "sick",
+            "start_date": "2027-04-10",
+            "end_date": "2027-04-12",
+            "reason": "Medical leave",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_201_CREATED,
+        )
+
+        notifications = Notification.objects.filter(
+            notification_type=Notification.NotificationType.LEAVE,
+        )
+
+        self.assertEqual(
+            notifications.count(),
+            2,
+        )
+
+        self.assertTrue(
+            notifications.filter(
+                recipient=self.hr_user,
+            ).exists()
+        )
+
+        self.assertTrue(
+            notifications.filter(
+                recipient=self.admin_user,
+            ).exists()
+        )
+
+    def test_manager_cannot_create_leave_notification(self):
+        self.authenticate(self.manager_user)
+
+        payload = {
+            "employee": self.employee.id,
+            "leave_type": "casual",
+            "start_date": "2027-04-15",
+            "end_date": "2027-04-16",
+            "reason": "Manager permission test",
+        }
+
+        response = self.client.post(
+            self.url,
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
+        self.assertEqual(
+            Notification.objects.filter(
+                notification_type=Notification.NotificationType.LEAVE,
+            ).count(),
+            0,
         )
 
     def test_super_admin_can_create_leave(self):

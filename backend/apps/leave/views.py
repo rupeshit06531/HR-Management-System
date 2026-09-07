@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, serializers, viewsets
@@ -8,6 +9,7 @@ from apps.accounts.permissions import (
     IsLeaveCreator,
     IsLeaveViewer,
 )
+from apps.announcements.models import Notification
 from apps.employees.models import Employee
 
 from .models import Leave
@@ -150,6 +152,51 @@ class LeaveViewSet(viewsets.ModelViewSet):
 
         return queryset.none()
 
+    def _create_leave_application_notifications(self, leave):
+        """
+        Notify HR and Super Admin users when a new leave
+        application is successfully created.
+        """
+
+        recipient_ids = User.objects.filter(
+            role__in=[
+                User.Role.HR,
+                User.Role.SUPER_ADMIN,
+            ],
+            is_active=True,
+        ).values_list(
+            "id",
+            flat=True,
+        )
+
+        employee_name = (
+            leave.employee.user.get_full_name().strip()
+            or leave.employee.user.username
+        )
+
+        leave_type = leave.get_leave_type_display()
+
+        Notification.objects.bulk_create(
+            [
+                Notification(
+                    recipient_id=recipient_id,
+                    title="New Leave Application",
+                    message=(
+                        f"{employee_name} submitted a "
+                        f"{leave_type} request from "
+                        f"{leave.start_date:%d %b %Y} to "
+                        f"{leave.end_date:%d %b %Y}."
+                    ),
+                    notification_type=(
+                        Notification.NotificationType.LEAVE
+                    ),
+                    action_url=f"/leave?leave={leave.id}",
+                )
+                for recipient_id in recipient_ids
+            ]
+        )
+
+    @transaction.atomic
     def perform_create(self, serializer):
         """
         Automatically assign the logged-in employee
@@ -157,6 +204,9 @@ class LeaveViewSet(viewsets.ModelViewSet):
 
         HR / Super Admin can provide an employee
         explicitly when creating a leave record.
+
+        A notification is generated for active HR and
+        Super Admin users after successful creation.
         """
 
         user = self.request.user
@@ -173,9 +223,12 @@ class LeaveViewSet(viewsets.ModelViewSet):
                     }
                 )
 
-            serializer.save(
+            leave = serializer.save(
                 employee=employee,
             )
-            return
+        else:
+            leave = serializer.save()
 
-        serializer.save()
+        self._create_leave_application_notifications(
+            leave,
+        )
