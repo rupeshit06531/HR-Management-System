@@ -3,6 +3,7 @@ import {
   useMemo,
   useState,
   type ChangeEvent,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 import { useNavigate } from "react-router-dom"
@@ -24,6 +25,7 @@ import {
 } from "../api/employees"
 
 import { useAuth } from "../context/AuthContext"
+import { useTheme } from "../context/ThemeContext"
 
 const emptyForm: AttendancePayload = {
   employee: 0,
@@ -63,6 +65,7 @@ const formatStatus = (status: string) =>
 function Attendance() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { isDarkMode } = useTheme()
 
   const [records, setRecords] =
     useState<AttendanceRecord[]>([])
@@ -109,6 +112,142 @@ function Attendance() {
     user?.role === "SUPER_ADMIN" ||
     user?.role === "HR" ||
     user?.role === "MANAGER"
+
+  const theme = {
+    pageBackground: isDarkMode
+      ? "#0f172a"
+      : "#fffaf5",
+
+    pageBackgroundStart: isDarkMode
+      ? "#0f172a"
+      : "#fffaf5",
+
+    pageBackgroundEnd: isDarkMode
+      ? "#111827"
+      : "#eef2ff",
+
+    cardBackground: isDarkMode
+      ? "#111827"
+      : "#ffffff",
+
+    cardSecondary: isDarkMode
+      ? "#1f2937"
+      : "#f8fafc",
+
+    inputBackground: isDarkMode
+      ? "#1f2937"
+      : "#ffffff",
+
+    inputDisabled: isDarkMode
+      ? "#111827"
+      : "#f1f5f9",
+
+    text: isDarkMode
+      ? "#f9fafb"
+      : "#0f172a",
+
+    secondaryText: isDarkMode
+      ? "#d1d5db"
+      : "#334155",
+
+    mutedText: isDarkMode
+      ? "#9ca3af"
+      : "#64748b",
+
+    subtleText: isDarkMode
+      ? "#6b7280"
+      : "#94a3b8",
+
+    border: isDarkMode
+      ? "#374151"
+      : "#e2e8f0",
+
+    inputBorder: isDarkMode
+      ? "#4b5563"
+      : "#cbd5e1",
+
+    rowBorder: isDarkMode
+      ? "#263244"
+      : "#f1f5f9",
+
+    headerBackground: isDarkMode
+      ? "#1f2937"
+      : "#f8fafc",
+
+    orangeSoft: isDarkMode
+      ? "#431407"
+      : "#fff7ed",
+
+    orangeLight: isDarkMode
+      ? "#7c2d12"
+      : "#ffedd5",
+
+    orangeText: isDarkMode
+      ? "#fdba74"
+      : "#c2410c",
+
+    orangePrimary: "#f97316",
+
+    blueSoft: isDarkMode
+      ? "#172554"
+      : "#eff6ff",
+
+    blueBorder: isDarkMode
+      ? "#1e40af"
+      : "#bfdbfe",
+
+    blueText: isDarkMode
+      ? "#93c5fd"
+      : "#1d4ed8",
+
+    errorBackground: isDarkMode
+      ? "#450a0a"
+      : "#fff1f2",
+
+    errorBorder: isDarkMode
+      ? "#7f1d1d"
+      : "#fecaca",
+
+    errorText: isDarkMode
+      ? "#fca5a5"
+      : "#991b1b",
+
+    successBackground: isDarkMode
+      ? "#052e16"
+      : "#f0fdf4",
+
+    successBorder: isDarkMode
+      ? "#166534"
+      : "#bbf7d0",
+
+    successText: isDarkMode
+      ? "#86efac"
+      : "#166534",
+
+    disabledBackground: isDarkMode
+      ? "#374151"
+      : "#cbd5e1",
+
+    disabledText: isDarkMode
+      ? "#9ca3af"
+      : "#94a3b8",
+
+    white: "#ffffff",
+  }
+
+  const inputStyle: CSSProperties = {
+    width: "100%",
+    height: "44px",
+    padding: "0 12px",
+    border:
+      `1px solid ${theme.inputBorder}`,
+    borderRadius: "9px",
+    backgroundColor:
+      theme.inputBackground,
+    color: theme.text,
+    outline: "none",
+    boxSizing: "border-box",
+  }
 
   useEffect(() => {
     if (!user) {
@@ -186,7 +325,7 @@ function Attendance() {
     }
   }, [records])
 
-    const todayAttendance = useMemo(() => {
+  const todayAttendance = useMemo(() => {
     const today =
       new Date()
         .toISOString()
@@ -825,8 +964,8 @@ function Attendance() {
           alignItems: "center",
           justifyContent: "center",
           background:
-            "linear-gradient(135deg, #fff7ed 0%, #f8fafc 50%, #eef2ff 100%)",
-          color: "#0f172a",
+            `linear-gradient(135deg, ${theme.pageBackgroundStart} 0%, ${isDarkMode ? "#111827" : "#f8fafc"} 50%, ${theme.pageBackgroundEnd} 100%)`,
+          color: theme.text,
         }}
       >
         <div
@@ -842,8 +981,10 @@ function Attendance() {
               width: "42px",
               height: "42px",
               borderRadius: "50%",
-              border: "4px solid #fed7aa",
-              borderTopColor: "#f97316",
+              border:
+                `4px solid ${isDarkMode ? "#7c2d12" : "#fed7aa"}`,
+              borderTopColor:
+                theme.orangePrimary,
               animation:
                 "attendanceSpin 0.8s linear infinite",
             }}
@@ -852,7 +993,7 @@ function Attendance() {
           <p
             style={{
               margin: 0,
-              color: "#64748b",
+              color: theme.mutedText,
               fontSize: "14px",
               fontWeight: 600,
             }}
@@ -880,8 +1021,10 @@ function Attendance() {
         minHeight: "100vh",
         padding: "28px",
         background:
-          "linear-gradient(135deg, #fffaf5 0%, #f8fafc 48%, #eef2ff 100%)",
-        color: "#0f172a",
+          `linear-gradient(135deg, ${theme.pageBackgroundStart} 0%, ${isDarkMode ? "#111827" : "#f8fafc"} 48%, ${theme.pageBackgroundEnd} 100%)`,
+        color: theme.text,
+        transition:
+          "background 0.2s ease, color 0.2s ease",
       }}
     >
       <section
@@ -910,8 +1053,9 @@ function Attendance() {
                 gap: "8px",
                 padding: "6px 10px",
                 borderRadius: "999px",
-                backgroundColor: "#fff1e6",
-                color: "#c2410c",
+                backgroundColor:
+                  theme.orangeSoft,
+                color: theme.orangeText,
                 fontSize: "12px",
                 fontWeight: 700,
                 marginBottom: "10px",
@@ -922,7 +1066,8 @@ function Attendance() {
                   width: "7px",
                   height: "7px",
                   borderRadius: "50%",
-                  backgroundColor: "#f97316",
+                  backgroundColor:
+                    theme.orangePrimary,
                 }}
               />
               HRMS · ATTENDANCE
@@ -931,7 +1076,7 @@ function Attendance() {
             <h1
               style={{
                 margin: 0,
-                color: "#0f172a",
+                color: theme.text,
                 fontSize: "32px",
                 fontWeight: 800,
                 letterSpacing: "-0.8px",
@@ -944,7 +1089,7 @@ function Attendance() {
               style={{
                 margin:
                   "8px 0 0",
-                color: "#64748b",
+                color: theme.mutedText,
                 fontSize: "15px",
               }}
             >
@@ -972,11 +1117,11 @@ function Attendance() {
                     minHeight: "42px",
                     padding: "0 14px",
                     border:
-                      "1px solid #fed7aa",
+                      `1px solid ${isDarkMode ? "#7c2d12" : "#fed7aa"}`,
                     borderRadius: "9px",
                     backgroundColor:
-                      "#ffffff",
-                    color: "#9a3412",
+                      theme.cardBackground,
+                    color: theme.orangeText,
                     fontSize: "13px",
                     fontWeight: 700,
                     cursor: "pointer",
@@ -1034,7 +1179,7 @@ function Attendance() {
                       isPunchingOut ||
                       !selfieFile ||
                       hasPunchedIn
-                        ? "#cbd5e1"
+                        ? theme.disabledBackground
                         : "linear-gradient(135deg, #f97316, #ea580c)",
                     color: "#ffffff",
                     fontSize: "13px",
@@ -1059,6 +1204,7 @@ function Attendance() {
                       ? "Punched In"
                       : "Punch In"}
                 </button>
+
                 <button
                   type="button"
                   onClick={() =>
@@ -1074,7 +1220,8 @@ function Attendance() {
                   style={{
                     minHeight: "42px",
                     padding: "0 17px",
-                    border: "1px solid #cbd5e1",
+                    border:
+                      `1px solid ${theme.inputBorder}`,
                     borderRadius: "9px",
                     backgroundColor:
                       isPunchingOut ||
@@ -1082,16 +1229,16 @@ function Attendance() {
                       !selfieFile ||
                       !hasPunchedIn ||
                       hasPunchedOut
-                        ? "#f1f5f9"
-                        : "#ffffff",
+                        ? theme.inputDisabled
+                        : theme.cardBackground,
                     color:
                       isPunchingOut ||
                       isPunchingIn ||
                       !selfieFile ||
                       !hasPunchedIn ||
                       hasPunchedOut
-                        ? "#94a3b8"
-                        : "#334155",
+                        ? theme.disabledText
+                        : theme.secondaryText,
                     fontSize: "13px",
                     fontWeight: 700,
                     cursor:
@@ -1147,11 +1294,11 @@ function Attendance() {
                 minHeight: "42px",
                 padding: "0 15px",
                 border:
-                  "1px solid #cbd5e1",
+                  `1px solid ${theme.inputBorder}`,
                 borderRadius: "9px",
                 backgroundColor:
-                  "#ffffff",
-                color: "#334155",
+                  theme.cardBackground,
+                color: theme.secondaryText,
                 fontSize: "13px",
                 fontWeight: 700,
                 cursor: "pointer",
@@ -1172,10 +1319,11 @@ function Attendance() {
               padding: "14px 16px",
               marginBottom: "20px",
               border:
-                "1px solid #fecaca",
+                `1px solid ${theme.errorBorder}`,
               borderRadius: "10px",
-              backgroundColor: "#fff1f2",
-              color: "#991b1b",
+              backgroundColor:
+                theme.errorBackground,
+              color: theme.errorText,
               boxShadow:
                 "0 2px 8px rgba(127, 29, 29, 0.05)",
             }}
@@ -1219,10 +1367,11 @@ function Attendance() {
               padding: "14px 16px",
               marginBottom: "20px",
               border:
-                "1px solid #bbf7d0",
+                `1px solid ${theme.successBorder}`,
               borderRadius: "10px",
-              backgroundColor: "#f0fdf4",
-              color: "#166534",
+              backgroundColor:
+                theme.successBackground,
+              color: theme.successText,
               boxShadow:
                 "0 2px 8px rgba(22, 101, 52, 0.05)",
             }}
@@ -1272,41 +1421,86 @@ function Attendance() {
               label: "Total Records",
               value: summary.total,
               icon: "▦",
-              background: "#fff7ed",
-              iconBackground: "#ffedd5",
-              iconColor: "#ea580c",
+              background:
+                isDarkMode
+                  ? "#431407"
+                  : "#fff7ed",
+              iconBackground:
+                isDarkMode
+                  ? "#7c2d12"
+                  : "#ffedd5",
+              iconColor:
+                isDarkMode
+                  ? "#fdba74"
+                  : "#ea580c",
             },
             {
               label: "Present",
               value: summary.present,
               icon: "✓",
-              background: "#f0fdf4",
-              iconBackground: "#dcfce7",
-              iconColor: "#16a34a",
+              background:
+                isDarkMode
+                  ? "#052e16"
+                  : "#f0fdf4",
+              iconBackground:
+                isDarkMode
+                  ? "#14532d"
+                  : "#dcfce7",
+              iconColor:
+                isDarkMode
+                  ? "#86efac"
+                  : "#16a34a",
             },
             {
               label: "Late",
               value: summary.late,
               icon: "◷",
-              background: "#fffbeb",
-              iconBackground: "#fef3c7",
-              iconColor: "#d97706",
+              background:
+                isDarkMode
+                  ? "#451a03"
+                  : "#fffbeb",
+              iconBackground:
+                isDarkMode
+                  ? "#78350f"
+                  : "#fef3c7",
+              iconColor:
+                isDarkMode
+                  ? "#fcd34d"
+                  : "#d97706",
             },
             {
               label: "Absent",
               value: summary.absent,
               icon: "×",
-              background: "#fff1f2",
-              iconBackground: "#ffe4e6",
-              iconColor: "#dc2626",
+              background:
+                isDarkMode
+                  ? "#450a0a"
+                  : "#fff1f2",
+              iconBackground:
+                isDarkMode
+                  ? "#7f1d1d"
+                  : "#ffe4e6",
+              iconColor:
+                isDarkMode
+                  ? "#fca5a5"
+                  : "#dc2626",
             },
             {
               label: "Half Day",
               value: summary.halfDay,
               icon: "◐",
-              background: "#eff6ff",
-              iconBackground: "#dbeafe",
-              iconColor: "#2563eb",
+              background:
+                isDarkMode
+                  ? "#172554"
+                  : "#eff6ff",
+              iconBackground:
+                isDarkMode
+                  ? "#1e3a8a"
+                  : "#dbeafe",
+              iconColor:
+                isDarkMode
+                  ? "#93c5fd"
+                  : "#2563eb",
             },
           ].map((card) => (
             <article
@@ -1314,9 +1508,10 @@ function Attendance() {
               style={{
                 padding: "18px",
                 border:
-                  "1px solid rgba(226, 232, 240, 0.9)",
+                  `1px solid ${theme.border}`,
                 borderRadius: "14px",
-                backgroundColor: "#ffffff",
+                backgroundColor:
+                  card.background,
                 boxShadow:
                   "0 4px 14px rgba(15, 23, 42, 0.05)",
                 display: "flex",
@@ -1330,12 +1525,13 @@ function Attendance() {
                 <p
                   style={{
                     margin: "0 0 6px",
-                    color: "#64748b",
+                    color: theme.mutedText,
                     fontSize: "12px",
                     fontWeight: 700,
                     textTransform:
                       "uppercase",
-                    letterSpacing: "0.05em",
+                    letterSpacing:
+                      "0.05em",
                   }}
                 >
                   {card.label}
@@ -1343,7 +1539,7 @@ function Attendance() {
 
                 <strong
                   style={{
-                    color: "#0f172a",
+                    color: theme.text,
                     fontSize: "26px",
                     lineHeight: 1,
                   }}
@@ -1358,7 +1554,8 @@ function Attendance() {
                   height: "44px",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
+                  justifyContent:
+                    "center",
                   borderRadius: "12px",
                   backgroundColor:
                     card.iconBackground,
@@ -1484,9 +1681,10 @@ function Attendance() {
               style={{
                 marginBottom: "22px",
                 border:
-                  "1px solid #e2e8f0",
+                  `1px solid ${theme.border}`,
                 borderRadius: "16px",
-                backgroundColor: "#ffffff",
+                backgroundColor:
+                  theme.cardBackground,
                 boxShadow:
                   "0 6px 20px rgba(15, 23, 42, 0.07)",
                 overflow: "hidden",
@@ -1501,9 +1699,12 @@ function Attendance() {
                   gap: "16px",
                   padding: "20px 22px",
                   borderBottom:
-                    "1px solid #eef2f7",
+                    `1px solid ${theme.rowBorder}`,
                   background:
-                    "linear-gradient(90deg, #fff7ed, #ffffff)",
+                    isDarkMode
+                      ? "#1f2937"
+                      : "linear-gradient(90deg, #fff7ed, #ffffff)",
+                  flexWrap: "wrap",
                 }}
               >
                 <div>
@@ -1511,7 +1712,8 @@ function Attendance() {
                     style={{
                       margin:
                         "0 0 4px",
-                      color: "#ea580c",
+                      color:
+                        theme.orangeText,
                       fontSize: "11px",
                       fontWeight: 800,
                       letterSpacing:
@@ -1524,7 +1726,7 @@ function Attendance() {
                   <h2
                     style={{
                       margin: 0,
-                      color: "#0f172a",
+                      color: theme.text,
                       fontSize: "20px",
                     }}
                   >
@@ -1541,11 +1743,12 @@ function Attendance() {
                     padding:
                       "8px 13px",
                     border:
-                      "1px solid #cbd5e1",
+                      `1px solid ${theme.inputBorder}`,
                     borderRadius: "8px",
                     backgroundColor:
-                      "#ffffff",
-                    color: "#475569",
+                      theme.cardBackground,
+                    color:
+                      theme.secondaryText,
                     fontSize: "12px",
                     fontWeight: 700,
                     cursor: "pointer",
@@ -1584,22 +1787,9 @@ function Attendance() {
                             handleInputChange
                           }
                           required
-                          style={{
-                            width: "100%",
-                            height: "44px",
-                            padding:
-                              "0 12px",
-                            border:
-                              "1px solid #cbd5e1",
-                            borderRadius:
-                              "9px",
-                            backgroundColor:
-                              "#ffffff",
-                            color:
-                              "#0f172a",
-                            outline:
-                              "none",
-                          }}
+                          style={
+                            inputStyle
+                          }
                         >
                           <option value="">
                             Select employee
@@ -1641,22 +1831,9 @@ function Attendance() {
                             handleInputChange
                           }
                           required
-                          style={{
-                            width: "100%",
-                            height: "44px",
-                            padding:
-                              "0 12px",
-                            border:
-                              "1px solid #cbd5e1",
-                            borderRadius:
-                              "9px",
-                            backgroundColor:
-                              "#ffffff",
-                            color:
-                              "#0f172a",
-                            outline:
-                              "none",
-                          }}
+                          style={
+                            inputStyle
+                          }
                         />
                       ),
                     },
@@ -1679,23 +1856,12 @@ function Attendance() {
                             "absent"
                           }
                           style={{
-                            width: "100%",
-                            height: "44px",
-                            padding:
-                              "0 12px",
-                            border:
-                              "1px solid #cbd5e1",
-                            borderRadius:
-                              "9px",
+                            ...inputStyle,
                             backgroundColor:
                               form.status ===
                               "absent"
-                                ? "#f1f5f9"
-                                : "#ffffff",
-                            color:
-                              "#0f172a",
-                            outline:
-                              "none",
+                                ? theme.inputDisabled
+                                : theme.inputBackground,
                           }}
                         />
                       ),
@@ -1719,23 +1885,12 @@ function Attendance() {
                             "absent"
                           }
                           style={{
-                            width: "100%",
-                            height: "44px",
-                            padding:
-                              "0 12px",
-                            border:
-                              "1px solid #cbd5e1",
-                            borderRadius:
-                              "9px",
+                            ...inputStyle,
                             backgroundColor:
                               form.status ===
                               "absent"
-                                ? "#f1f5f9"
-                                : "#ffffff",
-                            color:
-                              "#0f172a",
-                            outline:
-                              "none",
+                                ? theme.inputDisabled
+                                : theme.inputBackground,
                           }}
                         />
                       ),
@@ -1753,22 +1908,9 @@ function Attendance() {
                             handleInputChange
                           }
                           required
-                          style={{
-                            width: "100%",
-                            height: "44px",
-                            padding:
-                              "0 12px",
-                            border:
-                              "1px solid #cbd5e1",
-                            borderRadius:
-                              "9px",
-                            backgroundColor:
-                              "#ffffff",
-                            color:
-                              "#0f172a",
-                            outline:
-                              "none",
-                          }}
+                          style={
+                            inputStyle
+                          }
                         >
                           {attendanceStatuses.map(
                             (status) => (
@@ -1798,7 +1940,7 @@ function Attendance() {
                           "column",
                         gap: "7px",
                         color:
-                          "#334155",
+                          theme.secondaryText,
                         fontSize: "12px",
                         fontWeight: 700,
                       }}
@@ -1814,7 +1956,8 @@ function Attendance() {
                       flexDirection:
                         "column",
                       gap: "7px",
-                      color: "#334155",
+                      color:
+                        theme.secondaryText,
                       fontSize: "12px",
                       fontWeight: 700,
                       gridColumn:
@@ -1837,12 +1980,16 @@ function Attendance() {
                         width: "100%",
                         padding: "12px",
                         border:
-                          "1px solid #cbd5e1",
+                          `1px solid ${theme.inputBorder}`,
                         borderRadius: "9px",
                         resize: "vertical",
+                        backgroundColor:
+                          theme.inputBackground,
                         color:
-                          "#0f172a",
+                          theme.text,
                         outline: "none",
+                        boxSizing:
+                          "border-box",
                       }}
                     />
                   </label>
@@ -1855,7 +2002,8 @@ function Attendance() {
                     marginTop: "22px",
                     paddingTop: "18px",
                     borderTop:
-                      "1px solid #eef2f7",
+                      `1px solid ${theme.rowBorder}`,
+                    flexWrap: "wrap",
                   }}
                 >
                   <button
@@ -1871,7 +2019,7 @@ function Attendance() {
                       borderRadius: "9px",
                       background:
                         isSubmitting
-                          ? "#cbd5e1"
+                          ? theme.disabledBackground
                           : "linear-gradient(135deg, #f97316, #ea580c)",
                       color: "#ffffff",
                       fontSize: "13px",
@@ -1903,11 +2051,12 @@ function Attendance() {
                       padding:
                         "0 17px",
                       border:
-                        "1px solid #cbd5e1",
+                        `1px solid ${theme.inputBorder}`,
                       borderRadius: "9px",
                       backgroundColor:
-                        "#ffffff",
-                      color: "#475569",
+                        theme.cardBackground,
+                      color:
+                        theme.secondaryText,
                       fontSize: "13px",
                       fontWeight: 700,
                       cursor:
@@ -1927,9 +2076,10 @@ function Attendance() {
         <section
           style={{
             border:
-              "1px solid #e2e8f0",
+              `1px solid ${theme.border}`,
             borderRadius: "16px",
-            backgroundColor: "#ffffff",
+            backgroundColor:
+              theme.cardBackground,
             boxShadow:
               "0 6px 20px rgba(15, 23, 42, 0.06)",
             overflow: "hidden",
@@ -1944,7 +2094,7 @@ function Attendance() {
               gap: "16px",
               padding: "20px 22px",
               borderBottom:
-                "1px solid #eef2f7",
+                `1px solid ${theme.rowBorder}`,
               flexWrap: "wrap",
             }}
           >
@@ -1952,7 +2102,7 @@ function Attendance() {
               <h2
                 style={{
                   margin: 0,
-                  color: "#0f172a",
+                  color: theme.text,
                   fontSize: "19px",
                   fontWeight: 800,
                 }}
@@ -1964,7 +2114,7 @@ function Attendance() {
                 style={{
                   margin:
                     "5px 0 0",
-                  color: "#64748b",
+                  color: theme.mutedText,
                   fontSize: "12px",
                 }}
               >
@@ -1981,8 +2131,9 @@ function Attendance() {
                   "7px 11px",
                 borderRadius: "999px",
                 backgroundColor:
-                  "#fff7ed",
-                color: "#c2410c",
+                  theme.orangeSoft,
+                color:
+                  theme.orangeText,
                 fontSize: "12px",
                 fontWeight: 800,
               }}
@@ -2010,8 +2161,9 @@ function Attendance() {
                     "center",
                   borderRadius: "16px",
                   backgroundColor:
-                    "#fff7ed",
-                  color: "#ea580c",
+                    theme.orangeSoft,
+                  color:
+                    theme.orangePrimary,
                   fontSize: "27px",
                 }}
               >
@@ -2022,7 +2174,8 @@ function Attendance() {
                 style={{
                   margin:
                     "0 0 6px",
-                  color: "#334155",
+                  color:
+                    theme.secondaryText,
                   fontSize: "16px",
                 }}
               >
@@ -2032,7 +2185,8 @@ function Attendance() {
               <p
                 style={{
                   margin: 0,
-                  color: "#94a3b8",
+                  color:
+                    theme.subtleText,
                   fontSize: "13px",
                 }}
               >
@@ -2081,11 +2235,11 @@ function Attendance() {
                           textAlign:
                             "left",
                           borderBottom:
-                            "1px solid #e2e8f0",
+                            `1px solid ${theme.border}`,
                           backgroundColor:
-                            "#f8fafc",
+                            theme.headerBackground,
                           color:
-                            "#64748b",
+                            theme.mutedText,
                           fontSize: "11px",
                           fontWeight: 800,
                           letterSpacing:
@@ -2117,9 +2271,9 @@ function Attendance() {
                             padding:
                               "14px 15px",
                             borderBottom:
-                              "1px solid #f1f5f9",
+                              `1px solid ${theme.rowBorder}`,
                             color:
-                              "#64748b",
+                              theme.mutedText,
                             fontSize: "13px",
                             fontWeight: 700,
                           }}
@@ -2132,7 +2286,7 @@ function Attendance() {
                             padding:
                               "14px 15px",
                             borderBottom:
-                              "1px solid #f1f5f9",
+                              `1px solid ${theme.rowBorder}`,
                           }}
                         >
                           <div
@@ -2160,9 +2314,11 @@ function Attendance() {
                                 borderRadius:
                                   "10px",
                                 background:
-                                  "linear-gradient(135deg, #fff7ed, #ffedd5)",
+                                  isDarkMode
+                                    ? "linear-gradient(135deg, #431407, #7c2d12)"
+                                    : "linear-gradient(135deg, #fff7ed, #ffedd5)",
                                 color:
-                                  "#c2410c",
+                                  theme.orangeText,
                                 fontSize:
                                   "12px",
                                 fontWeight:
@@ -2180,7 +2336,7 @@ function Attendance() {
                             <span
                               style={{
                                 color:
-                                  "#0f172a",
+                                  theme.text,
                                 fontSize:
                                   "13px",
                                 fontWeight:
@@ -2198,9 +2354,9 @@ function Attendance() {
                             padding:
                               "14px 15px",
                             borderBottom:
-                              "1px solid #f1f5f9",
+                              `1px solid ${theme.rowBorder}`,
                             color:
-                              "#475569",
+                              theme.secondaryText,
                             fontSize: "13px",
                             fontWeight: 600,
                           }}
@@ -2214,9 +2370,9 @@ function Attendance() {
                             padding:
                               "14px 15px",
                             borderBottom:
-                              "1px solid #f1f5f9",
+                              `1px solid ${theme.rowBorder}`,
                             color:
-                              "#475569",
+                              theme.secondaryText,
                             fontSize: "13px",
                             whiteSpace:
                               "nowrap",
@@ -2230,9 +2386,9 @@ function Attendance() {
                             padding:
                               "14px 15px",
                             borderBottom:
-                              "1px solid #f1f5f9",
+                              `1px solid ${theme.rowBorder}`,
                             color:
-                              "#475569",
+                              theme.secondaryText,
                             fontSize: "13px",
                             fontWeight: 600,
                           }}
@@ -2246,9 +2402,9 @@ function Attendance() {
                             padding:
                               "14px 15px",
                             borderBottom:
-                              "1px solid #f1f5f9",
+                              `1px solid ${theme.rowBorder}`,
                             color:
-                              "#475569",
+                              theme.secondaryText,
                             fontSize: "13px",
                             fontWeight: 600,
                           }}
@@ -2262,7 +2418,7 @@ function Attendance() {
                             padding:
                               "14px 15px",
                             borderBottom:
-                              "1px solid #f1f5f9",
+                              `1px solid ${theme.rowBorder}`,
                           }}
                         >
                           <span
@@ -2279,25 +2435,41 @@ function Attendance() {
                               backgroundColor:
                                 record.status ===
                                 "present"
-                                  ? "#ecfdf5"
+                                  ? isDarkMode
+                                    ? "#052e16"
+                                    : "#ecfdf5"
                                   : record.status ===
                                       "absent"
-                                    ? "#fef2f2"
+                                    ? isDarkMode
+                                      ? "#450a0a"
+                                      : "#fef2f2"
                                     : record.status ===
                                         "late"
-                                      ? "#fffbeb"
-                                      : "#eff6ff",
+                                      ? isDarkMode
+                                        ? "#451a03"
+                                        : "#fffbeb"
+                                      : isDarkMode
+                                        ? "#172554"
+                                        : "#eff6ff",
                               color:
                                 record.status ===
                                 "present"
-                                  ? "#047857"
+                                  ? isDarkMode
+                                    ? "#86efac"
+                                    : "#047857"
                                   : record.status ===
                                       "absent"
-                                    ? "#b91c1c"
+                                    ? isDarkMode
+                                      ? "#fca5a5"
+                                      : "#b91c1c"
                                     : record.status ===
                                         "late"
-                                      ? "#b45309"
-                                      : "#1d4ed8",
+                                      ? isDarkMode
+                                        ? "#fcd34d"
+                                        : "#b45309"
+                                      : isDarkMode
+                                        ? "#93c5fd"
+                                        : "#1d4ed8",
                               fontSize:
                                 "11px",
                               fontWeight:
@@ -2330,11 +2502,11 @@ function Attendance() {
                             padding:
                               "14px 15px",
                             borderBottom:
-                              "1px solid #f1f5f9",
+                              `1px solid ${theme.rowBorder}`,
                             maxWidth:
                               "260px",
                             color:
-                              "#64748b",
+                              theme.mutedText,
                             fontSize: "12px",
                           }}
                         >
@@ -2348,7 +2520,7 @@ function Attendance() {
                               padding:
                                 "14px 15px",
                               borderBottom:
-                                "1px solid #f1f5f9",
+                                `1px solid ${theme.rowBorder}`,
                             }}
                           >
                             <div
@@ -2369,13 +2541,13 @@ function Attendance() {
                                   padding:
                                     "7px 11px",
                                   border:
-                                    "1px solid #bfdbfe",
+                                    `1px solid ${theme.blueBorder}`,
                                   borderRadius:
                                     "7px",
                                   backgroundColor:
-                                    "#eff6ff",
+                                    theme.blueSoft,
                                   color:
-                                    "#1d4ed8",
+                                    theme.blueText,
                                   fontSize:
                                     "11px",
                                   fontWeight:
@@ -2402,19 +2574,21 @@ function Attendance() {
                                   padding:
                                     "7px 11px",
                                   border:
-                                    "1px solid #fecaca",
+                                    `1px solid ${theme.errorBorder}`,
                                   borderRadius:
                                     "7px",
                                   backgroundColor:
                                     isDeleting ===
                                     record.id
-                                      ? "#f1f5f9"
-                                      : "#fff1f2",
+                                      ? theme.inputDisabled
+                                      : theme.errorBackground,
                                   color:
                                     isDeleting ===
                                     record.id
-                                      ? "#94a3b8"
-                                      : "#dc2626",
+                                      ? theme.disabledText
+                                      : isDarkMode
+                                        ? "#fca5a5"
+                                        : "#dc2626",
                                   fontSize:
                                     "11px",
                                   fontWeight:
