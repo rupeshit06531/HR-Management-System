@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -22,6 +23,8 @@ import {
   type DesignationPayload,
 } from "../api/departments"
 
+import { useTheme } from "../context/ThemeContext"
+
 const createEmptyDepartment = (): DepartmentPayload => ({
   name: "",
   description: "",
@@ -35,6 +38,122 @@ const createEmptyDesignation = (): DesignationPayload => ({
 })
 
 function Departments() {
+  const { isDarkMode } = useTheme()
+
+  const theme = isDarkMode
+    ? {
+        page: "#0f172a",
+        card: "#111827",
+        input: "#0f172a",
+        inputDisabled: "#182235",
+        border: "#334155",
+        tableBorder: "#243044",
+        rowBorder: "#1f2937",
+        heading: "#f8fafc",
+        text: "#f1f5f9",
+        secondary: "#cbd5e1",
+        muted: "#94a3b8",
+        placeholder: "#64748b",
+        blue: "#2563eb",
+        blueText: "#93c5fd",
+        green: "#16a34a",
+        danger: "#dc2626",
+        disabled: "#475569",
+        errorBg: "#450a0a",
+        errorText: "#fca5a5",
+        successBg: "#052e16",
+        successText: "#86efac",
+      }
+    : {
+        page: "#f5f7fa",
+        card: "#ffffff",
+        input: "#ffffff",
+        inputDisabled: "#f3f4f6",
+        border: "#d1d5db",
+        tableBorder: "#e5e7eb",
+        rowBorder: "#f3f4f6",
+        heading: "#111827",
+        text: "#111827",
+        secondary: "#6b7280",
+        muted: "#6b7280",
+        placeholder: "#6b7280",
+        blue: "#2563eb",
+        blueText: "#2563eb",
+        green: "#16a34a",
+        danger: "#dc2626",
+        disabled: "#9ca3af",
+        errorBg: "#fee2e2",
+        errorText: "#991b1b",
+        successBg: "#dcfce7",
+        successText: "#166534",
+      }
+
+  const pageStyle: CSSProperties = {
+    minHeight: "100vh",
+    padding: "32px",
+    backgroundColor: theme.page,
+    color: theme.text,
+    fontFamily: "Arial, sans-serif",
+    boxSizing: "border-box",
+  }
+
+  const cardStyle: CSSProperties = {
+    backgroundColor: theme.card,
+    color: theme.text,
+    borderRadius: "10px",
+    boxShadow: isDarkMode
+      ? "0 1px 3px rgba(0, 0, 0, 0.3)"
+      : "0 1px 3px rgba(0, 0, 0, 0.08)",
+  }
+
+  const inputStyle: CSSProperties = {
+    display: "block",
+    width: "100%",
+    marginTop: "6px",
+    padding: "10px",
+    boxSizing: "border-box",
+    backgroundColor: theme.input,
+    color: theme.text,
+    border: `1px solid ${theme.border}`,
+    borderRadius: "6px",
+    outline: "none",
+  }
+
+  const secondaryButtonStyle: CSSProperties = {
+    padding: "8px 14px",
+    border: `1px solid ${theme.border}`,
+    borderRadius: "6px",
+    backgroundColor: theme.card,
+    color: theme.text,
+    cursor: "pointer",
+  }
+
+  const tableHeaderStyle: CSSProperties = {
+    padding: "14px",
+    textAlign: "left",
+    borderBottom: `1px solid ${theme.tableBorder}`,
+    color: theme.secondary,
+    backgroundColor: isDarkMode
+      ? "#172033"
+      : "#f9fafb",
+  }
+
+  const tableCellStyle: CSSProperties = {
+    padding: "14px",
+    borderBottom: `1px solid ${theme.rowBorder}`,
+    color: theme.text,
+  }
+
+  const mutedCellStyle: CSSProperties = {
+    ...tableCellStyle,
+    color: theme.muted,
+  }
+
+  const labelStyle: CSSProperties = {
+    color: theme.text,
+    fontWeight: 500,
+  }
+
   const [departments, setDepartments] =
     useState<Department[]>([])
 
@@ -577,16 +696,7 @@ function Departments() {
     )?.name ?? `Department #${id}`
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "32px",
-        backgroundColor: "#f5f7fa",
-        fontFamily:
-          "Arial, sans-serif",
-        boxSizing: "border-box",
-      }}
-    >
+    <main style={pageStyle}>
       <section
         style={{
           maxWidth: "1400px",
@@ -608,7 +718,7 @@ function Departments() {
             <h1
               style={{
                 margin: 0,
-                color: "#111827",
+                color: theme.heading,
               }}
             >
               Departments
@@ -616,7 +726,7 @@ function Departments() {
 
             <p
               style={{
-                color: "#6b7280",
+                color: theme.secondary,
                 marginBottom: 0,
               }}
             >
@@ -642,7 +752,7 @@ function Departments() {
                 border: "none",
                 borderRadius: "6px",
                 backgroundColor:
-                  "#2563eb",
+                  theme.blue,
                 color: "#ffffff",
                 cursor: "pointer",
               }}
@@ -666,8 +776,8 @@ function Departments() {
                 backgroundColor:
                   activeDepartments.length ===
                   0
-                    ? "#9ca3af"
-                    : "#16a34a",
+                    ? theme.disabled
+                    : theme.green,
                 color: "#ffffff",
                 cursor:
                   activeDepartments.length ===
@@ -688,9 +798,14 @@ function Departments() {
               padding: "16px",
               marginBottom: "20px",
               backgroundColor:
-                "#fee2e2",
+                theme.errorBg,
               borderRadius: "8px",
-              color: "#991b1b",
+              color: theme.errorText,
+              border: `1px solid ${
+                isDarkMode
+                  ? "#7f1d1d"
+                  : "#fecaca"
+              }`,
             }}
           >
             {error}
@@ -704,9 +819,14 @@ function Departments() {
               padding: "16px",
               marginBottom: "20px",
               backgroundColor:
-                "#dcfce7",
+                theme.successBg,
               borderRadius: "8px",
-              color: "#166534",
+              color: theme.successText,
+              border: `1px solid ${
+                isDarkMode
+                  ? "#166534"
+                  : "#bbf7d0"
+              }`,
             }}
           >
             {success}
@@ -716,12 +836,9 @@ function Departments() {
         {showDepartmentForm && (
           <section
             style={{
-              backgroundColor: "#ffffff",
+              ...cardStyle,
               padding: "24px",
-              borderRadius: "10px",
               marginBottom: "24px",
-              boxShadow:
-                "0 1px 3px rgba(0, 0, 0, 0.08)",
             }}
           >
             <div
@@ -732,12 +849,13 @@ function Departments() {
                   "space-between",
                 gap: "16px",
                 marginBottom: "20px",
+                flexWrap: "wrap",
               }}
             >
               <h2
                 style={{
                   margin: 0,
-                  color: "#111827",
+                  color: theme.heading,
                 }}
               >
                 {editingDepartmentId !==
@@ -751,15 +869,7 @@ function Departments() {
                 onClick={
                   resetDepartmentForm
                 }
-                style={{
-                  padding: "8px 14px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  backgroundColor:
-                    "#ffffff",
-                  cursor: "pointer",
-                }}
+                style={secondaryButtonStyle}
               >
                 Cancel
               </button>
@@ -775,7 +885,7 @@ function Departments() {
                 maxWidth: "700px",
               }}
             >
-              <label>
+              <label style={labelStyle}>
                 Name
 
                 <input
@@ -796,18 +906,11 @@ function Departments() {
                   }
                   maxLength={150}
                   required
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  style={inputStyle}
                 />
               </label>
 
-              <label>
+              <label style={labelStyle}>
                 Description
 
                 <textarea
@@ -828,12 +931,7 @@ function Departments() {
                   rows={4}
                   maxLength={500}
                   style={{
-                    display: "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
+                    ...inputStyle,
                     resize: "vertical",
                   }}
                 />
@@ -841,6 +939,7 @@ function Departments() {
 
               <label
                 style={{
+                  ...labelStyle,
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
@@ -870,6 +969,7 @@ function Departments() {
                 style={{
                   display: "flex",
                   gap: "10px",
+                  flexWrap: "wrap",
                 }}
               >
                 <button
@@ -884,9 +984,10 @@ function Departments() {
                     borderRadius: "6px",
                     backgroundColor:
                       isDepartmentSubmitting
-                        ? "#9ca3af"
-                        : "#2563eb",
-                    color: "#ffffff",
+                        ? theme.disabled
+                        : theme.blue,
+                    color:
+                      "#ffffff",
                     cursor:
                       isDepartmentSubmitting
                         ? "not-allowed"
@@ -910,17 +1011,15 @@ function Departments() {
                     isDepartmentSubmitting
                   }
                   style={{
-                    padding:
-                      "10px 18px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    backgroundColor:
-                      "#ffffff",
+                    ...secondaryButtonStyle,
                     cursor:
                       isDepartmentSubmitting
                         ? "not-allowed"
                         : "pointer",
+                    opacity:
+                      isDepartmentSubmitting
+                        ? 0.6
+                        : 1,
                   }}
                 >
                   Cancel
@@ -933,12 +1032,9 @@ function Departments() {
         {showDesignationForm && (
           <section
             style={{
-              backgroundColor: "#ffffff",
+              ...cardStyle,
               padding: "24px",
-              borderRadius: "10px",
               marginBottom: "24px",
-              boxShadow:
-                "0 1px 3px rgba(0, 0, 0, 0.08)",
             }}
           >
             <div
@@ -949,12 +1045,13 @@ function Departments() {
                   "space-between",
                 gap: "16px",
                 marginBottom: "20px",
+                flexWrap: "wrap",
               }}
             >
               <h2
                 style={{
                   margin: 0,
-                  color: "#111827",
+                  color: theme.heading,
                 }}
               >
                 {editingDesignationId !==
@@ -968,15 +1065,7 @@ function Departments() {
                 onClick={
                   resetDesignationForm
                 }
-                style={{
-                  padding: "8px 14px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius: "6px",
-                  backgroundColor:
-                    "#ffffff",
-                  cursor: "pointer",
-                }}
+                style={secondaryButtonStyle}
               >
                 Cancel
               </button>
@@ -992,7 +1081,7 @@ function Departments() {
                 maxWidth: "700px",
               }}
             >
-              <label>
+              <label style={labelStyle}>
                 Name
 
                 <input
@@ -1013,18 +1102,11 @@ function Departments() {
                   }
                   maxLength={150}
                   required
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  style={inputStyle}
                 />
               </label>
 
-              <label>
+              <label style={labelStyle}>
                 Department
 
                 <select
@@ -1048,16 +1130,17 @@ function Departments() {
                     )
                   }
                   required
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  style={inputStyle}
                 >
-                  <option value="">
+                  <option
+                    value=""
+                    style={{
+                      backgroundColor:
+                        theme.input,
+                      color:
+                        theme.text,
+                    }}
+                  >
                     Select active department
                   </option>
 
@@ -1072,6 +1155,12 @@ function Departments() {
                         value={
                           department.id
                         }
+                        style={{
+                          backgroundColor:
+                            theme.input,
+                          color:
+                            theme.text,
+                        }}
                       >
                         {department.name}
                       </option>
@@ -1082,6 +1171,7 @@ function Departments() {
 
               <label
                 style={{
+                  ...labelStyle,
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
@@ -1111,6 +1201,7 @@ function Departments() {
                 style={{
                   display: "flex",
                   gap: "10px",
+                  flexWrap: "wrap",
                 }}
               >
                 <button
@@ -1125,9 +1216,10 @@ function Departments() {
                     borderRadius: "6px",
                     backgroundColor:
                       isDesignationSubmitting
-                        ? "#9ca3af"
-                        : "#16a34a",
-                    color: "#ffffff",
+                        ? theme.disabled
+                        : theme.green,
+                    color:
+                      "#ffffff",
                     cursor:
                       isDesignationSubmitting
                         ? "not-allowed"
@@ -1151,17 +1243,15 @@ function Departments() {
                     isDesignationSubmitting
                   }
                   style={{
-                    padding:
-                      "10px 18px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius: "6px",
-                    backgroundColor:
-                      "#ffffff",
+                    ...secondaryButtonStyle,
                     cursor:
                       isDesignationSubmitting
                         ? "not-allowed"
                         : "pointer",
+                    opacity:
+                      isDesignationSubmitting
+                        ? 0.6
+                        : 1,
                   }}
                 >
                   Cancel
@@ -1174,9 +1264,8 @@ function Departments() {
         {isLoading ? (
           <section
             style={{
-              backgroundColor: "#ffffff",
+              ...cardStyle,
               padding: "24px",
-              borderRadius: "10px",
             }}
           >
             Loading departments and
@@ -1186,8 +1275,7 @@ function Departments() {
           <>
             <section
               style={{
-                backgroundColor: "#ffffff",
-                borderRadius: "10px",
+                ...cardStyle,
                 overflow: "auto",
                 marginBottom: "24px",
               }}
@@ -1196,13 +1284,13 @@ function Departments() {
                 style={{
                   padding: "20px 24px",
                   borderBottom:
-                    "1px solid #e5e7eb",
+                    `1px solid ${theme.tableBorder}`,
                 }}
               >
                 <h2
                   style={{
                     margin: 0,
-                    color: "#111827",
+                    color: theme.heading,
                   }}
                 >
                   Departments
@@ -1212,7 +1300,7 @@ function Departments() {
                   style={{
                     margin:
                       "6px 0 0",
-                    color: "#6b7280",
+                    color: theme.secondary,
                   }}
                 >
                   {departments.length} department
@@ -1228,7 +1316,7 @@ function Departments() {
                 <p
                   style={{
                     padding: "24px",
-                    color: "#6b7280",
+                    color: theme.muted,
                   }}
                 >
                   No departments found.
@@ -1253,14 +1341,9 @@ function Departments() {
                         (heading) => (
                           <th
                             key={heading}
-                            style={{
-                              padding:
-                                "14px",
-                              textAlign:
-                                "left",
-                              borderBottom:
-                                "1px solid #e5e7eb",
-                            }}
+                            style={
+                              tableHeaderStyle
+                            }
                           >
                             {heading}
                           </th>
@@ -1281,10 +1364,7 @@ function Departments() {
                         >
                           <td
                             style={{
-                              padding:
-                                "14px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
+                              ...tableCellStyle,
                               fontWeight: 600,
                             }}
                           >
@@ -1294,44 +1374,66 @@ function Departments() {
                           </td>
 
                           <td
-                            style={{
-                              padding:
-                                "14px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                              color: "#6b7280",
-                            }}
+                            style={
+                              mutedCellStyle
+                            }
                           >
                             {department.description ||
                               "-"}
                           </td>
 
                           <td
-                            style={{
-                              padding:
-                                "14px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                            }}
+                            style={
+                              tableCellStyle
+                            }
                           >
-                            {formatStatus(
-                              department.is_active,
-                            )}
+                            <span
+                              style={{
+                                display:
+                                  "inline-block",
+                                padding:
+                                  "4px 10px",
+                                borderRadius:
+                                  "999px",
+                                backgroundColor:
+                                  department.is_active
+                                    ? isDarkMode
+                                      ? "#064e3b"
+                                      : "#dcfce7"
+                                    : isDarkMode
+                                      ? "#3f1d1d"
+                                      : "#fee2e2",
+                                color:
+                                  department.is_active
+                                    ? isDarkMode
+                                      ? "#86efac"
+                                      : "#166534"
+                                    : isDarkMode
+                                      ? "#fca5a5"
+                                      : "#991b1b",
+                                fontSize:
+                                  "13px",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {formatStatus(
+                                department.is_active,
+                              )}
+                            </span>
                           </td>
 
                           <td
-                            style={{
-                              padding:
-                                "14px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                            }}
+                            style={
+                              tableCellStyle
+                            }
                           >
                             <div
                               style={{
                                 display:
                                   "flex",
                                 gap: "8px",
+                                flexWrap:
+                                  "wrap",
                               }}
                             >
                               <button
@@ -1345,13 +1447,13 @@ function Departments() {
                                   padding:
                                     "7px 12px",
                                   border:
-                                    "1px solid #2563eb",
+                                    `1px solid ${theme.blue}`,
                                   borderRadius:
                                     "6px",
                                   backgroundColor:
-                                    "#ffffff",
+                                    theme.card,
                                   color:
-                                    "#2563eb",
+                                    theme.blueText,
                                   cursor:
                                     "pointer",
                                 }}
@@ -1380,8 +1482,8 @@ function Departments() {
                                   backgroundColor:
                                     deletingDepartmentId ===
                                     department.id
-                                      ? "#9ca3af"
-                                      : "#dc2626",
+                                      ? theme.disabled
+                                      : theme.danger,
                                   color:
                                     "#ffffff",
                                   cursor:
@@ -1408,8 +1510,7 @@ function Departments() {
 
             <section
               style={{
-                backgroundColor: "#ffffff",
-                borderRadius: "10px",
+                ...cardStyle,
                 overflow: "auto",
               }}
             >
@@ -1417,13 +1518,13 @@ function Departments() {
                 style={{
                   padding: "20px 24px",
                   borderBottom:
-                    "1px solid #e5e7eb",
+                    `1px solid ${theme.tableBorder}`,
                 }}
               >
                 <h2
                   style={{
                     margin: 0,
-                    color: "#111827",
+                    color: theme.heading,
                   }}
                 >
                   Designations
@@ -1433,7 +1534,7 @@ function Departments() {
                   style={{
                     margin:
                       "6px 0 0",
-                    color: "#6b7280",
+                    color: theme.secondary,
                   }}
                 >
                   {designations.length} designation
@@ -1449,7 +1550,7 @@ function Departments() {
                 <p
                   style={{
                     padding: "24px",
-                    color: "#6b7280",
+                    color: theme.muted,
                   }}
                 >
                   No designations found.
@@ -1474,14 +1575,9 @@ function Departments() {
                         (heading) => (
                           <th
                             key={heading}
-                            style={{
-                              padding:
-                                "14px",
-                              textAlign:
-                                "left",
-                              borderBottom:
-                                "1px solid #e5e7eb",
-                            }}
+                            style={
+                              tableHeaderStyle
+                            }
                           >
                             {heading}
                           </th>
@@ -1502,10 +1598,7 @@ function Departments() {
                         >
                           <td
                             style={{
-                              padding:
-                                "14px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
+                              ...tableCellStyle,
                               fontWeight: 600,
                             }}
                           >
@@ -1515,12 +1608,9 @@ function Departments() {
                           </td>
 
                           <td
-                            style={{
-                              padding:
-                                "14px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                            }}
+                            style={
+                              tableCellStyle
+                            }
                           >
                             {getDepartmentName(
                               designation.department,
@@ -1528,31 +1618,57 @@ function Departments() {
                           </td>
 
                           <td
-                            style={{
-                              padding:
-                                "14px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                            }}
+                            style={
+                              tableCellStyle
+                            }
                           >
-                            {formatStatus(
-                              designation.is_active,
-                            )}
+                            <span
+                              style={{
+                                display:
+                                  "inline-block",
+                                padding:
+                                  "4px 10px",
+                                borderRadius:
+                                  "999px",
+                                backgroundColor:
+                                  designation.is_active
+                                    ? isDarkMode
+                                      ? "#064e3b"
+                                      : "#dcfce7"
+                                    : isDarkMode
+                                      ? "#3f1d1d"
+                                      : "#fee2e2",
+                                color:
+                                  designation.is_active
+                                    ? isDarkMode
+                                      ? "#86efac"
+                                      : "#166534"
+                                    : isDarkMode
+                                      ? "#fca5a5"
+                                      : "#991b1b",
+                                fontSize:
+                                  "13px",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {formatStatus(
+                                designation.is_active,
+                              )}
+                            </span>
                           </td>
 
                           <td
-                            style={{
-                              padding:
-                                "14px",
-                              borderBottom:
-                                "1px solid #f3f4f6",
-                            }}
+                            style={
+                              tableCellStyle
+                            }
                           >
                             <div
                               style={{
                                 display:
                                   "flex",
                                 gap: "8px",
+                                flexWrap:
+                                  "wrap",
                               }}
                             >
                               <button
@@ -1566,13 +1682,13 @@ function Departments() {
                                   padding:
                                     "7px 12px",
                                   border:
-                                    "1px solid #2563eb",
+                                    `1px solid ${theme.blue}`,
                                   borderRadius:
                                     "6px",
                                   backgroundColor:
-                                    "#ffffff",
+                                    theme.card,
                                   color:
-                                    "#2563eb",
+                                    theme.blueText,
                                   cursor:
                                     "pointer",
                                 }}
@@ -1601,8 +1717,8 @@ function Departments() {
                                   backgroundColor:
                                     deletingDesignationId ===
                                     designation.id
-                                      ? "#9ca3af"
-                                      : "#dc2626",
+                                      ? theme.disabled
+                                      : theme.danger,
                                   color:
                                     "#ffffff",
                                   cursor:
