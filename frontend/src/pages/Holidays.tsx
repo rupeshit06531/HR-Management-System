@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -14,6 +15,8 @@ import {
   type HolidayListResponse,
   type HolidayPayload,
 } from "../api/holidays"
+
+import { useTheme } from "../context/ThemeContext"
 
 const holidayTypes = [
   {
@@ -43,6 +46,8 @@ const emptyForm: HolidayPayload = {
 }
 
 function Holidays() {
+  const { isDarkMode } = useTheme()
+
   const [holidays, setHolidays] = useState<Holiday[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -55,6 +60,50 @@ function Holidays() {
   const [searchTerm, setSearchTerm] = useState("")
   const [typeFilter, setTypeFilter] = useState("ALL")
   const [statusFilter, setStatusFilter] = useState("ALL")
+
+  const theme = {
+    pageBackground: isDarkMode ? "#111827" : "#f5f7fa",
+    cardBackground: isDarkMode ? "#1f2937" : "#ffffff",
+    inputBackground: isDarkMode ? "#111827" : "#ffffff",
+    text: isDarkMode ? "#f9fafb" : "#111827",
+    secondaryText: isDarkMode ? "#d1d5db" : "#374151",
+    mutedText: isDarkMode ? "#9ca3af" : "#6b7280",
+    border: isDarkMode ? "#374151" : "#e5e7eb",
+    rowBorder: isDarkMode ? "#374151" : "#f3f4f6",
+    tableHeader: isDarkMode ? "#111827" : "#f9fafb",
+    errorBackground: isDarkMode ? "#451a1a" : "#fef2f2",
+    errorBorder: isDarkMode ? "#7f1d1d" : "#fecaca",
+    errorText: isDarkMode ? "#fca5a5" : "#991b1b",
+    successBackground: isDarkMode ? "#14532d" : "#f0fdf4",
+    successBorder: isDarkMode ? "#166534" : "#bbf7d0",
+    successText: isDarkMode ? "#bbf7d0" : "#166534",
+    secondaryButtonBackground: isDarkMode
+      ? "#374151"
+      : "#ffffff",
+  }
+
+  const inputStyle: CSSProperties = {
+    display: "block",
+    width: "100%",
+    marginTop: "7px",
+    padding: "11px 12px",
+    border: `1px solid ${theme.border}`,
+    borderRadius: "7px",
+    boxSizing: "border-box",
+    backgroundColor: theme.inputBackground,
+    color: theme.text,
+    outline: "none",
+  }
+
+  const filterStyle: CSSProperties = {
+    width: "100%",
+    padding: "10px 12px",
+    border: `1px solid ${theme.border}`,
+    borderRadius: "7px",
+    backgroundColor: theme.inputBackground,
+    color: theme.text,
+    boxSizing: "border-box",
+  }
 
   const loadHolidays = async () => {
     try {
@@ -81,13 +130,17 @@ function Holidays() {
   }, [])
 
   const resetForm = () => {
-    setForm(emptyForm)
+    setForm({
+      ...emptyForm,
+    })
     setEditingId(null)
     setShowForm(false)
   }
 
   const openCreateForm = () => {
-    setForm(emptyForm)
+    setForm({
+      ...emptyForm,
+    })
     setEditingId(null)
     setShowForm(true)
     setError(null)
@@ -293,7 +346,9 @@ function Holidays() {
       style={{
         minHeight: "100vh",
         padding: "32px",
-        backgroundColor: "#f5f7fa",
+        backgroundColor:
+          theme.pageBackground,
+        color: theme.text,
         fontFamily:
           "Inter, Arial, sans-serif",
         boxSizing: "border-box",
@@ -319,7 +374,7 @@ function Holidays() {
             <h1
               style={{
                 margin: 0,
-                color: "#111827",
+                color: theme.text,
                 fontSize: "30px",
                 fontWeight: 700,
               }}
@@ -329,9 +384,8 @@ function Holidays() {
 
             <p
               style={{
-                margin:
-                  "8px 0 0",
-                color: "#6b7280",
+                margin: "8px 0 0",
+                color: theme.mutedText,
                 fontSize: "15px",
               }}
             >
@@ -365,11 +419,12 @@ function Holidays() {
             style={{
               padding: "14px 16px",
               marginBottom: "20px",
-              backgroundColor: "#fef2f2",
+              backgroundColor:
+                theme.errorBackground,
               border:
-                "1px solid #fecaca",
+                `1px solid ${theme.errorBorder}`,
               borderRadius: "8px",
-              color: "#991b1b",
+              color: theme.errorText,
             }}
           >
             {error}
@@ -382,11 +437,12 @@ function Holidays() {
             style={{
               padding: "14px 16px",
               marginBottom: "20px",
-              backgroundColor: "#f0fdf4",
+              backgroundColor:
+                theme.successBackground,
               border:
-                "1px solid #bbf7d0",
+                `1px solid ${theme.successBorder}`,
               borderRadius: "8px",
-              color: "#166534",
+              color: theme.successText,
             }}
           >
             {success}
@@ -402,105 +458,72 @@ function Holidays() {
             marginBottom: "24px",
           }}
         >
-          <div
-            style={{
-              backgroundColor: "#ffffff",
-              padding: "20px",
-              borderRadius: "10px",
-              border:
-                "1px solid #e5e7eb",
-            }}
-          >
+          {[
+            {
+              label: "Total Holidays",
+              value: holidays.length,
+              valueColor: theme.text,
+            },
+            {
+              label: "Active Holidays",
+              value: activeCount,
+              valueColor: isDarkMode
+                ? "#86efac"
+                : "#166534",
+            },
+            {
+              label: "Inactive Holidays",
+              value: inactiveCount,
+              valueColor: theme.mutedText,
+            },
+          ].map((card) => (
             <div
+              key={card.label}
               style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                marginBottom: "6px",
+                backgroundColor:
+                  theme.cardBackground,
+                padding: "20px",
+                borderRadius: "10px",
+                border:
+                  `1px solid ${theme.border}`,
               }}
             >
-              Total Holidays
+              <div
+                style={{
+                  color: theme.mutedText,
+                  fontSize: "13px",
+                  marginBottom: "6px",
+                }}
+              >
+                {card.label}
+              </div>
+
+              <strong
+                style={{
+                  fontSize: "28px",
+                  color: card.valueColor,
+                }}
+              >
+                {card.value}
+              </strong>
             </div>
-
-            <strong
-              style={{
-                fontSize: "28px",
-                color: "#111827",
-              }}
-            >
-              {holidays.length}
-            </strong>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: "#ffffff",
-              padding: "20px",
-              borderRadius: "10px",
-              border:
-                "1px solid #e5e7eb",
-            }}
-          >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                marginBottom: "6px",
-              }}
-            >
-              Active Holidays
-            </div>
-
-            <strong
-              style={{
-                fontSize: "28px",
-                color: "#166534",
-              }}
-            >
-              {activeCount}
-            </strong>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: "#ffffff",
-              padding: "20px",
-              borderRadius: "10px",
-              border:
-                "1px solid #e5e7eb",
-            }}
-          >
-            <div
-              style={{
-                color: "#6b7280",
-                fontSize: "13px",
-                marginBottom: "6px",
-              }}
-            >
-              Inactive Holidays
-            </div>
-
-            <strong
-              style={{
-                fontSize: "28px",
-                color: "#6b7280",
-              }}
-            >
-              {inactiveCount}
-            </strong>
-          </div>
+          ))}
         </section>
 
         {showForm && (
           <section
             style={{
-              backgroundColor: "#ffffff",
+              backgroundColor:
+                theme.cardBackground,
               padding: "24px",
               borderRadius: "10px",
               marginBottom: "24px",
               border:
-                "1px solid #e5e7eb",
+                `1px solid ${theme.border}`,
               boxShadow:
-                "0 2px 6px rgba(0, 0, 0, 0.05)",
+                isDarkMode
+                  ? "0 2px 6px rgba(0, 0, 0, 0.3)"
+                  : "0 2px 6px rgba(0, 0, 0, 0.05)",
             }}
           >
             <div
@@ -516,7 +539,7 @@ function Holidays() {
                 <h2
                   style={{
                     margin: 0,
-                    color: "#111827",
+                    color: theme.text,
                     fontSize: "20px",
                   }}
                 >
@@ -527,9 +550,8 @@ function Holidays() {
 
                 <p
                   style={{
-                    margin:
-                      "6px 0 0",
-                    color: "#6b7280",
+                    margin: "6px 0 0",
+                    color: theme.mutedText,
                     fontSize: "14px",
                   }}
                 >
@@ -546,8 +568,10 @@ function Holidays() {
                   border: "none",
                   backgroundColor:
                     "transparent",
-                  color: "#6b7280",
-                  cursor: "pointer",
+                  color: theme.mutedText,
+                  cursor: isSubmitting
+                    ? "not-allowed"
+                    : "pointer",
                   fontSize: "20px",
                 }}
                 aria-label="Close form"
@@ -573,7 +597,7 @@ function Holidays() {
               >
                 <label
                   style={{
-                    color: "#374151",
+                    color: theme.secondaryText,
                     fontSize: "14px",
                     fontWeight: 600,
                   }}
@@ -594,24 +618,13 @@ function Holidays() {
                     }
                     required
                     placeholder="e.g. Independence Day"
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      marginTop: "7px",
-                      padding: "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius: "7px",
-                      boxSizing:
-                        "border-box",
-                      outline: "none",
-                    }}
+                    style={inputStyle}
                   />
                 </label>
 
                 <label
                   style={{
-                    color: "#374151",
+                    color: theme.secondaryText,
                     fontSize: "14px",
                     fontWeight: 600,
                   }}
@@ -631,23 +644,13 @@ function Holidays() {
                       )
                     }
                     required
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      marginTop: "7px",
-                      padding: "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius: "7px",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={inputStyle}
                   />
                 </label>
 
                 <label
                   style={{
-                    color: "#374151",
+                    color: theme.secondaryText,
                     fontSize: "14px",
                     fontWeight: 600,
                   }}
@@ -667,19 +670,7 @@ function Holidays() {
                         }),
                       )
                     }
-                    style={{
-                      display: "block",
-                      width: "100%",
-                      marginTop: "7px",
-                      padding: "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius: "7px",
-                      boxSizing:
-                        "border-box",
-                      backgroundColor:
-                        "#ffffff",
-                    }}
+                    style={inputStyle}
                   >
                     {holidayTypes.map(
                       (type) => (
@@ -697,7 +688,7 @@ function Holidays() {
 
               <label
                 style={{
-                  color: "#374151",
+                  color: theme.secondaryText,
                   fontSize: "14px",
                   fontWeight: 600,
                 }}
@@ -720,15 +711,7 @@ function Holidays() {
                   rows={4}
                   placeholder="Optional holiday description"
                   style={{
-                    display: "block",
-                    width: "100%",
-                    marginTop: "7px",
-                    padding: "11px 12px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius: "7px",
-                    boxSizing:
-                      "border-box",
+                    ...inputStyle,
                     resize: "vertical",
                   }}
                 />
@@ -739,7 +722,7 @@ function Holidays() {
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
-                  color: "#374151",
+                  color: theme.secondaryText,
                   fontSize: "14px",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -806,12 +789,13 @@ function Holidays() {
                     padding:
                       "10px 18px",
                     border:
-                      "1px solid #d1d5db",
+                      `1px solid ${theme.border}`,
                     borderRadius:
                       "7px",
                     backgroundColor:
-                      "#ffffff",
-                    color: "#374151",
+                      theme.secondaryButtonBackground,
+                    color:
+                      theme.text,
                     cursor:
                       isSubmitting
                         ? "not-allowed"
@@ -828,10 +812,11 @@ function Holidays() {
 
         <section
           style={{
-            backgroundColor: "#ffffff",
+            backgroundColor:
+              theme.cardBackground,
             borderRadius: "10px",
             border:
-              "1px solid #e5e7eb",
+              `1px solid ${theme.border}`,
             overflow: "hidden",
           }}
         >
@@ -839,7 +824,7 @@ function Holidays() {
             style={{
               padding: "20px 24px",
               borderBottom:
-                "1px solid #e5e7eb",
+                `1px solid ${theme.border}`,
             }}
           >
             <div
@@ -855,7 +840,7 @@ function Holidays() {
                 <h2
                   style={{
                     margin: 0,
-                    color: "#111827",
+                    color: theme.text,
                     fontSize: "19px",
                   }}
                 >
@@ -864,9 +849,8 @@ function Holidays() {
 
                 <p
                   style={{
-                    margin:
-                      "5px 0 0",
-                    color: "#6b7280",
+                    margin: "5px 0 0",
+                    color: theme.mutedText,
                     fontSize: "13px",
                   }}
                 >
@@ -894,14 +878,7 @@ function Holidays() {
                   )
                 }
                 placeholder="Search holidays..."
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius: "7px",
-                  outline: "none",
-                }}
+                style={filterStyle}
               />
 
               <select
@@ -911,15 +888,7 @@ function Holidays() {
                     event.target.value,
                   )
                 }
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius: "7px",
-                  backgroundColor:
-                    "#ffffff",
-                }}
+                style={filterStyle}
               >
                 <option value="ALL">
                   All Types
@@ -944,15 +913,7 @@ function Holidays() {
                     event.target.value,
                   )
                 }
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius: "7px",
-                  backgroundColor:
-                    "#ffffff",
-                }}
+                style={filterStyle}
               >
                 <option value="ALL">
                   All Status
@@ -972,7 +933,7 @@ function Holidays() {
               style={{
                 padding: "40px 24px",
                 textAlign: "center",
-                color: "#6b7280",
+                color: theme.mutedText,
               }}
             >
               Loading holidays...
@@ -998,7 +959,7 @@ function Holidays() {
                 style={{
                   margin:
                     "0 0 6px",
-                  color: "#111827",
+                  color: theme.text,
                 }}
               >
                 No holidays found
@@ -1007,7 +968,7 @@ function Holidays() {
               <p
                 style={{
                   margin: 0,
-                  color: "#6b7280",
+                  color: theme.mutedText,
                 }}
               >
                 Try changing your filters
@@ -1032,7 +993,7 @@ function Holidays() {
                   <tr
                     style={{
                       backgroundColor:
-                        "#f9fafb",
+                        theme.tableHeader,
                     }}
                   >
                     {[
@@ -1051,7 +1012,7 @@ function Holidays() {
                           textAlign:
                             "left",
                           color:
-                            "#4b5563",
+                            theme.mutedText,
                           fontSize:
                             "12px",
                           fontWeight:
@@ -1059,7 +1020,7 @@ function Holidays() {
                           textTransform:
                             "uppercase",
                           borderBottom:
-                            "1px solid #e5e7eb",
+                            `1px solid ${theme.border}`,
                           whiteSpace:
                             "nowrap",
                         }}
@@ -1081,9 +1042,9 @@ function Holidays() {
                             padding:
                               "15px 16px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${theme.rowBorder}`,
                             color:
-                              "#111827",
+                              theme.text,
                             fontWeight:
                               600,
                           }}
@@ -1096,9 +1057,9 @@ function Holidays() {
                             padding:
                               "15px 16px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${theme.rowBorder}`,
                             color:
-                              "#374151",
+                              theme.secondaryText,
                             whiteSpace:
                               "nowrap",
                           }}
@@ -1113,9 +1074,9 @@ function Holidays() {
                             padding:
                               "15px 16px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${theme.rowBorder}`,
                             color:
-                              "#374151",
+                              theme.secondaryText,
                           }}
                         >
                           {formatHolidayType(
@@ -1128,9 +1089,9 @@ function Holidays() {
                             padding:
                               "15px 16px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${theme.rowBorder}`,
                             color:
-                              "#6b7280",
+                              theme.mutedText,
                             maxWidth:
                               "300px",
                           }}
@@ -1144,7 +1105,7 @@ function Holidays() {
                             padding:
                               "15px 16px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${theme.rowBorder}`,
                           }}
                         >
                           <span
@@ -1157,12 +1118,18 @@ function Holidays() {
                                 "999px",
                               backgroundColor:
                                 holiday.is_active
-                                  ? "#dcfce7"
-                                  : "#f3f4f6",
+                                  ? isDarkMode
+                                    ? "#14532d"
+                                    : "#dcfce7"
+                                  : isDarkMode
+                                    ? "#374151"
+                                    : "#f3f4f6",
                               color:
                                 holiday.is_active
-                                  ? "#166534"
-                                  : "#6b7280",
+                                  ? isDarkMode
+                                    ? "#bbf7d0"
+                                    : "#166534"
+                                  : theme.mutedText,
                               fontSize:
                                 "12px",
                               fontWeight:
@@ -1180,7 +1147,7 @@ function Holidays() {
                             padding:
                               "15px 16px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${theme.rowBorder}`,
                           }}
                         >
                           <div
@@ -1205,9 +1172,11 @@ function Holidays() {
                                 borderRadius:
                                   "6px",
                                 backgroundColor:
-                                  "#ffffff",
+                                  theme.secondaryButtonBackground,
                                 color:
-                                  "#2563eb",
+                                  isDarkMode
+                                    ? "#60a5fa"
+                                    : "#2563eb",
                                 cursor:
                                   "pointer",
                                 fontWeight:
