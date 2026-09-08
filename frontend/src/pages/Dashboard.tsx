@@ -812,18 +812,24 @@ function EmployeeTodayAttendance() {
       )
 
       if (
-        punchError instanceof
-        GeolocationPositionError
+        punchError &&
+        typeof punchError === "object" &&
+        "code" in punchError &&
+        typeof (punchError as { code?: unknown }).code === "number"
       ) {
+        const locationError =
+          punchError as {
+            code: number
+          }
         if (
-          punchError.code ===
+          locationError.code ===
           GeolocationPositionError.PERMISSION_DENIED
         ) {
           setError(
             "Location permission was denied. Please allow location access and try again.",
           )
         } else if (
-          punchError.code ===
+          locationError.code ===
           GeolocationPositionError.POSITION_UNAVAILABLE
         ) {
           setError(
@@ -973,18 +979,24 @@ function EmployeeTodayAttendance() {
       )
 
       if (
-        punchError instanceof
-        GeolocationPositionError
+        punchError &&
+        typeof punchError === "object" &&
+        "code" in punchError &&
+        typeof (punchError as { code?: unknown }).code === "number"
       ) {
+        const locationError =
+          punchError as {
+            code: number
+          }
         if (
-          punchError.code ===
+          locationError.code ===
           GeolocationPositionError.PERMISSION_DENIED
         ) {
           setError(
             "Location permission was denied. Please allow location access and try again.",
           )
         } else if (
-          punchError.code ===
+          locationError.code ===
           GeolocationPositionError.POSITION_UNAVAILABLE
         ) {
           setError(
