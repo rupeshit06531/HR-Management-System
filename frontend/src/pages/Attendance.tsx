@@ -1034,7 +1034,6 @@ function Attendance() {
           margin: "0 auto",
         }}
       >
-        {/* PAGE HEADER */}
         <header
           style={{
             display: "flex",
@@ -1087,8 +1086,7 @@ function Attendance() {
 
             <p
               style={{
-                margin:
-                  "8px 0 0",
+                margin: "8px 0 0",
                 color: theme.mutedText,
                 fontSize: "15px",
               }}
@@ -1139,7 +1137,6 @@ function Attendance() {
                     disabled={
                       isPunchingIn ||
                       isPunchingOut ||
-                      !selfieFile ||
                       hasPunchedIn
                     }
                     style={{
@@ -1167,7 +1164,9 @@ function Attendance() {
                   }
                   disabled={
                     isPunchingIn ||
-                    !selfieFile
+                    isPunchingOut ||
+                    !selfieFile ||
+                    hasPunchedIn
                   }
                   style={{
                     minHeight: "42px",
@@ -1193,7 +1192,9 @@ function Attendance() {
                         : "pointer",
                     boxShadow:
                       isPunchingIn ||
-                      !selfieFile
+                      isPunchingOut ||
+                      !selfieFile ||
+                      hasPunchedIn
                         ? "none"
                         : "0 5px 14px rgba(234, 88, 12, 0.24)",
                   }}
@@ -1263,9 +1264,7 @@ function Attendance() {
             {canManageAttendance && (
               <button
                 type="button"
-                onClick={
-                  handleAddClick
-                }
+                onClick={handleAddClick}
                 style={{
                   minHeight: "42px",
                   padding: "0 17px",
@@ -1309,7 +1308,6 @@ function Attendance() {
           </div>
         </header>
 
-        {/* ALERTS */}
         {error && (
           <section
             style={{
@@ -1406,7 +1404,6 @@ function Attendance() {
           </section>
         )}
 
-        {/* SUMMARY CARDS */}
         <section
           style={{
             display: "grid",
@@ -1570,7 +1567,6 @@ function Attendance() {
           ))}
         </section>
 
-        {/* EMPLOYEE PUNCH CARD */}
         {user?.role === "EMPLOYEE" && (
           <section
             style={{
@@ -1674,7 +1670,6 @@ function Attendance() {
           </section>
         )}
 
-        {/* FORM */}
         {showForm &&
           canManageAttendance && (
             <section
@@ -2072,7 +2067,6 @@ function Attendance() {
             </section>
           )}
 
-        {/* RECORDS */}
         <section
           style={{
             border:
