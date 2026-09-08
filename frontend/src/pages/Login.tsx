@@ -6,6 +6,7 @@ import {
 import { useNavigate } from "react-router-dom"
 
 import { useAuth } from "../context/AuthContext"
+import { useTheme } from "../context/ThemeContext"
 
 function Login() {
   const navigate = useNavigate()
@@ -15,6 +16,8 @@ function Login() {
     isLoading,
     login,
   } = useAuth()
+
+  const { isDarkMode } = useTheme()
 
   const [username, setUsername] =
     useState("")
@@ -84,9 +87,12 @@ function Login() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background:
-            "linear-gradient(135deg, #f8fafc 0%, #eef4ff 100%)",
-          color: "#475569",
+          background: isDarkMode
+            ? "linear-gradient(135deg, #0f172a 0%, #172554 100%)"
+            : "linear-gradient(135deg, #f8fafc 0%, #eef4ff 100%)",
+          color: isDarkMode
+            ? "#cbd5e1"
+            : "#475569",
           fontFamily:
             'Inter, "Segoe UI", Roboto, Arial, sans-serif',
         }}
@@ -101,7 +107,9 @@ function Login() {
               width: "38px",
               height: "38px",
               margin: "0 auto 14px",
-              border: "3px solid #dbeafe",
+              border: isDarkMode
+                ? "3px solid #334155"
+                : "3px solid #dbeafe",
               borderTopColor: "#2563eb",
               borderRadius: "50%",
               animation:
@@ -143,7 +151,9 @@ function Login() {
         minHeight: "100vh",
         display: "flex",
         alignItems: "stretch",
-        background: "#f8fafc",
+        background: isDarkMode
+          ? "#0f172a"
+          : "#f8fafc",
         fontFamily:
           'Inter, "Segoe UI", Roboto, Arial, sans-serif',
       }}
@@ -297,7 +307,9 @@ function Login() {
           justifyContent: "center",
           padding: "40px 28px",
           boxSizing: "border-box",
-          background: "#f8fafc",
+          background: isDarkMode
+            ? "#0f172a"
+            : "#f8fafc",
         }}
       >
         <div
@@ -327,7 +339,9 @@ function Login() {
             <h2
               style={{
                 margin: 0,
-                color: "#0f172a",
+                color: isDarkMode
+                  ? "#f8fafc"
+                  : "#0f172a",
                 fontSize: "30px",
                 lineHeight: 1.2,
                 fontWeight: 800,
@@ -340,7 +354,9 @@ function Login() {
             <p
               style={{
                 margin: "9px 0 0",
-                color: "#64748b",
+                color: isDarkMode
+                  ? "#94a3b8"
+                  : "#64748b",
                 fontSize: "14px",
                 lineHeight: 1.6,
               }}
@@ -356,11 +372,16 @@ function Login() {
               style={{
                 marginBottom: "20px",
                 padding: "12px 14px",
-                border:
-                  "1px solid #fecaca",
+                border: isDarkMode
+                  ? "1px solid #7f1d1d"
+                  : "1px solid #fecaca",
                 borderRadius: "9px",
-                background: "#fef2f2",
-                color: "#991b1b",
+                background: isDarkMode
+                  ? "#450a0a"
+                  : "#fef2f2",
+                color: isDarkMode
+                  ? "#fecaca"
+                  : "#991b1b",
                 fontSize: "13px",
                 lineHeight: 1.5,
               }}
@@ -373,10 +394,13 @@ function Login() {
             onSubmit={handleSubmit}
             style={{
               padding: "26px",
-              border:
-                "1px solid #e2e8f0",
+              border: isDarkMode
+                ? "1px solid #334155"
+                : "1px solid #e2e8f0",
               borderRadius: "14px",
-              background: "#ffffff",
+              background: isDarkMode
+                ? "#1e293b"
+                : "#ffffff",
               boxShadow:
                 "0 10px 30px rgba(15, 23, 42, 0.07)",
             }}
@@ -390,7 +414,9 @@ function Login() {
             >
               <span
                 style={{
-                  color: "#334155",
+                  color: isDarkMode
+                    ? "#e2e8f0"
+                    : "#334155",
                   fontSize: "13px",
                   fontWeight: 700,
                 }}
@@ -413,15 +439,21 @@ function Login() {
                   width: "100%",
                   minHeight: "44px",
                   padding: "10px 12px",
-                  border:
-                    "1px solid #cbd5e1",
+                  border: isDarkMode
+                    ? "1px solid #475569"
+                    : "1px solid #cbd5e1",
                   borderRadius: "9px",
                   boxSizing: "border-box",
-                  background:
-                    isSubmitting
-                      ? "#f8fafc"
+                  background: isSubmitting
+                    ? isDarkMode
+                      ? "#334155"
+                      : "#f8fafc"
+                    : isDarkMode
+                      ? "#0f172a"
                       : "#ffffff",
-                  color: "#0f172a",
+                  color: isDarkMode
+                    ? "#f8fafc"
+                    : "#0f172a",
                   fontSize: "14px",
                   outline: "none",
                 }}
@@ -437,7 +469,9 @@ function Login() {
             >
               <span
                 style={{
-                  color: "#334155",
+                  color: isDarkMode
+                    ? "#e2e8f0"
+                    : "#334155",
                   fontSize: "13px",
                   fontWeight: 700,
                 }}
@@ -460,15 +494,21 @@ function Login() {
                   width: "100%",
                   minHeight: "44px",
                   padding: "10px 12px",
-                  border:
-                    "1px solid #cbd5e1",
+                  border: isDarkMode
+                    ? "1px solid #475569"
+                    : "1px solid #cbd5e1",
                   borderRadius: "9px",
                   boxSizing: "border-box",
-                  background:
-                    isSubmitting
-                      ? "#f8fafc"
+                  background: isSubmitting
+                    ? isDarkMode
+                      ? "#334155"
+                      : "#f8fafc"
+                    : isDarkMode
+                      ? "#0f172a"
                       : "#ffffff",
-                  color: "#0f172a",
+                  color: isDarkMode
+                    ? "#f8fafc"
+                    : "#0f172a",
                   fontSize: "14px",
                   outline: "none",
                 }}
@@ -538,7 +578,9 @@ function Login() {
               justifyContent: "space-between",
               gap: "16px",
               marginTop: "18px",
-              color: "#94a3b8",
+              color: isDarkMode
+                ? "#64748b"
+                : "#94a3b8",
               fontSize: "11px",
             }}
           >
