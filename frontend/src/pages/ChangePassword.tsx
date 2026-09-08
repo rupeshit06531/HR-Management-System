@@ -10,7 +10,15 @@ import {
   changePassword,
 } from "../api/auth"
 
+import {
+  useTheme,
+} from "../context/ThemeContext"
+
 function ChangePassword() {
+  const {
+    isDarkMode,
+  } = useTheme()
+
   const [
     currentPassword,
     setCurrentPassword,
@@ -107,6 +115,56 @@ function ChangePassword() {
     }
   }
 
+  const pageTextColor =
+    isDarkMode
+      ? "#f8fafc"
+      : "#172033"
+
+  const secondaryTextColor =
+    isDarkMode
+      ? "#cbd5e1"
+      : "#64748b"
+
+  const labelColor =
+    isDarkMode
+      ? "#e2e8f0"
+      : "#334155"
+
+  const cardBackground =
+    isDarkMode
+      ? "#1e293b"
+      : "#ffffff"
+
+  const cardBorder =
+    isDarkMode
+      ? "#334155"
+      : "#e2e8f0"
+
+  const inputBackground =
+    isDarkMode
+      ? "#0f172a"
+      : "#ffffff"
+
+  const inputBorder =
+    isDarkMode
+      ? "#475569"
+      : "#dbe1ea"
+
+  const inputTextColor =
+    isDarkMode
+      ? "#f8fafc"
+      : "#172033"
+
+  const footerBorder =
+    isDarkMode
+      ? "#334155"
+      : "#eef1f5"
+
+  const footerTextColor =
+    isDarkMode
+      ? "#94a3b8"
+      : "#94a3b8"
+
   return (
     <div
       style={{
@@ -115,7 +173,7 @@ function ChangePassword() {
         margin: "0 auto",
         fontFamily:
           '"Inter", "Segoe UI", Arial, sans-serif',
-        color: "#172033",
+        color: pageTextColor,
       }}
     >
       <div
@@ -142,7 +200,7 @@ function ChangePassword() {
             fontSize: "26px",
             lineHeight: 1.2,
             fontWeight: 800,
-            color: "#172033",
+            color: pageTextColor,
           }}
         >
           Change Password
@@ -151,7 +209,7 @@ function ChangePassword() {
         <p
           style={{
             margin: "7px 0 0",
-            color: "#64748b",
+            color: secondaryTextColor,
             fontSize: "13px",
           }}
         >
@@ -163,12 +221,15 @@ function ChangePassword() {
       <form
         onSubmit={handleSubmit}
         style={{
-          background: "#ffffff",
-          border: "1px solid #e2e8f0",
+          background: cardBackground,
+          border:
+            `1px solid ${cardBorder}`,
           borderRadius: "14px",
           padding: "24px",
           boxShadow:
-            "0 4px 14px rgba(15,23,42,0.04)",
+            isDarkMode
+              ? "0 4px 14px rgba(0,0,0,0.20)"
+              : "0 4px 14px rgba(15,23,42,0.04)",
         }}
       >
         {error && (
@@ -177,10 +238,18 @@ function ChangePassword() {
               marginBottom: "18px",
               padding: "12px 14px",
               borderRadius: "8px",
-              background: "#fef2f2",
+              background:
+                isDarkMode
+                  ? "#450a0a"
+                  : "#fef2f2",
               border:
-                "1px solid #fecaca",
-              color: "#b91c1c",
+                isDarkMode
+                  ? "1px solid #7f1d1d"
+                  : "1px solid #fecaca",
+              color:
+                isDarkMode
+                  ? "#fecaca"
+                  : "#b91c1c",
               fontSize: "12px",
               fontWeight: 600,
             }}
@@ -195,10 +264,18 @@ function ChangePassword() {
               marginBottom: "18px",
               padding: "12px 14px",
               borderRadius: "8px",
-              background: "#f0fdf4",
+              background:
+                isDarkMode
+                  ? "#14532d"
+                  : "#f0fdf4",
               border:
-                "1px solid #bbf7d0",
-              color: "#15803d",
+                isDarkMode
+                  ? "1px solid #166534"
+                  : "1px solid #bbf7d0",
+              color:
+                isDarkMode
+                  ? "#bbf7d0"
+                  : "#15803d",
               fontSize: "12px",
               fontWeight: 600,
             }}
@@ -219,7 +296,7 @@ function ChangePassword() {
               display: "flex",
               flexDirection: "column",
               gap: "7px",
-              color: "#334155",
+              color: labelColor,
               fontSize: "12px",
               fontWeight: 700,
             }}
@@ -242,11 +319,11 @@ function ChangePassword() {
                 padding: "0 12px",
                 boxSizing: "border-box",
                 border:
-                  "1px solid #dbe1ea",
+                  `1px solid ${inputBorder}`,
                 borderRadius: "8px",
                 outline: "none",
-                color: "#172033",
-                background: "#ffffff",
+                color: inputTextColor,
+                background: inputBackground,
                 fontSize: "13px",
               }}
             />
@@ -257,7 +334,7 @@ function ChangePassword() {
               display: "flex",
               flexDirection: "column",
               gap: "7px",
-              color: "#334155",
+              color: labelColor,
               fontSize: "12px",
               fontWeight: 700,
             }}
@@ -280,11 +357,11 @@ function ChangePassword() {
                 padding: "0 12px",
                 boxSizing: "border-box",
                 border:
-                  "1px solid #dbe1ea",
+                  `1px solid ${inputBorder}`,
                 borderRadius: "8px",
                 outline: "none",
-                color: "#172033",
-                background: "#ffffff",
+                color: inputTextColor,
+                background: inputBackground,
                 fontSize: "13px",
               }}
             />
@@ -295,7 +372,7 @@ function ChangePassword() {
               display: "flex",
               flexDirection: "column",
               gap: "7px",
-              color: "#334155",
+              color: labelColor,
               fontSize: "12px",
               fontWeight: 700,
             }}
@@ -318,11 +395,11 @@ function ChangePassword() {
                 padding: "0 12px",
                 boxSizing: "border-box",
                 border:
-                  "1px solid #dbe1ea",
+                  `1px solid ${inputBorder}`,
                 borderRadius: "8px",
                 outline: "none",
-                color: "#172033",
-                background: "#ffffff",
+                color: inputTextColor,
+                background: inputBackground,
                 fontSize: "13px",
               }}
             />
@@ -359,8 +436,8 @@ function ChangePassword() {
             marginTop: "18px",
             paddingTop: "16px",
             borderTop:
-              "1px solid #eef1f5",
-            color: "#94a3b8",
+              `1px solid ${footerBorder}`,
+            color: footerTextColor,
             fontSize: "11px",
             lineHeight: 1.6,
           }}
