@@ -1,6 +1,7 @@
 import {
   useEffect,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -12,6 +13,8 @@ import {
   type CreateLeaveRequest,
   type LeaveRecord,
 } from "../api/leave"
+
+import { useTheme } from "../context/ThemeContext"
 
 const leaveTypes = [
   {
@@ -40,6 +43,8 @@ const emptyForm: CreateLeaveRequest = {
 }
 
 function Leave() {
+  const { isDarkMode } = useTheme()
+
   const [leaves, setLeaves] =
     useState<LeaveRecord[]>([])
 
@@ -65,6 +70,121 @@ function Leave() {
     useState<CreateLeaveRequest>(
       emptyForm,
     )
+
+  const theme = {
+    pageBackground: isDarkMode
+      ? "#111827"
+      : "#f5f7fb",
+
+    cardBackground: isDarkMode
+      ? "#1f2937"
+      : "#ffffff",
+
+    inputBackground: isDarkMode
+      ? "#111827"
+      : "#ffffff",
+
+    text: isDarkMode
+      ? "#f9fafb"
+      : "#111827",
+
+    secondaryText: isDarkMode
+      ? "#d1d5db"
+      : "#374151",
+
+    mutedText: isDarkMode
+      ? "#9ca3af"
+      : "#6b7280",
+
+    border: isDarkMode
+      ? "#374151"
+      : "#e5e7eb",
+
+    rowBorder: isDarkMode
+      ? "#374151"
+      : "#f3f4f6",
+
+    tableHeader: isDarkMode
+      ? "#111827"
+      : "#f9fafb",
+
+    primaryButton: isDarkMode
+      ? "#2563eb"
+      : "#2563eb",
+
+    primaryButtonText:
+      "#ffffff",
+
+    secondaryButtonBackground:
+      isDarkMode
+        ? "#374151"
+        : "#f3f4f6",
+
+    secondaryButtonText:
+      isDarkMode
+        ? "#f9fafb"
+        : "#111827",
+
+    errorBackground: isDarkMode
+      ? "#451a1a"
+      : "#fee2e2",
+
+    errorBorder: isDarkMode
+      ? "#7f1d1d"
+      : "#fecaca",
+
+    errorText: isDarkMode
+      ? "#fca5a5"
+      : "#991b1b",
+
+    successBackground:
+      isDarkMode
+        ? "#14351f"
+        : "#dcfce7",
+
+    successBorder: isDarkMode
+      ? "#166534"
+      : "#bbf7d0",
+
+    successText: isDarkMode
+      ? "#86efac"
+      : "#166534",
+  }
+
+  const inputStyle: CSSProperties = {
+    display: "block",
+    width: "100%",
+    marginTop: "6px",
+    padding: "10px",
+    boxSizing: "border-box",
+    border: `1px solid ${theme.border}`,
+    borderRadius: "6px",
+    background: theme.inputBackground,
+    color: theme.text,
+    fontSize: "14px",
+  }
+
+  const primaryButtonStyle: CSSProperties = {
+    padding: "12px 18px",
+    background: theme.primaryButton,
+    color: theme.primaryButtonText,
+    border: "none",
+    borderRadius: "6px",
+    cursor: isSubmitting
+      ? "not-allowed"
+      : "pointer",
+    opacity: isSubmitting ? 0.7 : 1,
+  }
+
+  const secondaryButtonStyle: CSSProperties = {
+    padding: "8px 14px",
+    background:
+      theme.secondaryButtonBackground,
+    color: theme.secondaryButtonText,
+    border: `1px solid ${theme.border}`,
+    borderRadius: "6px",
+    cursor: "pointer",
+  }
 
   const loadLeaves = async () => {
     try {
@@ -294,7 +414,8 @@ function Leave() {
         fontFamily:
           "Arial, sans-serif",
         background:
-          "#f5f7fb",
+          theme.pageBackground,
+        color: theme.text,
       }}
     >
       <section
@@ -303,11 +424,21 @@ function Leave() {
           margin: "0 auto",
         }}
       >
-        <h1>
+        <h1
+          style={{
+            marginBottom: "8px",
+            color: theme.text,
+          }}
+        >
           Leave Management
         </h1>
 
-        <p>
+        <p
+          style={{
+            marginTop: 0,
+            color: theme.secondaryText,
+          }}
+        >
           Submit and manage your
           leave requests.
         </p>
@@ -317,10 +448,11 @@ function Leave() {
             style={{
               padding: "12px",
               background:
-                "#fee2e2",
+                theme.errorBackground,
+              border: `1px solid ${theme.errorBorder}`,
               borderRadius: "6px",
               color:
-                "#991b1b",
+                theme.errorText,
             }}
           >
             {error}
@@ -332,10 +464,11 @@ function Leave() {
             style={{
               padding: "12px",
               background:
-                "#dcfce7",
+                theme.successBackground,
+              border: `1px solid ${theme.successBorder}`,
               borderRadius: "6px",
               color:
-                "#166534",
+                theme.successText,
             }}
           >
             {success}
@@ -345,24 +478,30 @@ function Leave() {
         <section
           style={{
             background:
-              "#ffffff",
+              theme.cardBackground,
             padding: "24px",
-            borderRadius:
-              "10px",
+            borderRadius: "10px",
             marginTop: "24px",
+            border: `1px solid ${theme.border}`,
+            boxSizing: "border-box",
           }}
         >
           <div
             style={{
               display: "flex",
-              alignItems:
-                "center",
+              alignItems: "center",
               justifyContent:
                 "space-between",
               gap: "16px",
+              flexWrap: "wrap",
             }}
           >
-            <h2>
+            <h2
+              style={{
+                margin: 0,
+                color: theme.text,
+              }}
+            >
               {editingId !== null
                 ? "Edit Leave Request"
                 : "Apply for Leave"}
@@ -374,12 +513,9 @@ function Leave() {
                 onClick={
                   resetForm
                 }
-                style={{
-                  padding:
-                    "8px 14px",
-                  cursor:
-                    "pointer",
-                }}
+                style={
+                  secondaryButtonStyle
+                }
               >
                 Cancel Edit
               </button>
@@ -394,9 +530,14 @@ function Leave() {
               display: "grid",
               gap: "16px",
               maxWidth: "600px",
+              marginTop: "20px",
             }}
           >
-            <label>
+            <label
+              style={{
+                color: theme.secondaryText,
+              }}
+            >
               Leave Type
 
               <select
@@ -415,15 +556,7 @@ function Leave() {
                     }),
                   )
                 }
-                style={{
-                  display:
-                    "block",
-                  width: "100%",
-                  marginTop:
-                    "6px",
-                  padding:
-                    "10px",
-                }}
+                style={inputStyle}
               >
                 {leaveTypes.map(
                   (type) => (
@@ -442,7 +575,11 @@ function Leave() {
               </select>
             </label>
 
-            <label>
+            <label
+              style={{
+                color: theme.secondaryText,
+              }}
+            >
               Start Date
 
               <input
@@ -462,19 +599,15 @@ function Leave() {
                     }),
                   )
                 }
-                style={{
-                  display:
-                    "block",
-                  width: "100%",
-                  marginTop:
-                    "6px",
-                  padding:
-                    "10px",
-                }}
+                style={inputStyle}
               />
             </label>
 
-            <label>
+            <label
+              style={{
+                color: theme.secondaryText,
+              }}
+            >
               End Date
 
               <input
@@ -494,19 +627,15 @@ function Leave() {
                     }),
                   )
                 }
-                style={{
-                  display:
-                    "block",
-                  width: "100%",
-                  marginTop:
-                    "6px",
-                  padding:
-                    "10px",
-                }}
+                style={inputStyle}
               />
             </label>
 
-            <label>
+            <label
+              style={{
+                color: theme.secondaryText,
+              }}
+            >
               Reason
 
               <textarea
@@ -527,13 +656,10 @@ function Leave() {
                 }
                 rows={4}
                 style={{
-                  display:
-                    "block",
-                  width: "100%",
-                  marginTop:
-                    "6px",
-                  padding:
-                    "10px",
+                  ...inputStyle,
+                  resize: "vertical",
+                  fontFamily:
+                    "Arial, sans-serif",
                 }}
               />
             </label>
@@ -543,14 +669,9 @@ function Leave() {
               disabled={
                 isSubmitting
               }
-              style={{
-                padding:
-                  "12px 18px",
-                cursor:
-                  isSubmitting
-                    ? "not-allowed"
-                    : "pointer",
-              }}
+              style={
+                primaryButtonStyle
+              }
             >
               {isSubmitting
                 ? editingId !== null
@@ -566,21 +687,37 @@ function Leave() {
         <section
           style={{
             background:
-              "#ffffff",
+              theme.cardBackground,
             padding: "24px",
-            borderRadius:
-              "10px",
+            borderRadius: "10px",
             marginTop: "24px",
+            border: `1px solid ${theme.border}`,
+            boxSizing: "border-box",
           }}
         >
-          <h2>
+          <h2
+            style={{
+              marginTop: 0,
+              color: theme.text,
+            }}
+          >
             My Leave Requests
           </h2>
 
           {isLoading ? (
-            <p>Loading...</p>
+            <p
+              style={{
+                color: theme.secondaryText,
+              }}
+            >
+              Loading...
+            </p>
           ) : leaves.length === 0 ? (
-            <p>
+            <p
+              style={{
+                color: theme.mutedText,
+              }}
+            >
               No leave records
               found.
             </p>
@@ -598,31 +735,85 @@ function Leave() {
                     "collapse",
                   minWidth:
                     "850px",
+                  color: theme.text,
                 }}
               >
                 <thead>
-                  <tr>
-                    <th align="left">
+                  <tr
+                    style={{
+                      background:
+                        theme.tableHeader,
+                    }}
+                  >
+                    <th
+                      align="left"
+                      style={{
+                        padding:
+                          "12px",
+                        borderBottom: `1px solid ${theme.border}`,
+                        color: theme.secondaryText,
+                      }}
+                    >
                       Type
                     </th>
 
-                    <th align="left">
+                    <th
+                      align="left"
+                      style={{
+                        padding:
+                          "12px",
+                        borderBottom: `1px solid ${theme.border}`,
+                        color: theme.secondaryText,
+                      }}
+                    >
                       Start
                     </th>
 
-                    <th align="left">
+                    <th
+                      align="left"
+                      style={{
+                        padding:
+                          "12px",
+                        borderBottom: `1px solid ${theme.border}`,
+                        color: theme.secondaryText,
+                      }}
+                    >
                       End
                     </th>
 
-                    <th align="left">
+                    <th
+                      align="left"
+                      style={{
+                        padding:
+                          "12px",
+                        borderBottom: `1px solid ${theme.border}`,
+                        color: theme.secondaryText,
+                      }}
+                    >
                       Status
                     </th>
 
-                    <th align="left">
+                    <th
+                      align="left"
+                      style={{
+                        padding:
+                          "12px",
+                        borderBottom: `1px solid ${theme.border}`,
+                        color: theme.secondaryText,
+                      }}
+                    >
                       Reason
                     </th>
 
-                    <th align="left">
+                    <th
+                      align="left"
+                      style={{
+                        padding:
+                          "12px",
+                        borderBottom: `1px solid ${theme.border}`,
+                        color: theme.secondaryText,
+                      }}
+                    >
                       Actions
                     </th>
                   </tr>
@@ -635,43 +826,113 @@ function Leave() {
                         key={
                           leave.id
                         }
+                        style={{
+                          borderBottom: `1px solid ${theme.rowBorder}`,
+                        }}
                       >
-                        <td>
+                        <td
+                          style={{
+                            padding:
+                              "12px",
+                            verticalAlign:
+                              "top",
+                          }}
+                        >
                           {formatLeaveType(
                             leave.leave_type,
                           )}
                         </td>
 
-                        <td>
+                        <td
+                          style={{
+                            padding:
+                              "12px",
+                            verticalAlign:
+                              "top",
+                          }}
+                        >
                           {
                             leave.start_date
                           }
                         </td>
 
-                        <td>
+                        <td
+                          style={{
+                            padding:
+                              "12px",
+                            verticalAlign:
+                              "top",
+                          }}
+                        >
                           {
                             leave.end_date
                           }
                         </td>
 
-                        <td>
-                          {formatLeaveType(
-                            leave.status,
-                          )}
+                        <td
+                          style={{
+                            padding:
+                              "12px",
+                            verticalAlign:
+                              "top",
+                          }}
+                        >
+                          <span
+                            style={{
+                              display:
+                                "inline-block",
+                              padding:
+                                "4px 8px",
+                              borderRadius:
+                                "999px",
+                              background:
+                                isDarkMode
+                                  ? "#374151"
+                                  : "#f3f4f6",
+                              color:
+                                theme.text,
+                              fontSize:
+                                "13px",
+                            }}
+                          >
+                            {formatLeaveType(
+                              leave.status,
+                            )}
+                          </span>
                         </td>
 
-                        <td>
+                        <td
+                          style={{
+                            padding:
+                              "12px",
+                            verticalAlign:
+                              "top",
+                            maxWidth:
+                              "280px",
+                            wordBreak:
+                              "break-word",
+                          }}
+                        >
                           {
                             leave.reason
                           }
                         </td>
 
-                        <td>
+                        <td
+                          style={{
+                            padding:
+                              "12px",
+                            verticalAlign:
+                              "top",
+                          }}
+                        >
                           <div
                             style={{
                               display:
                                 "flex",
                               gap: "8px",
+                              flexWrap:
+                                "wrap",
                             }}
                           >
                             <button
@@ -686,10 +947,19 @@ function Leave() {
                                 leave.id
                               }
                               style={{
+                                ...secondaryButtonStyle,
                                 padding:
                                   "7px 12px",
                                 cursor:
-                                  "pointer",
+                                  deletingId ===
+                                  leave.id
+                                    ? "not-allowed"
+                                    : "pointer",
+                                opacity:
+                                  deletingId ===
+                                  leave.id
+                                    ? 0.6
+                                    : 1,
                               }}
                             >
                               Edit
@@ -722,6 +992,11 @@ function Leave() {
                                   leave.id
                                     ? "not-allowed"
                                     : "pointer",
+                                opacity:
+                                  deletingId ===
+                                  leave.id
+                                    ? 0.6
+                                    : 1,
                               }}
                             >
                               {deletingId ===
