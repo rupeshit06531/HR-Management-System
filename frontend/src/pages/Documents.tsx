@@ -1,6 +1,7 @@
 import {
   useEffect,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -12,6 +13,8 @@ import {
   type DocumentListResponse,
   type DocumentRecord,
 } from "../api/documents"
+
+import { useTheme } from "../context/ThemeContext"
 
 const documentTypes = [
   {
@@ -50,6 +53,8 @@ const emptyForm: Omit<
 }
 
 function Documents() {
+  const { isDarkMode } = useTheme()
+
   const [documents, setDocuments] = useState<
     DocumentRecord[]
   >([])
@@ -75,6 +80,109 @@ function Documents() {
   const [form, setForm] = useState(
     emptyForm,
   )
+
+  const theme = {
+    pageBackground: isDarkMode
+      ? "#111827"
+      : "#f5f7fa",
+
+    cardBackground: isDarkMode
+      ? "#1f2937"
+      : "#ffffff",
+
+    text: isDarkMode
+      ? "#f9fafb"
+      : "#111827",
+
+    mutedText: isDarkMode
+      ? "#9ca3af"
+      : "#6b7280",
+
+    border: isDarkMode
+      ? "#374151"
+      : "#e5e7eb",
+
+    rowBorder: isDarkMode
+      ? "#374151"
+      : "#f3f4f6",
+
+    inputBackground: isDarkMode
+      ? "#111827"
+      : "#ffffff",
+
+    inputText: isDarkMode
+      ? "#f9fafb"
+      : "#111827",
+
+    secondaryButtonBackground:
+      isDarkMode
+        ? "#374151"
+        : "#ffffff",
+
+    errorBackground: isDarkMode
+      ? "#451a1a"
+      : "#fee2e2",
+
+    errorText: isDarkMode
+      ? "#fca5a5"
+      : "#991b1b",
+
+    successBackground: isDarkMode
+      ? "#14532d"
+      : "#dcfce7",
+
+    successText: isDarkMode
+      ? "#bbf7d0"
+      : "#166534",
+
+    tableHeaderBackground: isDarkMode
+      ? "#111827"
+      : "#f9fafb",
+  }
+
+  const inputStyle: CSSProperties = {
+    display: "block",
+    width: "100%",
+    marginTop: "6px",
+    padding: "10px",
+    boxSizing: "border-box",
+    backgroundColor:
+      theme.inputBackground,
+    color: theme.inputText,
+    border: `1px solid ${theme.border}`,
+    borderRadius: "6px",
+  }
+
+  const fileInputStyle: CSSProperties = {
+    display: "block",
+    width: "100%",
+    marginTop: "6px",
+    padding: "8px 0",
+    boxSizing: "border-box",
+    backgroundColor:
+      theme.inputBackground,
+    color: theme.inputText,
+    border: "none",
+  }
+
+  const buttonStyle: CSSProperties = {
+    padding: "10px 18px",
+    border: "none",
+    borderRadius: "6px",
+    backgroundColor: "#2563eb",
+    color: "#ffffff",
+    cursor: "pointer",
+  }
+
+  const cancelButtonStyle: CSSProperties = {
+    padding: "10px 18px",
+    border: `1px solid ${theme.border}`,
+    borderRadius: "6px",
+    backgroundColor:
+      theme.secondaryButtonBackground,
+    color: theme.text,
+    cursor: "pointer",
+  }
 
   const loadDocuments = async () => {
     try {
@@ -108,7 +216,9 @@ function Documents() {
   }, [])
 
   const resetForm = () => {
-    setForm(emptyForm)
+    setForm({
+      ...emptyForm,
+    })
     setShowForm(false)
   }
 
@@ -235,7 +345,9 @@ function Documents() {
       style={{
         minHeight: "100vh",
         padding: "32px",
-        backgroundColor: "#f5f7fa",
+        backgroundColor:
+          theme.pageBackground,
+        color: theme.text,
         fontFamily:
           "Arial, sans-serif",
         boxSizing: "border-box",
@@ -255,13 +367,14 @@ function Documents() {
             alignItems: "center",
             gap: "16px",
             marginBottom: "24px",
+            flexWrap: "wrap",
           }}
         >
           <div>
             <h1
               style={{
                 margin: 0,
-                color: "#111827",
+                color: theme.text,
               }}
             >
               Documents
@@ -269,7 +382,8 @@ function Documents() {
 
             <p
               style={{
-                color: "#6b7280",
+                color: theme.mutedText,
+                marginBottom: 0,
               }}
             >
               Manage employee documents.
@@ -279,19 +393,16 @@ function Documents() {
           <button
             type="button"
             onClick={() => {
-              setForm(emptyForm)
+              setForm({
+                ...emptyForm,
+              })
               setShowForm(true)
               setError(null)
               setSuccess(null)
             }}
             style={{
+              ...buttonStyle,
               padding: "10px 16px",
-              border: "none",
-              borderRadius: "6px",
-              backgroundColor:
-                "#2563eb",
-              color: "#ffffff",
-              cursor: "pointer",
             }}
           >
             Upload Document
@@ -304,9 +415,9 @@ function Documents() {
               padding: "14px",
               marginBottom: "20px",
               backgroundColor:
-                "#fee2e2",
+                theme.errorBackground,
               borderRadius: "8px",
-              color: "#991b1b",
+              color: theme.errorText,
             }}
           >
             {error}
@@ -319,9 +430,9 @@ function Documents() {
               padding: "14px",
               marginBottom: "20px",
               backgroundColor:
-                "#dcfce7",
+                theme.successBackground,
               borderRadius: "8px",
-              color: "#166534",
+              color: theme.successText,
             }}
           >
             {success}
@@ -332,15 +443,23 @@ function Documents() {
           <section
             style={{
               backgroundColor:
-                "#ffffff",
+                theme.cardBackground,
+              color: theme.text,
               padding: "24px",
               borderRadius: "10px",
               marginBottom: "24px",
               boxShadow:
-                "0 1px 3px rgba(0, 0, 0, 0.08)",
+                isDarkMode
+                  ? "0 1px 3px rgba(0, 0, 0, 0.35)"
+                  : "0 1px 3px rgba(0, 0, 0, 0.08)",
             }}
           >
-            <h2>
+            <h2
+              style={{
+                marginTop: 0,
+                color: theme.text,
+              }}
+            >
               Upload Employee Document
             </h2>
 
@@ -352,7 +471,11 @@ function Documents() {
                 maxWidth: "700px",
               }}
             >
-              <label>
+              <label
+                style={{
+                  color: theme.text,
+                }}
+              >
                 Employee ID
 
                 <input
@@ -374,19 +497,15 @@ function Documents() {
                     )
                   }
                   required
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  style={inputStyle}
                 />
               </label>
 
-              <label>
+              <label
+                style={{
+                  color: theme.text,
+                }}
+              >
                 Document Title
 
                 <input
@@ -403,19 +522,15 @@ function Documents() {
                     )
                   }
                   required
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  style={inputStyle}
                 />
               </label>
 
-              <label>
+              <label
+                style={{
+                  color: theme.text,
+                }}
+              >
                 Document Type
 
                 <select
@@ -432,13 +547,7 @@ function Documents() {
                       }),
                     )
                   }
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                  }}
+                  style={inputStyle}
                 >
                   {documentTypes.map(
                     (type) => (
@@ -457,7 +566,11 @@ function Documents() {
                 </select>
               </label>
 
-              <label>
+              <label
+                style={{
+                  color: theme.text,
+                }}
+              >
                 Document File
 
                 <input
@@ -474,16 +587,15 @@ function Documents() {
                     )
                   }
                   required
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                  }}
+                  style={fileInputStyle}
                 />
               </label>
 
-              <label>
+              <label
+                style={{
+                  color: theme.text,
+                }}
+              >
                 Description
 
                 <textarea
@@ -501,15 +613,7 @@ function Documents() {
                     )
                   }
                   rows={4}
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  style={inputStyle}
                 />
               </label>
 
@@ -517,6 +621,7 @@ function Documents() {
                 style={{
                   display: "flex",
                   gap: "10px",
+                  flexWrap: "wrap",
                 }}
               >
                 <button
@@ -525,17 +630,15 @@ function Documents() {
                     isSubmitting
                   }
                   style={{
-                    padding:
-                      "10px 18px",
-                    border: "none",
-                    borderRadius:
-                      "6px",
-                    backgroundColor:
-                      "#2563eb",
-                    color:
-                      "#ffffff",
+                    ...buttonStyle,
+                    opacity:
+                      isSubmitting
+                        ? 0.7
+                        : 1,
                     cursor:
-                      "pointer",
+                      isSubmitting
+                        ? "not-allowed"
+                        : "pointer",
                   }}
                 >
                   {isSubmitting
@@ -546,18 +649,7 @@ function Documents() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  style={{
-                    padding:
-                      "10px 18px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "6px",
-                    backgroundColor:
-                      "#ffffff",
-                    cursor:
-                      "pointer",
-                  }}
+                  style={cancelButtonStyle}
                 >
                   Cancel
                 </button>
@@ -569,9 +661,14 @@ function Documents() {
         <section
           style={{
             backgroundColor:
-              "#ffffff",
+              theme.cardBackground,
+            color: theme.text,
             borderRadius: "10px",
             overflow: "auto",
+            boxShadow:
+              isDarkMode
+                ? "0 1px 3px rgba(0, 0, 0, 0.25)"
+                : "none",
           }}
         >
           <div
@@ -579,12 +676,13 @@ function Documents() {
               padding:
                 "20px 24px",
               borderBottom:
-                "1px solid #e5e7eb",
+                `1px solid ${theme.border}`,
             }}
           >
             <h2
               style={{
                 margin: 0,
+                color: theme.text,
               }}
             >
               Employee Documents
@@ -595,6 +693,7 @@ function Documents() {
             <p
               style={{
                 padding: "24px",
+                color: theme.mutedText,
               }}
             >
               Loading documents...
@@ -604,7 +703,7 @@ function Documents() {
             <p
               style={{
                 padding: "24px",
-                color: "#6b7280",
+                color: theme.mutedText,
               }}
             >
               No documents found.
@@ -619,7 +718,12 @@ function Documents() {
               }}
             >
               <thead>
-                <tr>
+                <tr
+                  style={{
+                    backgroundColor:
+                      theme.tableHeaderBackground,
+                  }}
+                >
                   {[
                     "Employee",
                     "Title",
@@ -637,7 +741,8 @@ function Documents() {
                         textAlign:
                           "left",
                         borderBottom:
-                          "1px solid #e5e7eb",
+                          `1px solid ${theme.border}`,
+                        color: theme.text,
                       }}
                     >
                       {heading}
@@ -659,7 +764,8 @@ function Documents() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          color: theme.text,
                         }}
                       >
                         Employee #
@@ -673,7 +779,8 @@ function Documents() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          color: theme.text,
                         }}
                       >
                         {document.title}
@@ -684,7 +791,8 @@ function Documents() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          color: theme.text,
                         }}
                       >
                         {formatDocumentType(
@@ -697,9 +805,10 @@ function Documents() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
                           maxWidth:
                             "250px",
+                          color: theme.text,
                         }}
                       >
                         {document.description ||
@@ -711,7 +820,8 @@ function Documents() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          color: theme.text,
                         }}
                       >
                         {new Date(
@@ -724,7 +834,7 @@ function Documents() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
                         }}
                       >
                         {document.file ? (
@@ -736,13 +846,20 @@ function Documents() {
                             rel="noreferrer"
                             style={{
                               color:
-                                "#2563eb",
+                                "#60a5fa",
                             }}
                           >
                             View File
                           </a>
                         ) : (
-                          "-"
+                          <span
+                            style={{
+                              color:
+                                theme.mutedText,
+                            }}
+                          >
+                            -
+                          </span>
                         )}
                       </td>
 
@@ -750,8 +867,8 @@ function Documents() {
                         style={{
                           padding:
                             "14px",
-                            borderBottom:
-                              "1px solid #f3f4f6",
+                          borderBottom:
+                            `1px solid ${theme.rowBorder}`,
                         }}
                       >
                         <button
@@ -777,7 +894,15 @@ function Documents() {
                             color:
                               "#ffffff",
                             cursor:
-                              "pointer",
+                              deletingId ===
+                              document.id
+                                ? "not-allowed"
+                                : "pointer",
+                            opacity:
+                              deletingId ===
+                              document.id
+                                ? 0.7
+                                : 1,
                           }}
                         >
                           {deletingId ===
