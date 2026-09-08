@@ -1,6 +1,7 @@
 import {
   useEffect,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -19,16 +20,21 @@ import {
   type Employee,
 } from "../api/employees"
 
-const createEmptyForm = (): CreatePerformanceRequest => ({
-  employee: 0,
-  review_period: "Annual Review",
-  strengths: "",
-  areas_for_improvement: "",
-  manager_comments: "",
-  review_date: "",
-})
+import { useTheme } from "../context/ThemeContext"
+
+const createEmptyForm =
+  (): CreatePerformanceRequest => ({
+    employee: 0,
+    review_period: "Annual Review",
+    strengths: "",
+    areas_for_improvement: "",
+    manager_comments: "",
+    review_date: "",
+  })
 
 function Performance() {
+  const { isDarkMode } = useTheme()
+
   const [reviews, setReviews] = useState<
     PerformanceReview[]
   >([])
@@ -65,6 +71,93 @@ function Performance() {
       createEmptyForm(),
     )
 
+  const theme = {
+    pageBackground: isDarkMode
+      ? "#111827"
+      : "#f5f7fa",
+
+    cardBackground: isDarkMode
+      ? "#1f2937"
+      : "#ffffff",
+
+    inputBackground: isDarkMode
+      ? "#111827"
+      : "#ffffff",
+
+    disabledBackground: isDarkMode
+      ? "#374151"
+      : "#f3f4f6",
+
+    text: isDarkMode
+      ? "#f9fafb"
+      : "#111827",
+
+    secondaryText: isDarkMode
+      ? "#d1d5db"
+      : "#374151",
+
+    mutedText: isDarkMode
+      ? "#9ca3af"
+      : "#6b7280",
+
+    border: isDarkMode
+      ? "#374151"
+      : "#e5e7eb",
+
+    inputBorder: isDarkMode
+      ? "#4b5563"
+      : "#d1d5db",
+
+    rowBorder: isDarkMode
+      ? "#374151"
+      : "#f3f4f6",
+
+    tableHeader: isDarkMode
+      ? "#111827"
+      : "#f9fafb",
+
+    primary: "#2563eb",
+
+    errorBackground: isDarkMode
+      ? "#451a1a"
+      : "#fee2e2",
+
+    errorBorder: isDarkMode
+      ? "#7f1d1d"
+      : "#fecaca",
+
+    errorText: isDarkMode
+      ? "#fca5a5"
+      : "#991b1b",
+
+    successBackground: isDarkMode
+      ? "#14351f"
+      : "#dcfce7",
+
+    successBorder: isDarkMode
+      ? "#166534"
+      : "#bbf7d0",
+
+    successText: isDarkMode
+      ? "#86efac"
+      : "#166534",
+  }
+
+  const inputStyle: CSSProperties = {
+    display: "block",
+    width: "100%",
+    marginTop: "6px",
+    padding: "10px 11px",
+    boxSizing: "border-box",
+    border: `1px solid ${theme.inputBorder}`,
+    borderRadius: "7px",
+    backgroundColor:
+      theme.inputBackground,
+    color: theme.text,
+    fontSize: "14px",
+    outline: "none",
+  }
+
   const loadReviews = async () => {
     try {
       setIsLoading(true)
@@ -96,7 +189,8 @@ function Performance() {
     try {
       setIsLoadingEmployees(true)
 
-      const response = await getEmployees()
+      const response =
+        await getEmployees()
 
       if (Array.isArray(response)) {
         setEmployees(response)
@@ -138,7 +232,8 @@ function Performance() {
   ) => {
     setForm({
       employee: review.employee,
-      review_period: review.review_period,
+      review_period:
+        review.review_period,
       strengths: review.strengths,
       areas_for_improvement:
         review.areas_for_improvement,
@@ -307,7 +402,11 @@ function Performance() {
       `${value}T00:00:00`,
     )
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+      Number.isNaN(
+        date.getTime(),
+      )
+    ) {
       return value
     }
 
@@ -326,7 +425,9 @@ function Performance() {
       style={{
         minHeight: "100vh",
         padding: "32px",
-        backgroundColor: "#f5f7fa",
+        backgroundColor:
+          theme.pageBackground,
+        color: theme.text,
         fontFamily:
           "Arial, sans-serif",
         boxSizing: "border-box",
@@ -353,7 +454,7 @@ function Performance() {
             <h1
               style={{
                 margin: 0,
-                color: "#111827",
+                color: theme.text,
               }}
             >
               Performance
@@ -361,7 +462,8 @@ function Performance() {
 
             <p
               style={{
-                color: "#6b7280",
+                color:
+                  theme.mutedText,
                 marginBottom: 0,
               }}
             >
@@ -378,7 +480,7 @@ function Performance() {
               border: "none",
               borderRadius: "6px",
               backgroundColor:
-                "#2563eb",
+                theme.primary,
               color: "#ffffff",
               cursor: "pointer",
               fontWeight: 600,
@@ -395,11 +497,12 @@ function Performance() {
               padding: "16px",
               marginBottom: "20px",
               backgroundColor:
-                "#fee2e2",
+                theme.errorBackground,
               borderRadius: "8px",
-              color: "#991b1b",
+              color:
+                theme.errorText,
               border:
-                "1px solid #fecaca",
+                `1px solid ${theme.errorBorder}`,
             }}
           >
             {error}
@@ -413,11 +516,12 @@ function Performance() {
               padding: "16px",
               marginBottom: "20px",
               backgroundColor:
-                "#dcfce7",
+                theme.successBackground,
               borderRadius: "8px",
-              color: "#166534",
+              color:
+                theme.successText,
               border:
-                "1px solid #bbf7d0",
+                `1px solid ${theme.successBorder}`,
             }}
           >
             {success}
@@ -428,12 +532,14 @@ function Performance() {
           <section
             style={{
               backgroundColor:
-                "#ffffff",
+                theme.cardBackground,
               padding: "24px",
               borderRadius: "10px",
               marginBottom: "24px",
+              border:
+                `1px solid ${theme.border}`,
               boxShadow:
-                "0 1px 3px rgba(0, 0, 0, 0.08)",
+                "0 2px 6px rgba(0, 0, 0, 0.12)",
             }}
           >
             <div
@@ -449,6 +555,7 @@ function Performance() {
               <h2
                 style={{
                   margin: 0,
+                  color: theme.text,
                 }}
               >
                 {editingId !== null
@@ -463,14 +570,19 @@ function Performance() {
                 style={{
                   padding: "7px 12px",
                   border:
-                    "1px solid #d1d5db",
+                    `1px solid ${theme.inputBorder}`,
                   borderRadius: "6px",
                   backgroundColor:
-                    "#ffffff",
+                    isDarkMode
+                      ? "#374151"
+                      : "#ffffff",
+                  color:
+                    theme.text,
                   cursor:
                     isSubmitting
                       ? "not-allowed"
                       : "pointer",
+                  fontWeight: 600,
                 }}
               >
                 Close
@@ -485,7 +597,14 @@ function Performance() {
                 maxWidth: "700px",
               }}
             >
-              <label>
+              <label
+                style={{
+                  color:
+                    theme.secondaryText,
+                  fontWeight: 600,
+                  fontSize: "14px",
+                }}
+              >
                 Employee
 
                 <select
@@ -509,14 +628,12 @@ function Performance() {
                     isLoadingEmployees
                   }
                   style={{
-                    display: "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                    backgroundColor:
-                      "#ffffff",
+                    ...inputStyle,
+                    cursor:
+                      isSubmitting ||
+                      isLoadingEmployees
+                        ? "not-allowed"
+                        : "pointer",
                   }}
                 >
                   <option value="">
@@ -528,8 +645,12 @@ function Performance() {
                   {employees.map(
                     (employee) => (
                       <option
-                        key={employee.id}
-                        value={employee.id}
+                        key={
+                          employee.id
+                        }
+                        value={
+                          employee.id
+                        }
                       >
                         {employee.full_name} —{" "}
                         {employee.employee_id}
@@ -539,7 +660,14 @@ function Performance() {
                 </select>
               </label>
 
-              <label>
+              <label
+                style={{
+                  color:
+                    theme.secondaryText,
+                  fontWeight: 600,
+                  fontSize: "14px",
+                }}
+              >
                 Review Period
 
                 <input
@@ -560,19 +688,20 @@ function Performance() {
                   required
                   disabled={isSubmitting}
                   placeholder="e.g. Annual Review"
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  style={
+                    inputStyle
+                  }
                 />
               </label>
 
-              <label>
+              <label
+                style={{
+                  color:
+                    theme.secondaryText,
+                  fontWeight: 600,
+                  fontSize: "14px",
+                }}
+              >
                 Review Date
 
                 <input
@@ -592,23 +721,26 @@ function Performance() {
                   }
                   required
                   disabled={isSubmitting}
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  style={
+                    inputStyle
+                  }
                 />
               </label>
 
-              <label>
+              <label
+                style={{
+                  color:
+                    theme.secondaryText,
+                  fontWeight: 600,
+                  fontSize: "14px",
+                }}
+              >
                 Strengths
 
                 <textarea
-                  value={form.strengths}
+                  value={
+                    form.strengths
+                  }
                   onChange={(event) =>
                     setForm(
                       (current) => ({
@@ -623,19 +755,20 @@ function Performance() {
                   disabled={isSubmitting}
                   placeholder="Employee strengths and achievements"
                   style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
+                    ...inputStyle,
                     resize: "vertical",
                   }}
                 />
               </label>
 
-              <label>
+              <label
+                style={{
+                  color:
+                    theme.secondaryText,
+                  fontWeight: 600,
+                  fontSize: "14px",
+                }}
+              >
                 Areas for Improvement
 
                 <textarea
@@ -656,19 +789,20 @@ function Performance() {
                   disabled={isSubmitting}
                   placeholder="Skills or areas requiring improvement"
                   style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
+                    ...inputStyle,
                     resize: "vertical",
                   }}
                 />
               </label>
 
-              <label>
+              <label
+                style={{
+                  color:
+                    theme.secondaryText,
+                  fontWeight: 600,
+                  fontSize: "14px",
+                }}
+              >
                 Manager Comments
 
                 <textarea
@@ -689,13 +823,7 @@ function Performance() {
                   disabled={isSubmitting}
                   placeholder="Manager's overall comments"
                   style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
+                    ...inputStyle,
                     resize: "vertical",
                   }}
                 />
@@ -720,9 +848,15 @@ function Performance() {
                     borderRadius:
                       "6px",
                     backgroundColor:
-                      "#2563eb",
+                      isSubmitting
+                        ? isDarkMode
+                          ? "#374151"
+                          : "#93c5fd"
+                        : theme.primary,
                     color:
-                      "#ffffff",
+                      isSubmitting
+                        ? theme.mutedText
+                        : "#ffffff",
                     cursor:
                       isSubmitting
                         ? "not-allowed"
@@ -747,15 +881,20 @@ function Performance() {
                     padding:
                       "10px 18px",
                     border:
-                      "1px solid #d1d5db",
+                      `1px solid ${theme.inputBorder}`,
                     borderRadius:
                       "6px",
                     backgroundColor:
-                      "#ffffff",
+                      isDarkMode
+                        ? "#374151"
+                        : "#ffffff",
+                    color:
+                      theme.text,
                     cursor:
                       isSubmitting
                         ? "not-allowed"
                         : "pointer",
+                    fontWeight: 600,
                   }}
                 >
                   Cancel
@@ -768,11 +907,13 @@ function Performance() {
         <section
           style={{
             backgroundColor:
-              "#ffffff",
+              theme.cardBackground,
             borderRadius: "10px",
             overflow: "auto",
+            border:
+              `1px solid ${theme.border}`,
             boxShadow:
-              "0 1px 3px rgba(0, 0, 0, 0.05)",
+              "0 2px 6px rgba(0, 0, 0, 0.08)",
           }}
         >
           <div
@@ -780,12 +921,13 @@ function Performance() {
               padding:
                 "20px 24px",
               borderBottom:
-                "1px solid #e5e7eb",
+                `1px solid ${theme.border}`,
             }}
           >
             <h2
               style={{
                 margin: 0,
+                color: theme.text,
               }}
             >
               Performance Reviews
@@ -796,7 +938,7 @@ function Performance() {
                 margin:
                   "6px 0 0",
                 color:
-                  "#6b7280",
+                  theme.mutedText,
                 fontSize:
                   "14px",
               }}
@@ -812,6 +954,8 @@ function Performance() {
             <p
               style={{
                 padding: "24px",
+                color:
+                  theme.mutedText,
               }}
             >
               Loading performance
@@ -830,7 +974,7 @@ function Performance() {
                 style={{
                   margin: 0,
                   color:
-                    "#6b7280",
+                    theme.mutedText,
                 }}
               >
                 No performance reviews
@@ -851,11 +995,13 @@ function Performance() {
                   borderRadius:
                     "6px",
                   backgroundColor:
-                    "#2563eb",
+                    theme.primary,
                   color:
                     "#ffffff",
                   cursor:
                     "pointer",
+                  fontWeight:
+                    600,
                 }}
               >
                 Add First Review
@@ -869,6 +1015,8 @@ function Performance() {
                   "collapse",
                 minWidth:
                   "1150px",
+                color:
+                  theme.text,
               }}
             >
               <thead>
@@ -893,15 +1041,15 @@ function Performance() {
                           textAlign:
                             "left",
                           borderBottom:
-                            "1px solid #e5e7eb",
+                            `1px solid ${theme.border}`,
                           backgroundColor:
-                            "#f9fafb",
+                            theme.tableHeader,
                           whiteSpace:
                             "nowrap",
                           fontSize:
                             "13px",
                           color:
-                            "#374151",
+                            theme.secondaryText,
                         }}
                       >
                         {heading}
@@ -924,9 +1072,11 @@ function Performance() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
                           verticalAlign:
                             "top",
+                          color:
+                            theme.text,
                         }}
                       >
                         <strong>
@@ -939,7 +1089,7 @@ function Performance() {
                             fontSize:
                               "12px",
                             color:
-                              "#6b7280",
+                              theme.mutedText,
                             marginTop:
                               "4px",
                           }}
@@ -954,11 +1104,13 @@ function Performance() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
                           verticalAlign:
                             "top",
                           whiteSpace:
                             "nowrap",
+                          color:
+                            theme.secondaryText,
                         }}
                       >
                         {
@@ -971,11 +1123,13 @@ function Performance() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
                           verticalAlign:
                             "top",
                           whiteSpace:
                             "nowrap",
+                          color:
+                            theme.secondaryText,
                         }}
                       >
                         {formatDate(
@@ -988,7 +1142,7 @@ function Performance() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
                           verticalAlign:
                             "top",
                           maxWidth:
@@ -997,6 +1151,8 @@ function Performance() {
                             "pre-wrap",
                           overflowWrap:
                             "anywhere",
+                          color:
+                            theme.secondaryText,
                         }}
                       >
                         {review.strengths ||
@@ -1008,7 +1164,7 @@ function Performance() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
                           verticalAlign:
                             "top",
                           maxWidth:
@@ -1017,6 +1173,8 @@ function Performance() {
                             "pre-wrap",
                           overflowWrap:
                             "anywhere",
+                          color:
+                            theme.secondaryText,
                         }}
                       >
                         {
@@ -1030,7 +1188,7 @@ function Performance() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
                           verticalAlign:
                             "top",
                           maxWidth:
@@ -1039,6 +1197,8 @@ function Performance() {
                             "pre-wrap",
                           overflowWrap:
                             "anywhere",
+                          color:
+                            theme.secondaryText,
                         }}
                       >
                         {
@@ -1052,7 +1212,7 @@ function Performance() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
                           verticalAlign:
                             "top",
                         }}
@@ -1083,19 +1243,25 @@ function Performance() {
                               padding:
                                 "7px 12px",
                               border:
-                                "1px solid #2563eb",
+                                `1px solid ${theme.primary}`,
                               borderRadius:
                                 "6px",
                               backgroundColor:
-                                "#ffffff",
+                                isDarkMode
+                                  ? "#1e3a8a"
+                                  : "#ffffff",
                               color:
-                                "#2563eb",
+                                isDarkMode
+                                  ? "#dbeafe"
+                                  : theme.primary,
                               cursor:
                                 isSubmitting ||
                                 deletingId !==
                                   null
                                   ? "not-allowed"
                                   : "pointer",
+                              fontWeight:
+                                600,
                             }}
                           >
                             Edit
@@ -1120,7 +1286,12 @@ function Performance() {
                               borderRadius:
                                 "6px",
                               backgroundColor:
-                                "#dc2626",
+                                deletingId ===
+                                review.id
+                                  ? isDarkMode
+                                    ? "#7f1d1d"
+                                    : "#fca5a5"
+                                  : "#dc2626",
                               color:
                                 "#ffffff",
                               cursor:
@@ -1128,6 +1299,8 @@ function Performance() {
                                 review.id
                                   ? "not-allowed"
                                   : "pointer",
+                              fontWeight:
+                                600,
                             }}
                           >
                             {deletingId ===
