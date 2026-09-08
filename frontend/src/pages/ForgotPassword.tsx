@@ -14,7 +14,15 @@ import {
   forgotPassword,
 } from "../api/auth"
 
+import {
+  useTheme,
+} from "../context/ThemeContext"
+
 function ForgotPassword() {
+  const {
+    isDarkMode,
+  } = useTheme()
+
   const [username, setUsername] =
     useState("")
 
@@ -83,6 +91,56 @@ function ForgotPassword() {
     setEmail(event.target.value)
   }
 
+  const pageBackground =
+    isDarkMode
+      ? "#0f172a"
+      : "#f5f7fb"
+
+  const cardBackground =
+    isDarkMode
+      ? "#1e293b"
+      : "#ffffff"
+
+  const borderColor =
+    isDarkMode
+      ? "#334155"
+      : "#e5e7eb"
+
+  const headingColor =
+    isDarkMode
+      ? "#f8fafc"
+      : "#172033"
+
+  const textColor =
+    isDarkMode
+      ? "#cbd5e1"
+      : "#64748b"
+
+  const labelColor =
+    isDarkMode
+      ? "#e2e8f0"
+      : "#334155"
+
+  const inputBackground =
+    isDarkMode
+      ? "#0f172a"
+      : "#ffffff"
+
+  const inputBorder =
+    isDarkMode
+      ? "#475569"
+      : "#d1d5db"
+
+  const inputColor =
+    isDarkMode
+      ? "#f8fafc"
+      : "#172033"
+
+  const cardShadow =
+    isDarkMode
+      ? "0 8px 24px rgba(0,0,0,0.25)"
+      : "0 8px 24px rgba(15,23,42,0.06)"
+
   return (
     <div
       style={{
@@ -91,22 +149,23 @@ function ForgotPassword() {
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
-        background: "#f5f7fb",
+        background: pageBackground,
         fontFamily:
           "Inter, Arial, Helvetica, sans-serif",
+        boxSizing: "border-box",
       }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: "430px",
-          background: "#ffffff",
-          border: "1px solid #e5e7eb",
+          background: cardBackground,
+          border:
+            `1px solid ${borderColor}`,
           borderRadius: "14px",
           padding: "30px",
           boxSizing: "border-box",
-          boxShadow:
-            "0 8px 24px rgba(15,23,42,0.06)",
+          boxShadow: cardShadow,
         }}
       >
         <div
@@ -130,7 +189,7 @@ function ForgotPassword() {
           <h1
             style={{
               margin: 0,
-              color: "#172033",
+              color: headingColor,
               fontSize: "24px",
               fontWeight: 800,
             }}
@@ -141,7 +200,7 @@ function ForgotPassword() {
           <p
             style={{
               margin: "8px 0 0",
-              color: "#64748b",
+              color: textColor,
               fontSize: "13px",
               lineHeight: 1.6,
             }}
@@ -157,9 +216,18 @@ function ForgotPassword() {
               marginBottom: "18px",
               padding: "12px 14px",
               borderRadius: "8px",
-              background: "#f0fdf4",
-              border: "1px solid #bbf7d0",
-              color: "#166534",
+              background:
+                isDarkMode
+                  ? "#14532d"
+                  : "#f0fdf4",
+              border:
+                isDarkMode
+                  ? "1px solid #166534"
+                  : "1px solid #bbf7d0",
+              color:
+                isDarkMode
+                  ? "#bbf7d0"
+                  : "#166534",
               fontSize: "13px",
               lineHeight: 1.5,
             }}
@@ -174,9 +242,18 @@ function ForgotPassword() {
               marginBottom: "18px",
               padding: "12px 14px",
               borderRadius: "8px",
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
-              color: "#b91c1c",
+              background:
+                isDarkMode
+                  ? "#450a0a"
+                  : "#fef2f2",
+              border:
+                isDarkMode
+                  ? "1px solid #7f1d1d"
+                  : "1px solid #fecaca",
+              color:
+                isDarkMode
+                  ? "#fecaca"
+                  : "#b91c1c",
               fontSize: "13px",
               lineHeight: 1.5,
             }}
@@ -196,7 +273,7 @@ function ForgotPassword() {
               style={{
                 display: "block",
                 marginBottom: "7px",
-                color: "#334155",
+                color: labelColor,
                 fontSize: "13px",
                 fontWeight: 700,
               }}
@@ -215,12 +292,12 @@ function ForgotPassword() {
                 width: "100%",
                 padding: "11px 12px",
                 border:
-                  "1px solid #d1d5db",
+                  `1px solid ${inputBorder}`,
                 borderRadius: "8px",
                 outline: "none",
                 boxSizing: "border-box",
-                color: "#172033",
-                background: "#ffffff",
+                color: inputColor,
+                background: inputBackground,
                 fontSize: "13px",
               }}
             />
@@ -236,7 +313,7 @@ function ForgotPassword() {
               style={{
                 display: "block",
                 marginBottom: "7px",
-                color: "#334155",
+                color: labelColor,
                 fontSize: "13px",
                 fontWeight: 700,
               }}
@@ -255,12 +332,12 @@ function ForgotPassword() {
                 width: "100%",
                 padding: "11px 12px",
                 border:
-                  "1px solid #d1d5db",
+                  `1px solid ${inputBorder}`,
                 borderRadius: "8px",
                 outline: "none",
                 boxSizing: "border-box",
-                color: "#172033",
-                background: "#ffffff",
+                color: inputColor,
+                background: inputBackground,
                 fontSize: "13px",
               }}
             />
