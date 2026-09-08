@@ -15,6 +15,7 @@ import {
   type Attendance,
 } from "../api/attendance"
 import { getDashboard } from "../api/dashboard"
+import { getAnalytics } from "../api/analytics"
 import { getAnnouncements, type AnnouncementRecord } from "../api/announcements"
 import { getHolidays, type Holiday } from "../api/holidays"
 import { useAuth } from "../context/AuthContext"
@@ -167,6 +168,9 @@ function Dashboard() {
   >(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [analytics, setAnalytics] = useState<
+    Awaited<ReturnType<typeof getAnalytics>> | null
+  >(null)
 
   const [announcements, setAnnouncements] = useState<AnnouncementRecord[]>([])
   const [holidays, setHolidays] = useState<Holiday[]>([])
@@ -178,7 +182,10 @@ function Dashboard() {
       setError("")
 
       const data = await getDashboard()
+      const analyticsData = await getAnalytics()
+
       setDashboard(data)
+      setAnalytics(analyticsData)
     } catch {
       setError("Unable to load dashboard information.")
     } finally {
@@ -499,6 +506,7 @@ function Dashboard() {
             announcements={announcements}
             holidays={holidays}
             contentError={contentError}
+            analytics={analytics}
           />
         )}
 
@@ -1361,6 +1369,7 @@ function AdminHrDashboard({
   announcements,
   holidays,
   contentError,
+  analytics,
 }: {
   role: string
   totalEmployees: number
@@ -1377,6 +1386,7 @@ function AdminHrDashboard({
   announcements: AnnouncementRecord[]
   holidays: Holiday[]
   contentError: string
+  analytics: Awaited<ReturnType<typeof getAnalytics>> | null
 }) {
   const isSuperAdmin = role === "SUPER_ADMIN"
 
@@ -1448,6 +1458,111 @@ function AdminHrDashboard({
       </div>
 
       <SectionHeader
+        title="Employee Analytics"
+        description="Workforce distribution by department and employment type."
+      />
+
+      <div className="dashboard-two-column">
+        <div className="dashboard-panel">
+          <div className="dashboard-panel-heading">
+            <div>
+              <h3>By Department</h3>
+              <p>Employee distribution across departments.</p>
+            </div>
+          </div>
+
+          {analytics?.employees.by_department.length ? (
+            <div className="dashboard-analytics-list">
+              {analytics.employees.by_department.map((item) => {
+                const maxTotal = Math.max(
+                  ...analytics.employees.by_department.map(
+                    (department) => department.total,
+                  ),
+                  1,
+                )
+
+                const percentage = Math.round(
+                  (item.total / maxTotal) * 100,
+                )
+
+                return (
+                  <div
+                    key={item.department ?? "unassigned"}
+                    className="dashboard-analytics-row"
+                  >
+                    <div className="dashboard-analytics-row-top">
+                      <span>{item.department ?? "Unassigned"}</span>
+                      <strong>{item.total}</strong>
+                    </div>
+
+                    <div className="dashboard-status-track">
+                      <div
+                        className="dashboard-status-progress"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="dashboard-empty-text">
+              No department analytics available.
+            </p>
+          )}
+        </div>
+
+        <div className="dashboard-panel">
+          <div className="dashboard-panel-heading">
+            <div>
+              <h3>By Employment Type</h3>
+              <p>Employee distribution by employment type.</p>
+            </div>
+          </div>
+
+          {analytics?.employees.by_employment_type.length ? (
+            <div className="dashboard-analytics-list">
+              {analytics.employees.by_employment_type.map((item) => {
+                const maxTotal = Math.max(
+                  ...analytics.employees.by_employment_type.map(
+                    (employmentType) => employmentType.total,
+                  ),
+                  1,
+                )
+
+                const percentage = Math.round(
+                  (item.total / maxTotal) * 100,
+                )
+
+                return (
+                  <div
+                    key={item.employment_type}
+                    className="dashboard-analytics-row"
+                  >
+                    <div className="dashboard-analytics-row-top">
+                      <span>{item.employment_type}</span>
+                      <strong>{item.total}</strong>
+                    </div>
+
+                    <div className="dashboard-status-track">
+                      <div
+                        className="dashboard-status-progress"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="dashboard-empty-text">
+              No employment type analytics available.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <SectionHeader
         title={
           isSuperAdmin
             ? "Administrative Actions"
@@ -1484,6 +1599,7 @@ function AdminHrDashboard({
         announcements={announcements}
         holidays={holidays}
         contentError={contentError}
+        analytics={analytics}
       />
     </>
   )
@@ -1842,6 +1958,7 @@ function DashboardBottomPanels({
   announcements: AnnouncementRecord[]
   holidays: Holiday[]
   contentError: string
+  analytics: Awaited<ReturnType<typeof getAnalytics>> | null
 }) {
   return (
     <div className="dashboard-bottom-grid">
@@ -2519,6 +2636,40 @@ const dashboardStyles = `
     border: 1px solid var(--border);
     border-radius: 9px;
     background: var(--surface);
+  }
+
+  .dashboard-analytics-list {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  .dashboard-analytics-row {
+    min-width: 0;
+  }
+
+  .dashboard-analytics-row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+  }
+
+  .dashboard-analytics-row-top span {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 10px;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-analytics-row-top strong {
+    flex: 0 0 auto;
+    color: var(--text);
+    font-size: 10px;
+    font-weight: 800;
   }
 
   .dashboard-panel-total span {
