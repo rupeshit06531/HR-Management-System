@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -14,6 +15,8 @@ import {
   type CandidateListResponse,
   type CandidatePayload,
 } from "../api/recruitment"
+
+import { useTheme } from "../context/ThemeContext"
 
 const statuses = [
   { value: "APPLIED", label: "Applied" },
@@ -41,27 +44,6 @@ const emptyForm: CandidatePayload = {
   expected_salary: null,
   offer_date: null,
   joining_date: null,
-}
-
-const labelStyle = {
-  display: "flex",
-  flexDirection: "column" as const,
-  gap: "7px",
-  color: "#374151",
-  fontSize: "13px",
-  fontWeight: 600,
-}
-
-const inputStyle = {
-  width: "100%",
-  padding: "10px 12px",
-  border: "1px solid #d1d5db",
-  borderRadius: "7px",
-  boxSizing: "border-box" as const,
-  fontSize: "14px",
-  color: "#111827",
-  backgroundColor: "#ffffff",
-  outline: "none",
 }
 
 function formatStatus(value: string) {
@@ -126,9 +108,120 @@ function getStatusStyle(status: string) {
 }
 
 function Recruitment() {
-  const [candidates, setCandidates] = useState<Candidate[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { isDarkMode } = useTheme()
+
+  const colors = {
+    pageBackground: isDarkMode
+      ? "#0f172a"
+      : "#f8fafc",
+
+    cardBackground: isDarkMode
+      ? "#111827"
+      : "#ffffff",
+
+    inputBackground: isDarkMode
+      ? "#1f2937"
+      : "#ffffff",
+
+    text: isDarkMode
+      ? "#f9fafb"
+      : "#111827",
+
+    secondaryText: isDarkMode
+      ? "#d1d5db"
+      : "#374151",
+
+    mutedText: isDarkMode
+      ? "#9ca3af"
+      : "#6b7280",
+
+    subtleText: isDarkMode
+      ? "#6b7280"
+      : "#9ca3af",
+
+    border: isDarkMode
+      ? "#374151"
+      : "#e5e7eb",
+
+    inputBorder: isDarkMode
+      ? "#4b5563"
+      : "#d1d5db",
+
+    rowBorder: isDarkMode
+      ? "#263244"
+      : "#f3f4f6",
+
+    tableHeader: isDarkMode
+      ? "#1f2937"
+      : "#f8fafc",
+
+    primary: "#2563eb",
+
+    primaryDisabled: "#60a5fa",
+
+    errorBackground: isDarkMode
+      ? "#450a0a"
+      : "#fee2e2",
+
+    errorBorder: isDarkMode
+      ? "#7f1d1d"
+      : "#fecaca",
+
+    errorText: isDarkMode
+      ? "#fca5a5"
+      : "#991b1b",
+
+    successBackground: isDarkMode
+      ? "#052e16"
+      : "#dcfce7",
+
+    successBorder: isDarkMode
+      ? "#166534"
+      : "#bbf7d0",
+
+    successText: isDarkMode
+      ? "#86efac"
+      : "#166534",
+
+    secondaryButtonBackground: isDarkMode
+      ? "#1f2937"
+      : "#ffffff",
+
+    secondaryButtonText: isDarkMode
+      ? "#e5e7eb"
+      : "#374151",
+  }
+
+  const labelStyle: CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "7px",
+    color: colors.secondaryText,
+    fontSize: "13px",
+    fontWeight: 600,
+  }
+
+  const inputStyle: CSSProperties = {
+    width: "100%",
+    padding: "10px 12px",
+    border: `1px solid ${colors.inputBorder}`,
+    borderRadius: "7px",
+    boxSizing: "border-box",
+    fontSize: "14px",
+    color: colors.text,
+    backgroundColor: colors.inputBackground,
+    outline: "none",
+  }
+
+  const [candidates, setCandidates] =
+    useState<Candidate[]>([])
+
+  const [isLoading, setIsLoading] =
+    useState(true)
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false)
+
   const [deletingId, setDeletingId] =
     useState<number | null>(null)
 
@@ -592,7 +685,8 @@ function Recruitment() {
     <main
       style={{
         minHeight: "100vh",
-        backgroundColor: "#f8fafc",
+        backgroundColor:
+          colors.pageBackground,
         padding: "32px 24px",
         boxSizing: "border-box",
       }}
@@ -617,7 +711,7 @@ function Recruitment() {
           <div>
             <div
               style={{
-                color: "#2563eb",
+                color: colors.primary,
                 fontSize: "13px",
                 fontWeight: 700,
                 textTransform:
@@ -633,7 +727,7 @@ function Recruitment() {
             <h1
               style={{
                 margin: 0,
-                color: "#111827",
+                color: colors.text,
                 fontSize: "30px",
               }}
             >
@@ -644,7 +738,7 @@ function Recruitment() {
               style={{
                 margin:
                   "8px 0 0",
-                color: "#6b7280",
+                color: colors.mutedText,
                 fontSize: "15px",
               }}
             >
@@ -671,7 +765,7 @@ function Recruitment() {
               border: "none",
               borderRadius: "8px",
               backgroundColor:
-                "#2563eb",
+                colors.primary,
               color: "#ffffff",
               cursor: "pointer",
               fontWeight: 700,
@@ -689,11 +783,11 @@ function Recruitment() {
                 "14px 16px",
               marginBottom: "20px",
               backgroundColor:
-                "#fee2e2",
+                colors.errorBackground,
               border:
-                "1px solid #fecaca",
+                `1px solid ${colors.errorBorder}`,
               borderRadius: "8px",
-              color: "#991b1b",
+              color: colors.errorText,
               fontSize: "14px",
               whiteSpace: "pre-wrap",
             }}
@@ -709,11 +803,11 @@ function Recruitment() {
                 "14px 16px",
               marginBottom: "20px",
               backgroundColor:
-                "#dcfce7",
+                colors.successBackground,
               border:
-                "1px solid #bbf7d0",
+                `1px solid ${colors.successBorder}`,
               borderRadius: "8px",
-              color: "#166534",
+              color: colors.successText,
               fontSize: "14px",
             }}
           >
@@ -756,9 +850,9 @@ function Recruitment() {
               key={stat.label}
               style={{
                 backgroundColor:
-                  "#ffffff",
+                  colors.cardBackground,
                 border:
-                  "1px solid #e5e7eb",
+                  `1px solid ${colors.border}`,
                 borderRadius: "10px",
                 padding: "18px",
                 boxShadow:
@@ -767,7 +861,7 @@ function Recruitment() {
             >
               <div
                 style={{
-                  color: "#6b7280",
+                  color: colors.mutedText,
                   fontSize: "13px",
                   fontWeight: 600,
                   marginBottom:
@@ -779,7 +873,7 @@ function Recruitment() {
 
               <div
                 style={{
-                  color: "#111827",
+                  color: colors.text,
                   fontSize: "27px",
                   fontWeight: 700,
                 }}
@@ -794,9 +888,9 @@ function Recruitment() {
           <section
             style={{
               backgroundColor:
-                "#ffffff",
+                colors.cardBackground,
               border:
-                "1px solid #e5e7eb",
+                `1px solid ${colors.border}`,
               borderRadius: "10px",
               padding: "24px",
               marginBottom: "24px",
@@ -819,7 +913,7 @@ function Recruitment() {
                 <h2
                   style={{
                     margin: 0,
-                    color: "#111827",
+                    color: colors.text,
                     fontSize: "20px",
                   }}
                 >
@@ -833,7 +927,7 @@ function Recruitment() {
                   style={{
                     margin:
                       "6px 0 0",
-                    color: "#6b7280",
+                    color: colors.mutedText,
                     fontSize: "13px",
                   }}
                 >
@@ -850,7 +944,7 @@ function Recruitment() {
                   border: "none",
                   backgroundColor:
                     "transparent",
-                  color: "#6b7280",
+                  color: colors.mutedText,
                   cursor: "pointer",
                   fontSize: "24px",
                   lineHeight: 1,
@@ -1105,7 +1199,7 @@ function Recruitment() {
                     <span
                       style={{
                         color:
-                          "#6b7280",
+                          colors.mutedText,
                         fontSize:
                           "12px",
                         fontWeight:
@@ -1370,8 +1464,8 @@ function Recruitment() {
                       "7px",
                     backgroundColor:
                       isSubmitting
-                        ? "#93c5fd"
-                        : "#2563eb",
+                        ? colors.primaryDisabled
+                        : colors.primary,
                     color:
                       "#ffffff",
                     cursor:
@@ -1398,13 +1492,13 @@ function Recruitment() {
                     padding:
                       "11px 20px",
                     border:
-                      "1px solid #d1d5db",
+                      `1px solid ${colors.inputBorder}`,
                     borderRadius:
                       "7px",
                     backgroundColor:
-                      "#ffffff",
+                      colors.secondaryButtonBackground,
                     color:
-                      "#374151",
+                      colors.secondaryButtonText,
                     cursor:
                       "pointer",
                     fontWeight: 600,
@@ -1420,9 +1514,9 @@ function Recruitment() {
         <section
           style={{
             backgroundColor:
-              "#ffffff",
+              colors.cardBackground,
             border:
-              "1px solid #e5e7eb",
+              `1px solid ${colors.border}`,
             borderRadius: "10px",
             overflow: "hidden",
             boxShadow:
@@ -1434,7 +1528,7 @@ function Recruitment() {
               padding:
                 "20px 22px",
               borderBottom:
-                "1px solid #e5e7eb",
+                `1px solid ${colors.border}`,
             }}
           >
             <div
@@ -1453,7 +1547,7 @@ function Recruitment() {
                 <h2
                   style={{
                     margin: 0,
-                    color: "#111827",
+                    color: colors.text,
                     fontSize:
                       "19px",
                   }}
@@ -1466,7 +1560,7 @@ function Recruitment() {
                     margin:
                       "5px 0 0",
                     color:
-                      "#6b7280",
+                      colors.mutedText,
                     fontSize:
                       "13px",
                   }}
@@ -1504,18 +1598,11 @@ function Recruitment() {
                     )
                   }
                   style={{
+                    ...inputStyle,
                     width:
                       "240px",
                     padding:
                       "9px 12px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "7px",
-                    boxSizing:
-                      "border-box",
-                    fontSize:
-                      "14px",
                   }}
                 />
 
@@ -1530,16 +1617,11 @@ function Recruitment() {
                     )
                   }
                   style={{
+                    ...inputStyle,
+                    width:
+                      "auto",
                     padding:
                       "9px 12px",
-                    border:
-                      "1px solid #d1d5db",
-                    borderRadius:
-                      "7px",
-                    backgroundColor:
-                      "#ffffff",
-                    fontSize:
-                      "14px",
                   }}
                 >
                   <option value="ALL">
@@ -1573,7 +1655,7 @@ function Recruitment() {
                 textAlign:
                   "center",
                 color:
-                  "#6b7280",
+                  colors.mutedText,
               }}
             >
               Loading candidates...
@@ -1602,7 +1684,7 @@ function Recruitment() {
               <strong
                 style={{
                   color:
-                    "#374151",
+                    colors.secondaryText,
                 }}
               >
                 No candidates
@@ -1612,7 +1694,7 @@ function Recruitment() {
               <p
                 style={{
                   color:
-                    "#6b7280",
+                    colors.mutedText,
                   fontSize:
                     "14px",
                 }}
@@ -1642,7 +1724,7 @@ function Recruitment() {
                   <tr
                     style={{
                       backgroundColor:
-                        "#f8fafc",
+                        colors.tableHeader,
                     }}
                   >
                     {[
@@ -1668,7 +1750,7 @@ function Recruitment() {
                             textAlign:
                               "left",
                             color:
-                              "#6b7280",
+                              colors.mutedText,
                             fontSize:
                               "12px",
                             fontWeight:
@@ -1678,7 +1760,7 @@ function Recruitment() {
                             letterSpacing:
                               "0.04em",
                             borderBottom:
-                              "1px solid #e5e7eb",
+                              `1px solid ${colors.border}`,
                           }}
                         >
                           {heading}
@@ -1701,13 +1783,13 @@ function Recruitment() {
                             padding:
                               "15px 14px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${colors.rowBorder}`,
                           }}
                         >
                           <strong
                             style={{
                               color:
-                                "#111827",
+                                colors.text,
                             }}
                           >
                             {candidate.full_name ||
@@ -1720,13 +1802,13 @@ function Recruitment() {
                             padding:
                               "15px 14px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${colors.rowBorder}`,
                           }}
                         >
                           <div
                             style={{
                               color:
-                                "#374151",
+                                colors.secondaryText,
                               fontSize:
                                 "14px",
                             }}
@@ -1741,7 +1823,7 @@ function Recruitment() {
                               marginTop:
                                 "4px",
                               color:
-                                "#9ca3af",
+                                colors.subtleText,
                               fontSize:
                                 "12px",
                             }}
@@ -1757,9 +1839,9 @@ function Recruitment() {
                             padding:
                               "15px 14px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${colors.rowBorder}`,
                             color:
-                              "#374151",
+                              colors.secondaryText,
                             fontSize:
                               "14px",
                           }}
@@ -1774,9 +1856,9 @@ function Recruitment() {
                             padding:
                               "15px 14px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${colors.rowBorder}`,
                             color:
-                              "#374151",
+                              colors.secondaryText,
                             fontSize:
                               "14px",
                           }}
@@ -1790,15 +1872,14 @@ function Recruitment() {
                             padding:
                               "15px 14px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${colors.rowBorder}`,
                             color:
-                              "#6b7280",
+                              colors.mutedText,
                             fontSize:
                               "13px",
                           }}
                         >
-                          {candidate.experience_years ??
-                            0}{" "}
+                          {candidate.experience_years ?? 0}{" "}
                           yrs
                         </td>
 
@@ -1807,9 +1888,9 @@ function Recruitment() {
                             padding:
                               "15px 14px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${colors.rowBorder}`,
                             color:
-                              "#6b7280",
+                              colors.mutedText,
                             fontSize:
                               "13px",
                           }}
@@ -1824,9 +1905,9 @@ function Recruitment() {
                             padding:
                               "15px 14px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${colors.rowBorder}`,
                             color:
-                              "#6b7280",
+                              colors.mutedText,
                             fontSize:
                               "13px",
                           }}
@@ -1841,9 +1922,9 @@ function Recruitment() {
                             padding:
                               "15px 14px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${colors.rowBorder}`,
                             color:
-                              "#6b7280",
+                              colors.mutedText,
                             fontSize:
                               "13px",
                           }}
@@ -1860,7 +1941,7 @@ function Recruitment() {
                             padding:
                               "15px 14px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${colors.rowBorder}`,
                           }}
                         >
                           <span
@@ -1893,7 +1974,7 @@ function Recruitment() {
                             padding:
                               "15px 14px",
                             borderBottom:
-                              "1px solid #f3f4f6",
+                              `1px solid ${colors.rowBorder}`,
                           }}
                         >
                           <div
@@ -1914,13 +1995,13 @@ function Recruitment() {
                                 padding:
                                   "7px 11px",
                                 border:
-                                  "1px solid #2563eb",
+                                  `1px solid ${colors.primary}`,
                                 borderRadius:
                                   "6px",
                                 backgroundColor:
-                                  "#ffffff",
+                                  colors.cardBackground,
                                 color:
-                                  "#2563eb",
+                                  colors.primary,
                                 cursor:
                                   "pointer",
                                 fontSize:
