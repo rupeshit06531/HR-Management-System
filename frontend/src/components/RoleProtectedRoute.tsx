@@ -5,6 +5,12 @@ import {
 
 import { useAuth } from "../context/AuthContext"
 
+type UserRole =
+  | "SUPER_ADMIN"
+  | "HR"
+  | "MANAGER"
+  | "EMPLOYEE"
+
 interface RoleProtectedRouteProps {
   roles: string[]
 }
@@ -54,7 +60,7 @@ function RoleProtectedRoute({
               fontWeight: 600,
             }}
           >
-            Loading your session...
+            Checking your permissions...
           </p>
 
           <p
@@ -80,7 +86,12 @@ function RoleProtectedRoute({
     )
   }
 
-  if (!roles.includes(user.role)) {
+  const userRole =
+    user.role as UserRole
+
+  if (
+    !roles.includes(userRole)
+  ) {
     return (
       <Navigate
         to="/dashboard"

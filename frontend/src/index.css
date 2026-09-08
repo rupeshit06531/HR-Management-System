@@ -165,7 +165,10 @@
   color-scheme: light;
 }
 
-/* Dark Mode Overrides */
+/* =========================================================
+   DARK MODE OVERRIDES
+   ========================================================= */
+
 html[data-theme="dark"] {
   /* Brand - Orange stays vibrant */
   --primary-50: #3d2817;
@@ -190,6 +193,18 @@ html[data-theme="dark"] {
   --secondary-700: #e5e7eb;
   --secondary-800: #f3f4f6;
   --secondary-900: #f9fafb;
+
+  /* Neutral - Dark mode */
+  --gray-50: #1a1f2e;
+  --gray-100: #252d3d;
+  --gray-200: #374151;
+  --gray-300: #4b5563;
+  --gray-400: #6b7280;
+  --gray-500: #8a92a1;
+  --gray-600: #b4bcc8;
+  --gray-700: #d1d5db;
+  --gray-800: #e5e7eb;
+  --gray-900: #f3f4f6;
 
   /* Application */
   --app-bg: #0f1419;
