@@ -15,6 +15,7 @@ import Employees from "./pages/Employees"
 import Holidays from "./pages/Holidays"
 import Leave from "./pages/Leave"
 import Login from "./pages/Login"
+import ForgotPassword from "./pages/ForgotPassword"
 import Payroll from "./pages/Payroll"
 import Performance from "./pages/Performance"
 import Recruitment from "./pages/Recruitment"
@@ -29,6 +30,10 @@ function App() {
       <Route
         path="/login"
         element={<Login />}
+      />
+      <Route
+        path="/forgot-password"
+        element={<ForgotPassword />}
       />
 
       <Route element={<ProtectedRoute />}>
