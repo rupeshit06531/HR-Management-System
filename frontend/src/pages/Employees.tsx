@@ -31,6 +31,8 @@ import {
   type UserListResponse,
 } from "../api/accounts"
 
+import { useTheme } from "../context/ThemeContext"
+
 const emptyForm: EmployeePayload = {
   user: 0,
   employee_id: "",
@@ -59,47 +61,10 @@ const employmentStatuses = [
   "TERMINATED",
 ]
 
-const pageStyle: CSSProperties = {
-  minHeight: "100vh",
-  padding: "24px",
-  boxSizing: "border-box",
-  background: "#f5f7fb",
-  fontFamily: 'Inter, "Segoe UI", Roboto, Arial, sans-serif',
-  color: "#172033",
-}
-
 const containerStyle: CSSProperties = {
   width: "100%",
   maxWidth: "1480px",
   margin: "0 auto",
-}
-
-const cardStyle: CSSProperties = {
-  background: "#ffffff",
-  border: "1px solid #e8ebf2",
-  borderRadius: "10px",
-  boxShadow: "0 1px 3px rgba(15, 23, 42, 0.04)",
-}
-
-const inputStyle: CSSProperties = {
-  width: "100%",
-  height: "40px",
-  padding: "0 12px",
-  boxSizing: "border-box",
-  border: "1px solid #dfe3eb",
-  borderRadius: "7px",
-  background: "#ffffff",
-  color: "#172033",
-  fontSize: "13px",
-  outline: "none",
-}
-
-const labelStyle: CSSProperties = {
-  display: "grid",
-  gap: "6px",
-  color: "#596579",
-  fontSize: "12px",
-  fontWeight: 600,
 }
 
 function formatValue(value: string) {
@@ -146,6 +111,8 @@ function formatDate(date: string) {
 }
 
 function Employees() {
+  const { isDarkMode } = useTheme()
+
   const [employees, setEmployees] = useState<Employee[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [designations, setDesignations] = useState<Designation[]>([])
@@ -153,7 +120,8 @@ function Employees() {
 
   const [totalEmployees, setTotalEmployees] = useState(0)
   const [nextPage, setNextPage] = useState<string | null>(null)
-  const [previousPage, setPreviousPage] = useState<string | null>(null)
+  const [previousPage, setPreviousPage] =
+    useState<string | null>(null)
 
   const [page, setPage] = useState(1)
   const [pageSize] = useState(10)
@@ -187,6 +155,188 @@ function Employees() {
 
   const [form, setForm] =
     useState<EmployeePayload>(emptyForm)
+
+  const theme = useMemo(() => {
+    if (isDarkMode) {
+      return {
+        pageBackground: "#0f172a",
+        cardBackground: "#111827",
+        cardBackgroundAlt: "#172033",
+        inputBackground: "#0f172a",
+        inputBackgroundDisabled: "#182235",
+        border: "#273449",
+        borderSoft: "#334155",
+        borderTable: "#243044",
+        borderRow: "#1f2937",
+        textPrimary: "#f1f5f9",
+        textHeading: "#f8fafc",
+        textSecondary: "#cbd5e1",
+        textMuted: "#94a3b8",
+        textSubtle: "#64748b",
+        placeholder: "#64748b",
+        blueBackground: "#172554",
+        blueSoft: "#1e3a8a",
+        blueText: "#93c5fd",
+        blueBorder: "#315efb",
+        white: "#ffffff",
+        dangerBackground: "#2a1515",
+        dangerBorder: "#5f2929",
+        dangerText: "#fca5a5",
+        successBackground: "#10251b",
+        successBorder: "#23583b",
+        successText: "#86efac",
+        disabledBackground: "#1e293b",
+        disabledText: "#64748b",
+        avatarBackground: "#172554",
+        avatarText: "#93c5fd",
+      }
+    }
+
+    return {
+      pageBackground: "#f5f7fb",
+      cardBackground: "#ffffff",
+      cardBackgroundAlt: "#fafbfc",
+      inputBackground: "#ffffff",
+      inputBackgroundDisabled: "#f7f8fa",
+      border: "#e8ebf2",
+      borderSoft: "#dfe3eb",
+      borderTable: "#e8ebf2",
+      borderRow: "#f0f2f5",
+      textPrimary: "#293347",
+      textHeading: "#202939",
+      textSecondary: "#596579",
+      textMuted: "#7b8495",
+      textSubtle: "#929bab",
+      placeholder: "#9aa3b2",
+      blueBackground: "#eef3ff",
+      blueSoft: "#f3f6ff",
+      blueText: "#315efb",
+      blueBorder: "#cdd8ff",
+      white: "#ffffff",
+      dangerBackground: "#fff7f6",
+      dangerBorder: "#f2c5c1",
+      dangerText: "#b42318",
+      successBackground: "#f1fbf5",
+      successBorder: "#b8e5ca",
+      successText: "#18794e",
+      disabledBackground: "#f7f8fa",
+      disabledText: "#b1b8c4",
+      avatarBackground: "#eef3ff",
+      avatarText: "#315efb",
+    }
+  }, [isDarkMode])
+
+  const pageStyle: CSSProperties = {
+    minHeight: "100vh",
+    padding: "24px",
+    boxSizing: "border-box",
+    background: theme.pageBackground,
+    fontFamily:
+      'Inter, "Segoe UI", Roboto, Arial, sans-serif',
+    color: theme.textPrimary,
+    transition:
+      "background-color 0.2s ease, color 0.2s ease",
+  }
+
+  const cardStyle: CSSProperties = {
+    background: theme.cardBackground,
+    border: `1px solid ${theme.border}`,
+    borderRadius: "10px",
+    boxShadow: isDarkMode
+      ? "0 1px 3px rgba(0, 0, 0, 0.2)"
+      : "0 1px 3px rgba(15, 23, 42, 0.04)",
+  }
+
+  const inputStyle: CSSProperties = {
+    width: "100%",
+    height: "40px",
+    padding: "0 12px",
+    boxSizing: "border-box",
+    border: `1px solid ${theme.borderSoft}`,
+    borderRadius: "7px",
+    background: theme.inputBackground,
+    color: theme.textPrimary,
+    fontSize: "13px",
+    outline: "none",
+  }
+
+  const labelStyle: CSSProperties = {
+    display: "grid",
+    gap: "6px",
+    color: theme.textSecondary,
+    fontSize: "12px",
+    fontWeight: 600,
+  }
+
+  const getStatusStyle = (
+    status: string,
+  ): CSSProperties => {
+    if (isDarkMode) {
+      switch (status) {
+        case "ACTIVE":
+          return {
+            color: "#86efac",
+            background: "#123522",
+          }
+
+        case "INACTIVE":
+          return {
+            color: "#cbd5e1",
+            background: "#1e293b",
+          }
+
+        case "RESIGNED":
+          return {
+            color: "#fde68a",
+            background: "#3b2f0b",
+          }
+
+        case "TERMINATED":
+          return {
+            color: "#fca5a5",
+            background: "#3b1717",
+          }
+
+        default:
+          return {
+            color: "#cbd5e1",
+            background: "#1e293b",
+          }
+      }
+    }
+
+    switch (status) {
+      case "ACTIVE":
+        return {
+          color: "#18794e",
+          background: "#e8f7ef",
+        }
+
+      case "INACTIVE":
+        return {
+          color: "#64748b",
+          background: "#f1f5f9",
+        }
+
+      case "RESIGNED":
+        return {
+          color: "#a16207",
+          background: "#fff7d6",
+        }
+
+      case "TERMINATED":
+        return {
+          color: "#b42318",
+          background: "#ffebe9",
+        }
+
+      default:
+        return {
+          color: "#64748b",
+          background: "#f1f5f9",
+        }
+    }
+  }
 
   const filteredDesignations = useMemo(() => {
     if (!form.department) {
@@ -533,42 +683,6 @@ function Employees() {
     }
   }
 
-  const getStatusStyle = (
-    status: string,
-  ): CSSProperties => {
-    switch (status) {
-      case "ACTIVE":
-        return {
-          color: "#18794e",
-          background: "#e8f7ef",
-        }
-
-      case "INACTIVE":
-        return {
-          color: "#64748b",
-          background: "#f1f5f9",
-        }
-
-      case "RESIGNED":
-        return {
-          color: "#a16207",
-          background: "#fff7d6",
-        }
-
-      case "TERMINATED":
-        return {
-          color: "#b42318",
-          background: "#ffebe9",
-        }
-
-      default:
-        return {
-          color: "#64748b",
-          background: "#f1f5f9",
-        }
-    }
-  }
-
   const getUserName = (userId: number) => {
     const user = users.find(
       (item) => item.id === userId,
@@ -635,8 +749,8 @@ function Employees() {
                 minHeight: "26px",
                 padding: "0 10px",
                 borderRadius: "6px",
-                background: "#eef3ff",
-                color: "#315efb",
+                background: theme.blueBackground,
+                color: theme.blueText,
                 fontSize: "10px",
                 fontWeight: 700,
                 letterSpacing: "0.04em",
@@ -645,13 +759,14 @@ function Employees() {
             >
               HR Management / Employees
             </div>
+
             <h1
               style={{
                 margin: 0,
                 fontSize: "28px",
                 lineHeight: 1.2,
                 fontWeight: 700,
-                color: "#202939",
+                color: theme.textHeading,
               }}
             >
               Employees
@@ -660,7 +775,7 @@ function Employees() {
             <p
               style={{
                 margin: "7px 0 0",
-                color: "#7b8495",
+                color: theme.textMuted,
                 fontSize: "13px",
               }}
             >
@@ -694,7 +809,8 @@ function Employees() {
                 height: "18px",
                 marginRight: "7px",
                 borderRadius: "4px",
-                background: "rgba(255, 255, 255, 0.18)",
+                background:
+                  "rgba(255, 255, 255, 0.18)",
                 fontSize: "16px",
                 lineHeight: 1,
               }}
@@ -749,7 +865,7 @@ function Employees() {
             >
               <div
                 style={{
-                  color: "#7b8495",
+                  color: theme.textMuted,
                   fontSize: "12px",
                   fontWeight: 600,
                 }}
@@ -762,7 +878,7 @@ function Employees() {
                   marginTop: "8px",
                   fontSize: "25px",
                   fontWeight: 700,
-                  color: "#202939",
+                  color: theme.textHeading,
                 }}
               >
                 {item.value}
@@ -771,7 +887,7 @@ function Employees() {
               <div
                 style={{
                   marginTop: "5px",
-                  color: "#a0a8b6",
+                  color: theme.textSubtle,
                   fontSize: "11px",
                 }}
               >
@@ -788,9 +904,9 @@ function Employees() {
               ...cardStyle,
               padding: "12px 15px",
               marginBottom: "16px",
-              color: "#b42318",
-              background: "#fff5f4",
-              borderColor: "#f5c2c0",
+              color: theme.dangerText,
+              background: theme.dangerBackground,
+              borderColor: theme.dangerBorder,
               fontSize: "13px",
               fontWeight: 600,
             }}
@@ -806,9 +922,9 @@ function Employees() {
               ...cardStyle,
               padding: "12px 15px",
               marginBottom: "16px",
-              color: "#18794e",
-              background: "#f1fbf5",
-              borderColor: "#b8e5ca",
+              color: theme.successText,
+              background: theme.successBackground,
+              borderColor: theme.successBorder,
               fontSize: "13px",
               fontWeight: 600,
             }}
@@ -835,6 +951,7 @@ function Employees() {
           >
             <label style={labelStyle}>
               Search
+
               <div
                 style={{
                   position: "relative",
@@ -860,7 +977,7 @@ function Employees() {
                     position: "absolute",
                     left: "12px",
                     top: "11px",
-                    color: "#9aa3b2",
+                    color: theme.placeholder,
                     fontSize: "13px",
                   }}
                 >
@@ -871,6 +988,7 @@ function Employees() {
 
             <label style={labelStyle}>
               Department
+
               <select
                 value={departmentFilter}
                 onChange={(event) =>
@@ -899,6 +1017,7 @@ function Employees() {
 
             <label style={labelStyle}>
               Designation
+
               <select
                 value={designationFilter}
                 onChange={(event) => {
@@ -935,6 +1054,7 @@ function Employees() {
 
             <label style={labelStyle}>
               Employment Type
+
               <select
                 value={employmentTypeFilter}
                 onChange={(event) => {
@@ -964,6 +1084,7 @@ function Employees() {
 
             <label style={labelStyle}>
               Status
+
               <select
                 value={statusFilter}
                 onChange={(event) => {
@@ -998,10 +1119,10 @@ function Employees() {
                 height: "40px",
                 padding: "0 13px",
                 border:
-                  "1px solid #dfe3eb",
+                  `1px solid ${theme.borderSoft}`,
                 borderRadius: "7px",
-                background: "#ffffff",
-                color: "#596579",
+                background: theme.inputBackground,
+                color: theme.textSecondary,
                 cursor: "pointer",
                 fontSize: "12px",
                 fontWeight: 600,
@@ -1028,14 +1149,14 @@ function Employees() {
                 justifyContent: "space-between",
                 padding: "16px 20px",
                 borderBottom:
-                  "1px solid #e8ebf2",
-                background: "#fafbfc",
+                  `1px solid ${theme.border}`,
+                background: theme.cardBackgroundAlt,
               }}
             >
               <div>
                 <div
                   style={{
-                    color: "#315efb",
+                    color: theme.blueText,
                     fontSize: "10px",
                     fontWeight: 800,
                     letterSpacing: "0.08em",
@@ -1049,7 +1170,7 @@ function Employees() {
                   style={{
                     margin: "5px 0 0",
                     fontSize: "17px",
-                    color: "#202939",
+                    color: theme.textHeading,
                   }}
                 >
                   {editingId !== null
@@ -1066,10 +1187,10 @@ function Employees() {
                   height: "34px",
                   padding: "0 12px",
                   border:
-                    "1px solid #dfe3eb",
+                    `1px solid ${theme.borderSoft}`,
                   borderRadius: "6px",
-                  background: "#ffffff",
-                  color: "#596579",
+                  background: theme.inputBackground,
+                  color: theme.textSecondary,
                   cursor: "pointer",
                   fontSize: "12px",
                   fontWeight: 600,
@@ -1091,6 +1212,7 @@ function Employees() {
             >
               <label style={labelStyle}>
                 User
+
                 <select
                   value={form.user || ""}
                   onChange={(event) =>
@@ -1134,6 +1256,7 @@ function Employees() {
 
               <label style={labelStyle}>
                 Employee ID
+
                 <input
                   type="text"
                   value={form.employee_id}
@@ -1153,6 +1276,7 @@ function Employees() {
 
               <label style={labelStyle}>
                 Department
+
                 <select
                   value={
                     form.department ?? ""
@@ -1193,6 +1317,7 @@ function Employees() {
 
               <label style={labelStyle}>
                 Designation
+
                 <select
                   value={
                     form.designation ?? ""
@@ -1233,6 +1358,7 @@ function Employees() {
 
               <label style={labelStyle}>
                 Joining Date
+
                 <input
                   type="date"
                   value={form.joining_date}
@@ -1251,6 +1377,7 @@ function Employees() {
 
               <label style={labelStyle}>
                 Employment Type
+
                 <select
                   value={
                     form.employment_type
@@ -1280,6 +1407,7 @@ function Employees() {
 
               <label style={labelStyle}>
                 Employment Status
+
                 <select
                   value={
                     form.employment_status
@@ -1309,6 +1437,7 @@ function Employees() {
 
               <label style={labelStyle}>
                 Manager ID
+
                 <input
                   type="number"
                   min="1"
@@ -1334,6 +1463,7 @@ function Employees() {
 
               <label style={labelStyle}>
                 Date of Birth
+
                 <input
                   type="date"
                   value={
@@ -1354,6 +1484,7 @@ function Employees() {
 
               <label style={labelStyle}>
                 Emergency Contact
+
                 <input
                   type="text"
                   value={
@@ -1380,6 +1511,7 @@ function Employees() {
                 }}
               >
                 Address
+
                 <textarea
                   value={form.address ?? ""}
                   onChange={(event) =>
@@ -1410,7 +1542,7 @@ function Employees() {
                   gap: "10px",
                   paddingTop: "15px",
                   borderTop:
-                    "1px solid #e8ebf2",
+                    `1px solid ${theme.border}`,
                 }}
               >
                 <button
@@ -1421,10 +1553,11 @@ function Employees() {
                     height: "38px",
                     padding: "0 16px",
                     border:
-                      "1px solid #dfe3eb",
+                      `1px solid ${theme.borderSoft}`,
                     borderRadius: "7px",
-                    background: "#ffffff",
-                    color: "#596579",
+                    background:
+                      theme.inputBackground,
+                    color: theme.textSecondary,
                     cursor: "pointer",
                     fontSize: "12px",
                     fontWeight: 600,
@@ -1443,7 +1576,7 @@ function Employees() {
                     borderRadius: "7px",
                     background:
                       isSubmitting
-                        ? "#9db3ff"
+                        ? "#647de0"
                         : "#315efb",
                     color: "#ffffff",
                     cursor: isSubmitting
@@ -1480,14 +1613,15 @@ function Employees() {
                   justifyContent: "space-between",
                   padding: "16px 20px",
                   borderBottom:
-                    "1px solid #e8ebf2",
-                  background: "#fafbfc",
+                    `1px solid ${theme.border}`,
+                  background:
+                    theme.cardBackgroundAlt,
                 }}
               >
                 <div>
                   <div
                     style={{
-                      color: "#315efb",
+                      color: theme.blueText,
                       fontSize: "10px",
                       fontWeight: 800,
                       letterSpacing: "0.08em",
@@ -1499,7 +1633,7 @@ function Employees() {
                   <h2
                     style={{
                       margin: "5px 0 0",
-                      color: "#202939",
+                      color: theme.textHeading,
                       fontSize: "18px",
                     }}
                   >
@@ -1517,10 +1651,11 @@ function Employees() {
                     height: "34px",
                     padding: "0 12px",
                     border:
-                      "1px solid #dfe3eb",
+                      `1px solid ${theme.borderSoft}`,
                     borderRadius: "6px",
-                    background: "#ffffff",
-                    color: "#596579",
+                    background:
+                      theme.inputBackground,
+                    color: theme.textSecondary,
                     cursor: "pointer",
                     fontSize: "12px",
                   }}
@@ -1603,7 +1738,7 @@ function Employees() {
                   <div key={label}>
                     <div
                       style={{
-                        color: "#8a94a6",
+                        color: theme.textSubtle,
                         fontSize: "11px",
                         fontWeight: 600,
                         marginBottom: "5px",
@@ -1614,7 +1749,7 @@ function Employees() {
 
                     <div
                       style={{
-                        color: "#293347",
+                        color: theme.textPrimary,
                         fontSize: "13px",
                         fontWeight: 600,
                         wordBreak: "break-word",
@@ -1642,14 +1777,14 @@ function Employees() {
               gap: "15px",
               padding: "16px 18px",
               borderBottom:
-                "1px solid #e8ebf2",
+                `1px solid ${theme.border}`,
             }}
           >
             <div>
               <h2
                 style={{
                   margin: 0,
-                  color: "#202939",
+                  color: theme.textHeading,
                   fontSize: "15px",
                   fontWeight: 700,
                 }}
@@ -1660,7 +1795,7 @@ function Employees() {
               <p
                 style={{
                   margin: "4px 0 0",
-                  color: "#929bab",
+                  color: theme.textSubtle,
                   fontSize: "11px",
                 }}
               >
@@ -1675,7 +1810,7 @@ function Employees() {
             {isLoading && (
               <span
                 style={{
-                  color: "#315efb",
+                  color: theme.blueText,
                   fontSize: "11px",
                   fontWeight: 600,
                 }}
@@ -1690,7 +1825,7 @@ function Employees() {
               style={{
                 padding: "60px 20px",
                 textAlign: "center",
-                color: "#8c96a6",
+                color: theme.textMuted,
                 fontSize: "13px",
               }}
             >
@@ -1705,7 +1840,7 @@ function Employees() {
             >
               <div
                 style={{
-                  color: "#475467",
+                  color: theme.textPrimary,
                   fontSize: "16px",
                   fontWeight: 700,
                 }}
@@ -1716,7 +1851,7 @@ function Employees() {
               <p
                 style={{
                   margin: "7px 0 0",
-                  color: "#98a2b3",
+                  color: theme.textSubtle,
                   fontSize: "12px",
                 }}
               >
@@ -1742,7 +1877,8 @@ function Employees() {
                   <thead>
                     <tr
                       style={{
-                        background: "#fafbfc",
+                        background:
+                          theme.cardBackgroundAlt,
                       }}
                     >
                       {[
@@ -1762,8 +1898,8 @@ function Employees() {
                             padding: "11px 14px",
                             textAlign: "left",
                             borderBottom:
-                              "1px solid #e8ebf2",
-                            color: "#737d8f",
+                              `1px solid ${theme.borderTable}`,
+                            color: theme.textMuted,
                             fontSize: "10px",
                             fontWeight: 700,
                             whiteSpace:
@@ -1787,7 +1923,7 @@ function Employees() {
                           key={employee.id}
                           style={{
                             background:
-                              "#ffffff",
+                              theme.cardBackground,
                           }}
                         >
                           <td
@@ -1795,7 +1931,7 @@ function Employees() {
                               padding:
                                 "13px 14px",
                               borderBottom:
-                                "1px solid #f0f2f5",
+                                `1px solid ${theme.borderRow}`,
                             }}
                           >
                             <div
@@ -1823,9 +1959,9 @@ function Employees() {
                                   borderRadius:
                                     "50%",
                                   background:
-                                    "#eef3ff",
+                                    theme.avatarBackground,
                                   color:
-                                    "#315efb",
+                                    theme.avatarText,
                                   fontSize:
                                     "11px",
                                   fontWeight:
@@ -1841,7 +1977,7 @@ function Employees() {
                                 <div
                                   style={{
                                     color:
-                                      "#293347",
+                                      theme.textPrimary,
                                     fontSize:
                                       "12px",
                                     fontWeight:
@@ -1858,7 +1994,7 @@ function Employees() {
                                     marginTop:
                                       "3px",
                                     color:
-                                      "#929bab",
+                                      theme.textSubtle,
                                     fontSize:
                                       "10px",
                                   }}
@@ -1876,9 +2012,9 @@ function Employees() {
                               padding:
                                 "13px 14px",
                               borderBottom:
-                                "1px solid #f0f2f5",
+                                `1px solid ${theme.borderRow}`,
                               color:
-                                "#4f5b6f",
+                                theme.textSecondary,
                               fontSize:
                                 "12px",
                               fontWeight:
@@ -1897,9 +2033,9 @@ function Employees() {
                               padding:
                                 "13px 14px",
                               borderBottom:
-                                "1px solid #f0f2f5",
+                                `1px solid ${theme.borderRow}`,
                               color:
-                                "#596579",
+                                theme.textSecondary,
                               fontSize:
                                 "12px",
                             }}
@@ -1914,9 +2050,9 @@ function Employees() {
                               padding:
                                 "13px 14px",
                               borderBottom:
-                                "1px solid #f0f2f5",
+                                `1px solid ${theme.borderRow}`,
                               color:
-                                "#596579",
+                                theme.textSecondary,
                               fontSize:
                                 "12px",
                             }}
@@ -1931,9 +2067,9 @@ function Employees() {
                               padding:
                                 "13px 14px",
                               borderBottom:
-                                "1px solid #f0f2f5",
+                                `1px solid ${theme.borderRow}`,
                               color:
-                                "#596579",
+                                theme.textSecondary,
                               fontSize:
                                 "12px",
                             }}
@@ -1947,9 +2083,9 @@ function Employees() {
                               padding:
                                 "13px 14px",
                               borderBottom:
-                                "1px solid #f0f2f5",
+                                `1px solid ${theme.borderRow}`,
                               color:
-                                "#596579",
+                                theme.textSecondary,
                               fontSize:
                                 "12px",
                               whiteSpace:
@@ -1966,9 +2102,9 @@ function Employees() {
                               padding:
                                 "13px 14px",
                               borderBottom:
-                                "1px solid #f0f2f5",
+                                `1px solid ${theme.borderRow}`,
                               color:
-                                "#596579",
+                                theme.textSecondary,
                               fontSize:
                                 "12px",
                               whiteSpace:
@@ -1986,7 +2122,7 @@ function Employees() {
                               padding:
                                 "13px 14px",
                               borderBottom:
-                                "1px solid #f0f2f5",
+                                `1px solid ${theme.borderRow}`,
                             }}
                           >
                             <span
@@ -2024,7 +2160,7 @@ function Employees() {
                               padding:
                                 "13px 14px",
                               borderBottom:
-                                "1px solid #f0f2f5",
+                                `1px solid ${theme.borderRow}`,
                             }}
                           >
                             <div
@@ -2047,13 +2183,13 @@ function Employees() {
                                   padding:
                                     "0 9px",
                                   border:
-                                    "1px solid #dfe3eb",
+                                    `1px solid ${theme.borderSoft}`,
                                   borderRadius:
                                     "5px",
                                   background:
-                                    "#ffffff",
+                                    theme.inputBackground,
                                   color:
-                                    "#596579",
+                                    theme.textSecondary,
                                   cursor:
                                     "pointer",
                                   fontSize:
@@ -2078,13 +2214,13 @@ function Employees() {
                                   padding:
                                     "0 9px",
                                   border:
-                                    "1px solid #cdd8ff",
+                                    `1px solid ${theme.blueBorder}`,
                                   borderRadius:
                                     "5px",
                                   background:
-                                    "#f3f6ff",
+                                    theme.blueSoft,
                                   color:
-                                    "#315efb",
+                                    theme.blueText,
                                   cursor:
                                     "pointer",
                                   fontSize:
@@ -2113,13 +2249,13 @@ function Employees() {
                                   padding:
                                     "0 9px",
                                   border:
-                                    "1px solid #f2c5c1",
+                                    `1px solid ${theme.dangerBorder}`,
                                   borderRadius:
                                     "5px",
                                   background:
-                                    "#fff7f6",
+                                    theme.dangerBackground,
                                   color:
-                                    "#b42318",
+                                    theme.dangerText,
                                   cursor:
                                     deletingId ===
                                     employee.id
@@ -2154,20 +2290,20 @@ function Employees() {
                   gap: "12px",
                   padding: "13px 16px",
                   borderTop:
-                    "1px solid #e8ebf2",
+                    `1px solid ${theme.border}`,
                   flexWrap: "wrap",
                 }}
               >
                 <div
                   style={{
-                    color: "#8993a4",
+                    color: theme.textMuted,
                     fontSize: "11px",
                   }}
                 >
                   Showing{" "}
                   <strong
                     style={{
-                      color: "#596579",
+                      color: theme.textSecondary,
                     }}
                   >
                     {startRecord}
@@ -2175,7 +2311,7 @@ function Employees() {
                   to{" "}
                   <strong
                     style={{
-                      color: "#596579",
+                      color: theme.textSecondary,
                     }}
                   >
                     {endRecord}
@@ -2183,7 +2319,7 @@ function Employees() {
                   of{" "}
                   <strong
                     style={{
-                      color: "#596579",
+                      color: theme.textSecondary,
                     }}
                   >
                     {totalEmployees}
@@ -2208,18 +2344,18 @@ function Employees() {
                       height: "32px",
                       padding: "0 11px",
                       border:
-                        "1px solid #dfe3eb",
+                        `1px solid ${theme.borderSoft}`,
                       borderRadius: "6px",
                       background:
                         !previousPage ||
                         page <= 1
-                          ? "#f7f8fa"
-                          : "#ffffff",
+                          ? theme.disabledBackground
+                          : theme.inputBackground,
                       color:
                         !previousPage ||
                         page <= 1
-                          ? "#b1b8c4"
-                          : "#596579",
+                          ? theme.disabledText
+                          : theme.textSecondary,
                       cursor:
                         !previousPage ||
                         page <= 1
@@ -2252,7 +2388,7 @@ function Employees() {
 
                   <span
                     style={{
-                      color: "#8d96a5",
+                      color: theme.textMuted,
                       fontSize: "11px",
                     }}
                   >
@@ -2267,14 +2403,14 @@ function Employees() {
                       height: "32px",
                       padding: "0 11px",
                       border:
-                        "1px solid #dfe3eb",
+                        `1px solid ${theme.borderSoft}`,
                       borderRadius: "6px",
                       background: !nextPage
-                        ? "#f7f8fa"
-                        : "#ffffff",
+                        ? theme.disabledBackground
+                        : theme.inputBackground,
                       color: !nextPage
-                        ? "#b1b8c4"
-                        : "#596579",
+                        ? theme.disabledText
+                        : theme.textSecondary,
                       cursor: !nextPage
                         ? "not-allowed"
                         : "pointer",
@@ -2293,6 +2429,31 @@ function Employees() {
 
       <style>
         {`
+          input::placeholder,
+          textarea::placeholder {
+            color: ${theme.placeholder};
+            opacity: 1;
+          }
+
+          select option {
+            background: ${theme.inputBackground};
+            color: ${theme.textPrimary};
+          }
+
+          input:focus,
+          select:focus,
+          textarea:focus {
+            border-color: #315efb !important;
+            box-shadow: 0 0 0 2px rgba(49, 94, 251, 0.12);
+          }
+
+          button {
+            transition:
+              background-color 0.15s ease,
+              border-color 0.15s ease,
+              color 0.15s ease;
+          }
+
           @media (max-width: 1200px) {
             main section {
               max-width: 100%;
