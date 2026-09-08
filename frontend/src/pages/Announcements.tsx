@@ -1,6 +1,7 @@
 import {
   useEffect,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -12,6 +13,8 @@ import {
   type AnnouncementRecord,
   type CreateAnnouncementRequest,
 } from "../api/announcements"
+
+import { useTheme } from "../context/ThemeContext"
 
 const targetAudiences = [
   {
@@ -39,6 +42,8 @@ const emptyForm = {
 }
 
 function Announcements() {
+  const { isDarkMode } = useTheme()
+
   const [announcements, setAnnouncements] =
     useState<AnnouncementRecord[]>([])
 
@@ -62,6 +67,94 @@ function Announcements() {
 
   const [form, setForm] =
     useState(emptyForm)
+
+  const theme = {
+    pageBackground: isDarkMode
+      ? "#0f172a"
+      : "#f5f7fa",
+
+    cardBackground: isDarkMode
+      ? "#111827"
+      : "#ffffff",
+
+    inputBackground: isDarkMode
+      ? "#1f2937"
+      : "#ffffff",
+
+    text: isDarkMode
+      ? "#f9fafb"
+      : "#111827",
+
+    secondaryText: isDarkMode
+      ? "#d1d5db"
+      : "#374151",
+
+    mutedText: isDarkMode
+      ? "#9ca3af"
+      : "#6b7280",
+
+    border: isDarkMode
+      ? "#374151"
+      : "#e5e7eb",
+
+    inputBorder: isDarkMode
+      ? "#4b5563"
+      : "#d1d5db",
+
+    rowBorder: isDarkMode
+      ? "#263244"
+      : "#f3f4f6",
+
+    tableHeader: isDarkMode
+      ? "#1f2937"
+      : "#f8fafc",
+
+    secondaryButton: isDarkMode
+      ? "#1f2937"
+      : "#ffffff",
+
+    primary: "#2563eb",
+
+    primaryDisabled: isDarkMode
+      ? "#60a5fa"
+      : "#93c5fd",
+
+    errorBackground: isDarkMode
+      ? "#450a0a"
+      : "#fee2e2",
+
+    errorBorder: isDarkMode
+      ? "#7f1d1d"
+      : "#fecaca",
+
+    errorText: isDarkMode
+      ? "#fca5a5"
+      : "#991b1b",
+
+    successBackground: isDarkMode
+      ? "#052e16"
+      : "#dcfce7",
+
+    successBorder: isDarkMode
+      ? "#166534"
+      : "#bbf7d0",
+
+    successText: isDarkMode
+      ? "#86efac"
+      : "#166534",
+  }
+
+  const inputStyle: CSSProperties = {
+    display: "block",
+    width: "100%",
+    marginTop: "6px",
+    padding: "10px",
+    boxSizing: "border-box",
+    border: `1px solid ${theme.inputBorder}`,
+    borderRadius: "6px",
+    backgroundColor: theme.inputBackground,
+    color: theme.text,
+  }
 
   const loadAnnouncements =
     async () => {
@@ -274,10 +367,14 @@ function Announcements() {
       style={{
         minHeight: "100vh",
         padding: "32px",
-        backgroundColor: "#f5f7fa",
+        backgroundColor:
+          theme.pageBackground,
+        color: theme.text,
         fontFamily:
           "Arial, sans-serif",
         boxSizing: "border-box",
+        transition:
+          "background-color 0.2s ease, color 0.2s ease",
       }}
     >
       <section
@@ -294,13 +391,14 @@ function Announcements() {
             alignItems: "center",
             gap: "16px",
             marginBottom: "24px",
+            flexWrap: "wrap",
           }}
         >
           <div>
             <h1
               style={{
                 margin: 0,
-                color: "#111827",
+                color: theme.text,
               }}
             >
               Announcements
@@ -308,7 +406,7 @@ function Announcements() {
 
             <p
               style={{
-                color: "#6b7280",
+                color: theme.mutedText,
               }}
             >
               Create and manage company announcements.
@@ -328,7 +426,7 @@ function Announcements() {
               border: "none",
               borderRadius: "6px",
               backgroundColor:
-                "#2563eb",
+                theme.primary,
               color: "#ffffff",
               cursor: "pointer",
             }}
@@ -343,9 +441,10 @@ function Announcements() {
               padding: "14px",
               marginBottom: "20px",
               backgroundColor:
-                "#fee2e2",
+                theme.errorBackground,
+              border: `1px solid ${theme.errorBorder}`,
               borderRadius: "8px",
-              color: "#991b1b",
+              color: theme.errorText,
             }}
           >
             {error}
@@ -358,9 +457,10 @@ function Announcements() {
               padding: "14px",
               marginBottom: "20px",
               backgroundColor:
-                "#dcfce7",
+                theme.successBackground,
+              border: `1px solid ${theme.successBorder}`,
               borderRadius: "8px",
-              color: "#166534",
+              color: theme.successText,
             }}
           >
             {success}
@@ -371,15 +471,21 @@ function Announcements() {
           <section
             style={{
               backgroundColor:
-                "#ffffff",
+                theme.cardBackground,
               padding: "24px",
               borderRadius: "10px",
               marginBottom: "24px",
+              border: `1px solid ${theme.border}`,
               boxShadow:
                 "0 1px 3px rgba(0, 0, 0, 0.08)",
             }}
           >
-            <h2>
+            <h2
+              style={{
+                color: theme.text,
+                marginTop: 0,
+              }}
+            >
               Create Announcement
             </h2>
 
@@ -391,7 +497,11 @@ function Announcements() {
                 maxWidth: "700px",
               }}
             >
-              <label>
+              <label
+                style={{
+                  color: theme.secondaryText,
+                }}
+              >
                 Title
 
                 <input
@@ -408,19 +518,15 @@ function Announcements() {
                     )
                   }
                   required
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  style={inputStyle}
                 />
               </label>
 
-              <label>
+              <label
+                style={{
+                  color: theme.secondaryText,
+                }}
+              >
                 Message
 
                 <textarea
@@ -438,18 +544,17 @@ function Announcements() {
                   rows={5}
                   required
                   style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
+                    ...inputStyle,
+                    resize: "vertical",
                   }}
                 />
               </label>
 
-              <label>
+              <label
+                style={{
+                  color: theme.secondaryText,
+                }}
+              >
                 Target Audience
 
                 <select
@@ -468,13 +573,7 @@ function Announcements() {
                       }),
                     )
                   }
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                  }}
+                  style={inputStyle}
                 >
                   {targetAudiences.map(
                     (audience) => (
@@ -495,7 +594,12 @@ function Announcements() {
 
               {form.target_audience ===
                 "DEPARTMENT" && (
-                <label>
+                <label
+                  style={{
+                    color:
+                      theme.secondaryText,
+                  }}
+                >
                   Department ID
 
                   <input
@@ -515,20 +619,16 @@ function Announcements() {
                       )
                     }
                     required
-                    style={{
-                      display:
-                        "block",
-                      width: "100%",
-                      marginTop: "6px",
-                      padding: "10px",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={inputStyle}
                   />
                 </label>
               )}
 
-              <label>
+              <label
+                style={{
+                  color: theme.secondaryText,
+                }}
+              >
                 Publish Date & Time
 
                 <input
@@ -547,19 +647,15 @@ function Announcements() {
                     )
                   }
                   required
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  style={inputStyle}
                 />
               </label>
 
-              <label>
+              <label
+                style={{
+                  color: theme.secondaryText,
+                }}
+              >
                 Expiry Date & Time
 
                 <input
@@ -577,15 +673,7 @@ function Announcements() {
                       }),
                     )
                   }
-                  style={{
-                    display:
-                      "block",
-                    width: "100%",
-                    marginTop: "6px",
-                    padding: "10px",
-                    boxSizing:
-                      "border-box",
-                  }}
+                  style={inputStyle}
                 />
               </label>
 
@@ -595,6 +683,8 @@ function Announcements() {
                   alignItems:
                     "center",
                   gap: "8px",
+                  color:
+                    theme.secondaryText,
                 }}
               >
                 <input
@@ -621,6 +711,7 @@ function Announcements() {
                 style={{
                   display: "flex",
                   gap: "10px",
+                  flexWrap: "wrap",
                 }}
               >
                 <button
@@ -635,11 +726,15 @@ function Announcements() {
                     borderRadius:
                       "6px",
                     backgroundColor:
-                      "#2563eb",
+                      isSubmitting
+                        ? theme.primaryDisabled
+                        : theme.primary,
                     color:
                       "#ffffff",
                     cursor:
-                      "pointer",
+                      isSubmitting
+                        ? "not-allowed"
+                        : "pointer",
                   }}
                 >
                   {isSubmitting
@@ -654,11 +749,13 @@ function Announcements() {
                     padding:
                       "10px 18px",
                     border:
-                      "1px solid #d1d5db",
+                      `1px solid ${theme.inputBorder}`,
                     borderRadius:
                       "6px",
                     backgroundColor:
-                      "#ffffff",
+                      theme.secondaryButton,
+                    color:
+                      theme.secondaryText,
                     cursor:
                       "pointer",
                   }}
@@ -673,7 +770,8 @@ function Announcements() {
         <section
           style={{
             backgroundColor:
-              "#ffffff",
+              theme.cardBackground,
+            border: `1px solid ${theme.border}`,
             borderRadius: "10px",
             overflow: "auto",
           }}
@@ -683,12 +781,13 @@ function Announcements() {
               padding:
                 "20px 24px",
               borderBottom:
-                "1px solid #e5e7eb",
+                `1px solid ${theme.border}`,
             }}
           >
             <h2
               style={{
                 margin: 0,
+                color: theme.text,
               }}
             >
               Announcement List
@@ -699,6 +798,7 @@ function Announcements() {
             <p
               style={{
                 padding: "24px",
+                color: theme.secondaryText,
               }}
             >
               Loading announcements...
@@ -708,7 +808,7 @@ function Announcements() {
             <p
               style={{
                 padding: "24px",
-                color: "#6b7280",
+                color: theme.mutedText,
               }}
             >
               No announcements found.
@@ -720,10 +820,16 @@ function Announcements() {
                 borderCollapse:
                   "collapse",
                 minWidth: "1000px",
+                color: theme.text,
               }}
             >
               <thead>
-                <tr>
+                <tr
+                  style={{
+                    backgroundColor:
+                      theme.tableHeader,
+                  }}
+                >
                   {[
                     "Title",
                     "Audience",
@@ -742,7 +848,9 @@ function Announcements() {
                         textAlign:
                           "left",
                         borderBottom:
-                          "1px solid #e5e7eb",
+                          `1px solid ${theme.border}`,
+                        color:
+                          theme.secondaryText,
                       }}
                     >
                       {heading}
@@ -764,10 +872,17 @@ function Announcements() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          verticalAlign:
+                            "top",
                         }}
                       >
-                        <strong>
+                        <strong
+                          style={{
+                            color:
+                              theme.text,
+                          }}
+                        >
                           {
                             announcement.title
                           }
@@ -778,9 +893,11 @@ function Announcements() {
                             marginTop:
                               "6px",
                             color:
-                              "#6b7280",
+                              theme.mutedText,
                             maxWidth:
                               "280px",
+                            lineHeight:
+                              1.5,
                           }}
                         >
                           {
@@ -794,7 +911,11 @@ function Announcements() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          color:
+                            theme.secondaryText,
+                          verticalAlign:
+                            "top",
                         }}
                       >
                         {formatAudience(
@@ -807,7 +928,11 @@ function Announcements() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          color:
+                            theme.secondaryText,
+                          verticalAlign:
+                            "top",
                         }}
                       >
                         {
@@ -821,7 +946,11 @@ function Announcements() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          color:
+                            theme.secondaryText,
+                          verticalAlign:
+                            "top",
                         }}
                       >
                         {formatDate(
@@ -834,7 +963,11 @@ function Announcements() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          color:
+                            theme.secondaryText,
+                          verticalAlign:
+                            "top",
                         }}
                       >
                         {announcement.expiry_date
@@ -849,7 +982,11 @@ function Announcements() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          color:
+                            theme.secondaryText,
+                          verticalAlign:
+                            "top",
                         }}
                       >
                         {announcement.is_published
@@ -864,7 +1001,11 @@ function Announcements() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          color:
+                            theme.secondaryText,
+                          verticalAlign:
+                            "top",
                         }}
                       >
                         {
@@ -878,7 +1019,9 @@ function Announcements() {
                           padding:
                             "14px",
                           borderBottom:
-                            "1px solid #f3f4f6",
+                            `1px solid ${theme.rowBorder}`,
+                          verticalAlign:
+                            "top",
                         }}
                       >
                         <button
@@ -900,11 +1043,19 @@ function Announcements() {
                             borderRadius:
                               "6px",
                             backgroundColor:
-                              "#dc2626",
+                              deletingId ===
+                              announcement.id
+                                ? isDarkMode
+                                  ? "#7f1d1d"
+                                  : "#f87171"
+                                : "#dc2626",
                             color:
                               "#ffffff",
                             cursor:
-                              "pointer",
+                              deletingId ===
+                              announcement.id
+                                ? "not-allowed"
+                                : "pointer",
                           }}
                         >
                           {deletingId ===
