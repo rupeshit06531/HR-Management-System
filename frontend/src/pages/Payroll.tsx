@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type CSSProperties,
   type FormEvent,
 } from "react"
 
@@ -18,6 +19,8 @@ import {
   getEmployees,
   type Employee,
 } from "../api/employees"
+
+import { useTheme } from "../context/ThemeContext"
 
 interface PayrollForm {
   employee: number
@@ -40,6 +43,8 @@ const emptyForm: PayrollForm = {
 }
 
 function PayrollPage() {
+  const { isDarkMode } = useTheme()
+
   const [records, setRecords] = useState<Payroll[]>([])
   const [totalRecords, setTotalRecords] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
@@ -80,6 +85,125 @@ function PayrollPage() {
     useState("")
 
   const pageSize = 10
+
+  const theme = {
+    pageBackground: isDarkMode
+      ? "#111827"
+      : "#f5f7fa",
+
+    cardBackground: isDarkMode
+      ? "#1f2937"
+      : "#ffffff",
+
+    inputBackground: isDarkMode
+      ? "#111827"
+      : "#ffffff",
+
+    disabledBackground: isDarkMode
+      ? "#374151"
+      : "#f3f4f6",
+
+    text: isDarkMode
+      ? "#f9fafb"
+      : "#111827",
+
+    secondaryText: isDarkMode
+      ? "#d1d5db"
+      : "#374151",
+
+    mutedText: isDarkMode
+      ? "#9ca3af"
+      : "#6b7280",
+
+    border: isDarkMode
+      ? "#374151"
+      : "#e5e7eb",
+
+    inputBorder: isDarkMode
+      ? "#4b5563"
+      : "#d1d5db",
+
+    rowBorder: isDarkMode
+      ? "#374151"
+      : "#f3f4f6",
+
+    tableHeader: isDarkMode
+      ? "#111827"
+      : "#f9fafb",
+
+    primary: "#2563eb",
+
+    errorBackground: isDarkMode
+      ? "#451a1a"
+      : "#fef2f2",
+
+    errorBorder: isDarkMode
+      ? "#7f1d1d"
+      : "#fecaca",
+
+    errorText: isDarkMode
+      ? "#fca5a5"
+      : "#991b1b",
+
+    successBackground: isDarkMode
+      ? "#14351f"
+      : "#f0fdf4",
+
+    successBorder: isDarkMode
+      ? "#166534"
+      : "#bbf7d0",
+
+    successText: isDarkMode
+      ? "#86efac"
+      : "#166534",
+
+    paidBackground: isDarkMode
+      ? "#14532d"
+      : "#dcfce7",
+
+    paidText: isDarkMode
+      ? "#bbf7d0"
+      : "#166534",
+
+    pendingBackground: isDarkMode
+      ? "#78350f"
+      : "#fef3c7",
+
+    pendingText: isDarkMode
+      ? "#fde68a"
+      : "#92400e",
+
+    warningText: isDarkMode
+      ? "#fbbf24"
+      : "#92400e",
+  }
+
+  const inputStyle: CSSProperties = {
+    display: "block",
+    width: "100%",
+    marginTop: "7px",
+    padding: "11px 12px",
+    border: `1px solid ${theme.inputBorder}`,
+    borderRadius: "7px",
+    backgroundColor:
+      theme.inputBackground,
+    color: theme.text,
+    boxSizing: "border-box",
+    fontSize: "14px",
+  }
+
+  const filterStyle: CSSProperties = {
+    padding: "10px 12px",
+    border: `1px solid ${theme.inputBorder}`,
+    borderRadius: "7px",
+    backgroundColor:
+      theme.inputBackground,
+    color: theme.text,
+    outline: "none",
+    boxSizing: "border-box",
+    width: "100%",
+    fontSize: "14px",
+  }
 
   const totalPages =
     Math.max(
@@ -593,7 +717,8 @@ function PayrollPage() {
         minHeight: "100vh",
         padding: "32px",
         backgroundColor:
-          "#f5f7fa",
+          theme.pageBackground,
+        color: theme.text,
         fontFamily:
           "Inter, Arial, sans-serif",
         boxSizing: "border-box",
@@ -620,7 +745,7 @@ function PayrollPage() {
             <h1
               style={{
                 margin: 0,
-                color: "#111827",
+                color: theme.text,
                 fontSize: "30px",
                 fontWeight: 700,
               }}
@@ -630,7 +755,8 @@ function PayrollPage() {
 
             <p
               style={{
-                color: "#6b7280",
+                color:
+                  theme.mutedText,
                 margin:
                   "7px 0 0",
                 fontSize: "15px",
@@ -652,7 +778,7 @@ function PayrollPage() {
               border: "none",
               borderRadius: "8px",
               backgroundColor:
-                "#2563eb",
+                theme.primary,
               color: "#ffffff",
               cursor: "pointer",
               fontWeight: 600,
@@ -672,11 +798,12 @@ function PayrollPage() {
                 "14px 16px",
               marginBottom: "20px",
               backgroundColor:
-                "#fef2f2",
+                theme.errorBackground,
               border:
-                "1px solid #fecaca",
+                `1px solid ${theme.errorBorder}`,
               borderRadius: "8px",
-              color: "#991b1b",
+              color:
+                theme.errorText,
             }}
           >
             {error}
@@ -691,11 +818,12 @@ function PayrollPage() {
                 "14px 16px",
               marginBottom: "20px",
               backgroundColor:
-                "#f0fdf4",
+                theme.successBackground,
               border:
-                "1px solid #bbf7d0",
+                `1px solid ${theme.successBorder}`,
               borderRadius: "8px",
-              color: "#166534",
+              color:
+                theme.successText,
             }}
           >
             {success}
@@ -714,16 +842,17 @@ function PayrollPage() {
           <div
             style={{
               backgroundColor:
-                "#ffffff",
+                theme.cardBackground,
               padding: "20px",
               borderRadius: "10px",
               border:
-                "1px solid #e5e7eb",
+                `1px solid ${theme.border}`,
             }}
           >
             <div
               style={{
-                color: "#6b7280",
+                color:
+                  theme.mutedText,
                 fontSize: "13px",
                 marginBottom: "7px",
               }}
@@ -734,7 +863,7 @@ function PayrollPage() {
             <strong
               style={{
                 fontSize: "27px",
-                color: "#111827",
+                color: theme.text,
               }}
             >
               {totalRecords}
@@ -744,16 +873,17 @@ function PayrollPage() {
           <div
             style={{
               backgroundColor:
-                "#ffffff",
+                theme.cardBackground,
               padding: "20px",
               borderRadius: "10px",
               border:
-                "1px solid #e5e7eb",
+                `1px solid ${theme.border}`,
             }}
           >
             <div
               style={{
-                color: "#6b7280",
+                color:
+                  theme.mutedText,
                 fontSize: "13px",
                 marginBottom: "7px",
               }}
@@ -764,7 +894,8 @@ function PayrollPage() {
             <strong
               style={{
                 fontSize: "27px",
-                color: "#166534",
+                color:
+                  theme.paidText,
               }}
             >
               {statistics.paid}
@@ -774,16 +905,17 @@ function PayrollPage() {
           <div
             style={{
               backgroundColor:
-                "#ffffff",
+                theme.cardBackground,
               padding: "20px",
               borderRadius: "10px",
               border:
-                "1px solid #e5e7eb",
+                `1px solid ${theme.border}`,
             }}
           >
             <div
               style={{
-                color: "#6b7280",
+                color:
+                  theme.mutedText,
                 fontSize: "13px",
                 marginBottom: "7px",
               }}
@@ -794,7 +926,8 @@ function PayrollPage() {
             <strong
               style={{
                 fontSize: "27px",
-                color: "#92400e",
+                color:
+                  theme.pendingText,
               }}
             >
               {statistics.pending}
@@ -804,16 +937,17 @@ function PayrollPage() {
           <div
             style={{
               backgroundColor:
-                "#ffffff",
+                theme.cardBackground,
               padding: "20px",
               borderRadius: "10px",
               border:
-                "1px solid #e5e7eb",
+                `1px solid ${theme.border}`,
             }}
           >
             <div
               style={{
-                color: "#6b7280",
+                color:
+                  theme.mutedText,
                 fontSize: "13px",
                 marginBottom: "7px",
               }}
@@ -824,7 +958,7 @@ function PayrollPage() {
             <strong
               style={{
                 fontSize: "22px",
-                color: "#111827",
+                color: theme.text,
               }}
             >
               {formatCurrency(
@@ -840,14 +974,14 @@ function PayrollPage() {
           <section
             style={{
               backgroundColor:
-                "#ffffff",
+                theme.cardBackground,
               padding: "24px",
               borderRadius: "10px",
               marginBottom: "24px",
               border:
-                "1px solid #e5e7eb",
+                `1px solid ${theme.border}`,
               boxShadow:
-                "0 2px 6px rgba(0, 0, 0, 0.05)",
+                "0 2px 6px rgba(0, 0, 0, 0.12)",
             }}
           >
             <div
@@ -867,7 +1001,7 @@ function PayrollPage() {
                   style={{
                     margin: 0,
                     color:
-                      "#111827",
+                      theme.text,
                     fontSize:
                       "20px",
                   }}
@@ -882,7 +1016,7 @@ function PayrollPage() {
                     margin:
                       "6px 0 0",
                     color:
-                      "#6b7280",
+                      theme.mutedText,
                     fontSize:
                       "14px",
                   }}
@@ -905,7 +1039,7 @@ function PayrollPage() {
                   background:
                     "transparent",
                   color:
-                    "#6b7280",
+                    theme.mutedText,
                   cursor:
                     isSubmitting
                       ? "not-allowed"
@@ -940,7 +1074,7 @@ function PayrollPage() {
                 <label
                   style={{
                     color:
-                      "#374151",
+                      theme.secondaryText,
                     fontSize:
                       "14px",
                     fontWeight:
@@ -977,26 +1111,16 @@ function PayrollPage() {
                       isSubmitting
                     }
                     style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
+                      ...inputStyle,
                       backgroundColor:
                         isLoadingEmployees
-                          ? "#f3f4f6"
-                          : "#ffffff",
-                      color:
-                        "#111827",
-                      boxSizing:
-                        "border-box",
+                          ? theme.disabledBackground
+                          : theme.inputBackground,
+                      cursor:
+                        isLoadingEmployees ||
+                        isSubmitting
+                          ? "not-allowed"
+                          : "pointer",
                     }}
                   >
                     <option value="">
@@ -1033,7 +1157,7 @@ function PayrollPage() {
                           marginTop:
                             "6px",
                           color:
-                            "#92400e",
+                            theme.warningText,
                           fontSize:
                             "12px",
                           fontWeight:
@@ -1049,7 +1173,7 @@ function PayrollPage() {
                 <label
                   style={{
                     color:
-                      "#374151",
+                      theme.secondaryText,
                     fontSize:
                       "14px",
                     fontWeight:
@@ -1079,29 +1203,16 @@ function PayrollPage() {
                       )
                     }
                     required
-                    style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={
+                      inputStyle
+                    }
                   />
                 </label>
 
                 <label
                   style={{
                     color:
-                      "#374151",
+                      theme.secondaryText,
                     fontSize:
                       "14px",
                     fontWeight:
@@ -1133,29 +1244,16 @@ function PayrollPage() {
                       )
                     }
                     required
-                    style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={
+                      inputStyle
+                    }
                   />
                 </label>
 
                 <label
                   style={{
                     color:
-                      "#374151",
+                      theme.secondaryText,
                     fontSize:
                       "14px",
                     fontWeight:
@@ -1186,29 +1284,16 @@ function PayrollPage() {
                         }),
                       )
                     }
-                    style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={
+                      inputStyle
+                    }
                   />
                 </label>
 
                 <label
                   style={{
                     color:
-                      "#374151",
+                      theme.secondaryText,
                     fontSize:
                       "14px",
                     fontWeight:
@@ -1239,29 +1324,16 @@ function PayrollPage() {
                         }),
                       )
                     }
-                    style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={
+                      inputStyle
+                    }
                   />
                 </label>
 
                 <label
                   style={{
                     color:
-                      "#374151",
+                      theme.secondaryText,
                     fontSize:
                       "14px",
                     fontWeight:
@@ -1298,24 +1370,9 @@ function PayrollPage() {
                         }),
                       )
                     }
-                    style={{
-                      display:
-                        "block",
-                      width:
-                        "100%",
-                      marginTop:
-                        "7px",
-                      padding:
-                        "11px 12px",
-                      border:
-                        "1px solid #d1d5db",
-                      borderRadius:
-                        "7px",
-                      backgroundColor:
-                        "#ffffff",
-                      boxSizing:
-                        "border-box",
-                    }}
+                    style={
+                      inputStyle
+                    }
                   >
                     <option value="pending">
                       Pending
@@ -1332,7 +1389,7 @@ function PayrollPage() {
                   <label
                     style={{
                       color:
-                        "#374151",
+                        theme.secondaryText,
                       fontSize:
                         "14px",
                       fontWeight:
@@ -1362,22 +1419,9 @@ function PayrollPage() {
                         )
                       }
                       required
-                      style={{
-                        display:
-                          "block",
-                        width:
-                          "100%",
-                        marginTop:
-                          "7px",
-                        padding:
-                          "11px 12px",
-                        border:
-                          "1px solid #d1d5db",
-                        borderRadius:
-                          "7px",
-                        boxSizing:
-                          "border-box",
-                      }}
+                      style={
+                        inputStyle
+                      }
                     />
                   </label>
                 )}
@@ -1409,10 +1453,16 @@ function PayrollPage() {
                       isSubmitting ||
                       isLoadingEmployees ||
                       employees.length === 0
-                        ? "#93c5fd"
-                        : "#2563eb",
+                        ? isDarkMode
+                          ? "#374151"
+                          : "#93c5fd"
+                        : theme.primary,
                     color:
-                      "#ffffff",
+                      isSubmitting ||
+                      isLoadingEmployees ||
+                      employees.length === 0
+                        ? theme.mutedText
+                        : "#ffffff",
                     cursor:
                       isSubmitting ||
                       isLoadingEmployees ||
@@ -1443,13 +1493,15 @@ function PayrollPage() {
                     padding:
                       "10px 18px",
                     border:
-                      "1px solid #d1d5db",
+                      `1px solid ${theme.inputBorder}`,
                     borderRadius:
                       "7px",
                     backgroundColor:
-                      "#ffffff",
+                      isDarkMode
+                        ? "#374151"
+                        : "#ffffff",
                     color:
-                      "#374151",
+                      theme.text,
                     cursor:
                       isSubmitting
                         ? "not-allowed"
@@ -1468,10 +1520,10 @@ function PayrollPage() {
         <section
           style={{
             backgroundColor:
-              "#ffffff",
+              theme.cardBackground,
             borderRadius: "10px",
             border:
-              "1px solid #e5e7eb",
+              `1px solid ${theme.border}`,
             overflow: "hidden",
           }}
         >
@@ -1480,7 +1532,7 @@ function PayrollPage() {
               padding:
                 "20px 24px",
               borderBottom:
-                "1px solid #e5e7eb",
+                `1px solid ${theme.border}`,
             }}
           >
             <div
@@ -1501,7 +1553,7 @@ function PayrollPage() {
                   style={{
                     margin: 0,
                     color:
-                      "#111827",
+                      theme.text,
                     fontSize:
                       "19px",
                   }}
@@ -1514,7 +1566,7 @@ function PayrollPage() {
                     margin:
                       "5px 0 0",
                     color:
-                      "#6b7280",
+                      theme.mutedText,
                     fontSize:
                       "13px",
                   }}
@@ -1564,20 +1616,9 @@ function PayrollPage() {
                   )
                 }
                 placeholder="Search employee..."
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius:
-                    "7px",
-                  outline:
-                    "none",
-                  boxSizing:
-                    "border-box",
-                  width:
-                    "100%",
-                }}
+                style={
+                  filterStyle
+                }
               />
 
               <select
@@ -1595,16 +1636,9 @@ function PayrollPage() {
                       | "paid",
                   )
                 }
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius:
-                    "7px",
-                  backgroundColor:
-                    "#ffffff",
-                }}
+                style={
+                  filterStyle
+                }
               >
                 <option value="all">
                   All Status
@@ -1632,16 +1666,9 @@ function PayrollPage() {
                       .value,
                   )
                 }
-                style={{
-                  padding:
-                    "10px 12px",
-                  border:
-                    "1px solid #d1d5db",
-                  borderRadius:
-                    "7px",
-                  backgroundColor:
-                    "#ffffff",
-                }}
+                style={
+                  filterStyle
+                }
               />
             </div>
           </div>
@@ -1654,7 +1681,7 @@ function PayrollPage() {
                 textAlign:
                   "center",
                 color:
-                  "#6b7280",
+                  theme.mutedText,
               }}
             >
               Loading payroll...
@@ -1675,6 +1702,8 @@ function PayrollPage() {
                     "36px",
                   marginBottom:
                     "10px",
+                  color:
+                    theme.mutedText,
                 }}
               >
                 ₹
@@ -1685,7 +1714,7 @@ function PayrollPage() {
                   margin:
                     "0 0 6px",
                   color:
-                    "#111827",
+                    theme.text,
                 }}
               >
                 No payroll records
@@ -1696,7 +1725,7 @@ function PayrollPage() {
                 style={{
                   margin: 0,
                   color:
-                    "#6b7280",
+                    theme.mutedText,
                 }}
               >
                 Try changing the
@@ -1720,13 +1749,15 @@ function PayrollPage() {
                       "collapse",
                     minWidth:
                       "1350px",
+                    color:
+                      theme.text,
                   }}
                 >
                   <thead>
                     <tr
                       style={{
                         backgroundColor:
-                          "#f9fafb",
+                          theme.tableHeader,
                       }}
                     >
                       {[
@@ -1762,7 +1793,7 @@ function PayrollPage() {
                                   ? "right"
                                   : "left",
                               color:
-                                "#4b5563",
+                                theme.secondaryText,
                               fontSize:
                                 "12px",
                               fontWeight:
@@ -1770,7 +1801,7 @@ function PayrollPage() {
                               textTransform:
                                 "uppercase",
                               borderBottom:
-                                "1px solid #e5e7eb",
+                                `1px solid ${theme.border}`,
                               whiteSpace:
                                 "nowrap",
                             }}
@@ -1795,9 +1826,9 @@ function PayrollPage() {
                               padding:
                                 "15px 16px",
                               borderBottom:
-                                "1px solid #f3f4f6",
+                                `1px solid ${theme.rowBorder}`,
                               color:
-                                "#111827",
+                                theme.text,
                             }}
                           >
                             <strong>
@@ -1810,7 +1841,7 @@ function PayrollPage() {
                                 fontSize:
                                   "12px",
                                 color:
-                                  "#6b7280",
+                                  theme.mutedText,
                                 marginTop:
                                   "4px",
                               }}
@@ -1825,11 +1856,11 @@ function PayrollPage() {
                               padding:
                                 "15px 16px",
                               borderBottom:
-                                "1px solid #f3f4f6",
+                                `1px solid ${theme.rowBorder}`,
                               whiteSpace:
                                 "nowrap",
                               color:
-                                "#374151",
+                                theme.secondaryText,
                             }}
                           >
                             {formatMonth(
@@ -1844,7 +1875,7 @@ function PayrollPage() {
                               textAlign:
                                 "right",
                               borderBottom:
-                                "1px solid #f3f4f6",
+                                `1px solid ${theme.rowBorder}`,
                               whiteSpace:
                                 "nowrap",
                             }}
@@ -1861,7 +1892,7 @@ function PayrollPage() {
                               textAlign:
                                 "right",
                               borderBottom:
-                                "1px solid #f3f4f6",
+                                `1px solid ${theme.rowBorder}`,
                               whiteSpace:
                                 "nowrap",
                             }}
@@ -1878,7 +1909,7 @@ function PayrollPage() {
                               textAlign:
                                 "right",
                               borderBottom:
-                                "1px solid #f3f4f6",
+                                `1px solid ${theme.rowBorder}`,
                               whiteSpace:
                                 "nowrap",
                             }}
@@ -1895,7 +1926,7 @@ function PayrollPage() {
                               textAlign:
                                 "right",
                               borderBottom:
-                                "1px solid #f3f4f6",
+                                `1px solid ${theme.rowBorder}`,
                               whiteSpace:
                                 "nowrap",
                             }}
@@ -1912,13 +1943,11 @@ function PayrollPage() {
                               textAlign:
                                 "right",
                               borderBottom:
-                                "1px solid #f3f4f6",
-                              borderBottomColor:
-                                "#f3f4f6",
+                                `1px solid ${theme.rowBorder}`,
                               fontWeight:
                                 700,
                               color:
-                                "#111827",
+                                theme.text,
                               whiteSpace:
                                 "nowrap",
                             }}
@@ -1933,7 +1962,7 @@ function PayrollPage() {
                               padding:
                                 "15px 16px",
                               borderBottom:
-                                "1px solid #f3f4f6",
+                                `1px solid ${theme.rowBorder}`,
                             }}
                           >
                             <span
@@ -1947,13 +1976,13 @@ function PayrollPage() {
                                 backgroundColor:
                                   record.payment_status ===
                                   "paid"
-                                    ? "#dcfce7"
-                                    : "#fef3c7",
+                                    ? theme.paidBackground
+                                    : theme.pendingBackground,
                                 color:
                                   record.payment_status ===
                                   "paid"
-                                    ? "#166534"
-                                    : "#92400e",
+                                    ? theme.paidText
+                                    : theme.pendingText,
                                 fontSize:
                                   "12px",
                                 fontWeight:
@@ -1971,11 +2000,11 @@ function PayrollPage() {
                               padding:
                                 "15px 16px",
                               borderBottom:
-                                "1px solid #f3f4f6",
+                                `1px solid ${theme.rowBorder}`,
                               whiteSpace:
                                 "nowrap",
                               color:
-                                "#4b5563",
+                                theme.secondaryText,
                             }}
                           >
                             {formatPaidAt(
@@ -1988,7 +2017,7 @@ function PayrollPage() {
                               padding:
                                 "15px 16px",
                               borderBottom:
-                                "1px solid #f3f4f6",
+                                `1px solid ${theme.rowBorder}`,
                             }}
                           >
                             <div
@@ -2010,13 +2039,17 @@ function PayrollPage() {
                                   padding:
                                     "7px 12px",
                                   border:
-                                    "1px solid #2563eb",
+                                    `1px solid ${theme.primary}`,
                                   borderRadius:
                                     "6px",
                                   backgroundColor:
-                                    "#ffffff",
+                                    isDarkMode
+                                      ? "#1e3a8a"
+                                      : "#ffffff",
                                   color:
-                                    "#2563eb",
+                                    isDarkMode
+                                      ? "#dbeafe"
+                                      : theme.primary,
                                   cursor:
                                     "pointer",
                                   fontWeight:
@@ -2047,7 +2080,9 @@ function PayrollPage() {
                                   backgroundColor:
                                     deletingId ===
                                     record.id
-                                      ? "#fca5a5"
+                                      ? isDarkMode
+                                        ? "#7f1d1d"
+                                        : "#fca5a5"
                                       : "#dc2626",
                                   color:
                                     "#ffffff",
@@ -2086,7 +2121,7 @@ function PayrollPage() {
                   padding:
                     "16px 24px",
                   borderTop:
-                    "1px solid #e5e7eb",
+                    `1px solid ${theme.border}`,
                   flexWrap:
                     "wrap",
                 }}
@@ -2094,7 +2129,7 @@ function PayrollPage() {
                 <span
                   style={{
                     color:
-                      "#6b7280",
+                      theme.mutedText,
                     fontSize:
                       "14px",
                   }}
@@ -2109,7 +2144,8 @@ function PayrollPage() {
                   style={{
                     display:
                       "flex",
-                    gap: "8px",
+                    gap:
+                      "8px",
                   }}
                 >
                   <button
@@ -2131,19 +2167,21 @@ function PayrollPage() {
                       padding:
                         "8px 14px",
                       border:
-                        "1px solid #d1d5db",
+                        `1px solid ${theme.inputBorder}`,
                       borderRadius:
                         "7px",
                       backgroundColor:
                         currentPage <=
                         1
-                          ? "#f3f4f6"
-                          : "#ffffff",
+                          ? theme.disabledBackground
+                          : isDarkMode
+                            ? "#374151"
+                            : "#ffffff",
                       color:
                         currentPage <=
                         1
-                          ? "#9ca3af"
-                          : "#374151",
+                          ? theme.mutedText
+                          : theme.text,
                       cursor:
                         currentPage <=
                         1
@@ -2177,19 +2215,21 @@ function PayrollPage() {
                       padding:
                         "8px 14px",
                       border:
-                        "1px solid #d1d5db",
+                        `1px solid ${theme.inputBorder}`,
                       borderRadius:
                         "7px",
                       backgroundColor:
                         currentPage >=
                         totalPages
-                          ? "#f3f4f6"
-                          : "#ffffff",
+                          ? theme.disabledBackground
+                          : isDarkMode
+                            ? "#374151"
+                            : "#ffffff",
                       color:
                         currentPage >=
                         totalPages
-                          ? "#9ca3af"
-                          : "#374151",
+                          ? theme.mutedText
+                          : theme.text,
                       cursor:
                         currentPage >=
                         totalPages
