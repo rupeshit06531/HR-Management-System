@@ -1065,6 +1065,14 @@ function EmployeeTodayAttendance() {
     }
   }
 
+  useEffect(() => {
+    return () => {
+      if (selfiePreview) {
+        URL.revokeObjectURL(selfiePreview)
+      }
+    }
+  }, [selfiePreview])
+
   const handleSelfieChange = (
     event: ChangeEvent<HTMLInputElement>,
   ) => {
@@ -1098,8 +1106,11 @@ function EmployeeTodayAttendance() {
       return
     }
 
-    const previewUrl =
-      URL.createObjectURL(file)
+    if (selfiePreview) {
+      URL.revokeObjectURL(selfiePreview)
+    }
+
+    const previewUrl = URL.createObjectURL(file)
 
     setSelfieFile(file)
     setSelfiePreview(previewUrl)
