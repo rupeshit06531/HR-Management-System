@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
   type FormEvent,
@@ -10,11 +11,14 @@ import {
   deleteLeave,
   getLeaves,
   updateLeave,
+  updateLeaveStatus,
   type CreateLeaveRequest,
   type LeaveRecord,
 } from "../api/leave"
 
-import { useTheme } from "../context/ThemeContext"
+import { useTheme } from "../context/theme-context"
+import { useConfirm } from "../context/confirmation-context"
+import { useAuth } from "../context/auth-context"
 
 const leaveTypes = [
   {
@@ -43,10 +47,19 @@ const emptyForm: CreateLeaveRequest = {
 }
 
 function Leave() {
+  const confirm = useConfirm()
+  const { user } = useAuth()
   const { isDarkMode } = useTheme()
+  const canManageLeaves =
+    user?.role === "HR" || user?.role === "SUPER_ADMIN"
 
   const [leaves, setLeaves] =
     useState<LeaveRecord[]>([])
+
+  const [totalLeaveCount, setTotalLeaveCount] = useState(0)
+  const [nextPage, setNextPage] = useState(2)
+  const [hasMoreLeaves, setHasMoreLeaves] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const [isLoading, setIsLoading] =
     useState(true)
@@ -57,11 +70,16 @@ function Leave() {
   const [deletingId, setDeletingId] =
     useState<number | null>(null)
 
+  const [updatingStatusId, setUpdatingStatusId] =
+    useState<number | null>(null)
+
   const [error, setError] =
     useState("")
 
   const [success, setSuccess] =
     useState("")
+
+  const leaveRequestIdRef = useRef(0)
 
   const [editingId, setEditingId] =
     useState<number | null>(null)
@@ -72,83 +90,25 @@ function Leave() {
     )
 
   const theme = {
-    pageBackground: isDarkMode
-      ? "#111827"
-      : "#f5f7fb",
-
-    cardBackground: isDarkMode
-      ? "#1f2937"
-      : "#ffffff",
-
-    inputBackground: isDarkMode
-      ? "#111827"
-      : "#ffffff",
-
-    text: isDarkMode
-      ? "#f9fafb"
-      : "#111827",
-
-    secondaryText: isDarkMode
-      ? "#d1d5db"
-      : "#374151",
-
-    mutedText: isDarkMode
-      ? "#9ca3af"
-      : "#6b7280",
-
-    border: isDarkMode
-      ? "#374151"
-      : "#e5e7eb",
-
-    rowBorder: isDarkMode
-      ? "#374151"
-      : "#f3f4f6",
-
-    tableHeader: isDarkMode
-      ? "#111827"
-      : "#f9fafb",
-
-    primaryButton: isDarkMode
-      ? "#2563eb"
-      : "#2563eb",
-
-    primaryButtonText:
-      "#ffffff",
-
-    secondaryButtonBackground:
-      isDarkMode
-        ? "#374151"
-        : "#f3f4f6",
-
-    secondaryButtonText:
-      isDarkMode
-        ? "#f9fafb"
-        : "#111827",
-
-    errorBackground: isDarkMode
-      ? "#451a1a"
-      : "#fee2e2",
-
-    errorBorder: isDarkMode
-      ? "#7f1d1d"
-      : "#fecaca",
-
-    errorText: isDarkMode
-      ? "#fca5a5"
-      : "#991b1b",
-
-    successBackground:
-      isDarkMode
-        ? "#14351f"
-        : "#dcfce7",
-
-    successBorder: isDarkMode
-      ? "#166534"
-      : "#bbf7d0",
-
-    successText: isDarkMode
-      ? "#86efac"
-      : "#166534",
+    pageBackground: "var(--app-bg)",
+    cardBackground: "var(--surface)",
+    inputBackground: "var(--surface)",
+    text: "var(--text-primary)",
+    secondaryText: "var(--text-secondary)",
+    mutedText: "var(--text-muted)",
+    border: "var(--border)",
+    rowBorder: "var(--border-light)",
+    tableHeader: "var(--surface-subtle)",
+    primaryButton: "var(--app-primary)",
+    primaryButtonText: "var(--white)",
+    secondaryButtonBackground: "var(--surface-subtle)",
+    secondaryButtonText: "var(--text-primary)",
+    errorBackground: isDarkMode ? "#2a1515" : "var(--danger-50)",
+    errorBorder: isDarkMode ? "#5f2929" : "var(--danger-100)",
+    errorText: isDarkMode ? "#fca5a5" : "var(--danger-700)",
+    successBackground: isDarkMode ? "#10251b" : "var(--success-50)",
+    successBorder: isDarkMode ? "#23583b" : "var(--success-100)",
+    successText: isDarkMode ? "#86efac" : "var(--success-700)",
   }
 
   const inputStyle: CSSProperties = {
@@ -158,7 +118,7 @@ function Leave() {
     padding: "10px",
     boxSizing: "border-box",
     border: `1px solid ${theme.border}`,
-    borderRadius: "6px",
+    borderRadius: "10px",
     background: theme.inputBackground,
     color: theme.text,
     fontSize: "14px",
@@ -169,7 +129,7 @@ function Leave() {
     background: theme.primaryButton,
     color: theme.primaryButtonText,
     border: "none",
-    borderRadius: "6px",
+    borderRadius: "10px",
     cursor: isSubmitting
       ? "not-allowed"
       : "pointer",
@@ -182,33 +142,69 @@ function Leave() {
       theme.secondaryButtonBackground,
     color: theme.secondaryButtonText,
     border: `1px solid ${theme.border}`,
-    borderRadius: "6px",
+    borderRadius: "10px",
     cursor: "pointer",
   }
 
-  const loadLeaves = async () => {
+  const loadLeaves = async (page = 1, append = false) => {
+    const requestId = ++leaveRequestIdRef.current
+
     try {
+      if (append) {
+        setIsLoadingMore(true)
+      } else if (page === 1) {
+        setIsLoading(true)
+      }
       setError("")
 
       const response =
-        await getLeaves()
+        await getLeaves({ page })
+
+      if (requestId !== leaveRequestIdRef.current) {
+        return
+      }
 
       const data = Array.isArray(response)
         ? response
         : response.results
 
-      setLeaves(data)
-    } catch {
-      setError(
-        "Unable to load leave records.",
+      setLeaves((current) => append
+        ? [
+            ...current,
+            ...data.filter(
+              (item) => !current.some((existing) => existing.id === item.id),
+            ),
+          ]
+        : data,
       )
+      if (!Array.isArray(response)) {
+        setTotalLeaveCount(response.count)
+        setHasMoreLeaves(Boolean(response.next))
+        setNextPage(page + 1)
+      } else {
+        setTotalLeaveCount(data.length)
+        setHasMoreLeaves(false)
+      }
+    } catch {
+      if (requestId === leaveRequestIdRef.current) {
+        setError(
+          "Unable to load leave records.",
+        )
+      }
     } finally {
-      setIsLoading(false)
+      if (requestId === leaveRequestIdRef.current) {
+        setIsLoading(false)
+        setIsLoadingMore(false)
+      }
     }
   }
 
   useEffect(() => {
     void loadLeaves()
+
+    return () => {
+      leaveRequestIdRef.current += 1
+    }
   }, [])
 
   const resetForm = () => {
@@ -355,10 +351,11 @@ function Leave() {
   const handleDelete = async (
     id: number,
   ) => {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this leave request?",
-      )
+    const confirmed = await confirm({
+      title: "Delete leave request?",
+      message: "This leave request will be permanently deleted.",
+      confirmLabel: "Delete request",
+    })
 
     if (!confirmed) {
       return
@@ -371,12 +368,7 @@ function Leave() {
 
       await deleteLeave(id)
 
-      setLeaves((current) =>
-        current.filter(
-          (leave) =>
-            leave.id !== id,
-        ),
-      )
+      await loadLeaves(1)
 
       if (editingId === id) {
         resetForm()
@@ -394,6 +386,30 @@ function Leave() {
     }
   }
 
+  const handleStatusChange = async (
+    leave: LeaveRecord,
+    status: "approved" | "rejected",
+  ) => {
+    try {
+      setUpdatingStatusId(leave.id)
+      setError("")
+      setSuccess("")
+
+      const updatedLeave = await updateLeaveStatus(leave.id, status)
+      setLeaves((current) =>
+        current.map((item) =>
+          item.id === updatedLeave.id ? updatedLeave : item,
+        ),
+      )
+      setSuccess(`Leave request ${status} successfully.`)
+    } catch (statusError) {
+      console.error("Leave status update error:", statusError)
+      setError(`Unable to ${status} leave request. Please try again.`)
+    } finally {
+      setUpdatingStatusId(null)
+    }
+  }
+
   const formatLeaveType = (
     value: string,
   ) => {
@@ -408,11 +424,11 @@ function Leave() {
 
   return (
     <main
+      className="leave-page"
       style={{
-        minHeight: "100vh",
-        padding: "32px",
-        fontFamily:
-          "Arial, sans-serif",
+        minHeight: "auto",
+        padding: 0,
+        fontFamily: "inherit",
         background:
           theme.pageBackground,
         color: theme.text,
@@ -450,7 +466,7 @@ function Leave() {
               background:
                 theme.errorBackground,
               border: `1px solid ${theme.errorBorder}`,
-              borderRadius: "6px",
+              borderRadius: "10px",
               color:
                 theme.errorText,
             }}
@@ -466,7 +482,7 @@ function Leave() {
               background:
                 theme.successBackground,
               border: `1px solid ${theme.successBorder}`,
-              borderRadius: "6px",
+              borderRadius: "10px",
               color:
                 theme.successText,
             }}
@@ -480,7 +496,7 @@ function Leave() {
             background:
               theme.cardBackground,
             padding: "24px",
-            borderRadius: "10px",
+            borderRadius: "14px",
             marginTop: "24px",
             border: `1px solid ${theme.border}`,
             boxSizing: "border-box",
@@ -659,7 +675,7 @@ function Leave() {
                   ...inputStyle,
                   resize: "vertical",
                   fontFamily:
-                    "Arial, sans-serif",
+                    "inherit",
                 }}
               />
             </label>
@@ -689,7 +705,7 @@ function Leave() {
             background:
               theme.cardBackground,
             padding: "24px",
-            borderRadius: "10px",
+            borderRadius: "14px",
             marginTop: "24px",
             border: `1px solid ${theme.border}`,
             boxSizing: "border-box",
@@ -703,6 +719,9 @@ function Leave() {
           >
             My Leave Requests
           </h2>
+          <p style={{ marginTop: "-10px", color: theme.mutedText, fontSize: "13px" }}>
+            Showing {leaves.length} of {totalLeaveCount} requests
+          </p>
 
           {isLoading ? (
             <p
@@ -935,75 +954,74 @@ function Leave() {
                                 "wrap",
                             }}
                           >
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleEdit(
-                                  leave,
-                                )
-                              }
-                              disabled={
-                                deletingId ===
-                                leave.id
-                              }
-                              style={{
-                                ...secondaryButtonStyle,
-                                padding:
-                                  "7px 12px",
-                                cursor:
-                                  deletingId ===
-                                  leave.id
-                                    ? "not-allowed"
-                                    : "pointer",
-                                opacity:
-                                  deletingId ===
-                                  leave.id
-                                    ? 0.6
-                                    : 1,
-                              }}
-                            >
-                              Edit
-                            </button>
+                            {canManageLeaves && leave.status === "pending" && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleStatusChange(leave, "approved")
+                                  }
+                                  disabled={updatingStatusId === leave.id}
+                                  style={{
+                                    ...secondaryButtonStyle,
+                                    padding: "7px 12px",
+                                    color: isDarkMode ? "#86efac" : "#15803d",
+                                  }}
+                                >
+                                  {updatingStatusId === leave.id ? "Saving..." : "Approve"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    void handleStatusChange(leave, "rejected")
+                                  }
+                                  disabled={updatingStatusId === leave.id}
+                                  style={{
+                                    ...secondaryButtonStyle,
+                                    padding: "7px 12px",
+                                    color: isDarkMode ? "#fca5a5" : "#b91c1c",
+                                  }}
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
 
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void handleDelete(
-                                  leave.id,
-                                )
-                              }
-                              disabled={
-                                deletingId ===
-                                leave.id
-                              }
-                              style={{
-                                padding:
-                                  "7px 12px",
-                                background:
-                                  "#dc2626",
-                                color:
-                                  "#ffffff",
-                                border:
-                                  "none",
-                                borderRadius:
-                                  "5px",
-                                cursor:
-                                  deletingId ===
-                                  leave.id
-                                    ? "not-allowed"
-                                    : "pointer",
-                                opacity:
-                                  deletingId ===
-                                  leave.id
-                                    ? 0.6
-                                    : 1,
-                              }}
-                            >
-                              {deletingId ===
-                              leave.id
-                                ? "Deleting..."
-                                : "Delete"}
-                            </button>
+                            {canManageLeaves && leave.status === "pending" && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleEdit(leave)}
+                                  disabled={
+                                    deletingId === leave.id ||
+                                    updatingStatusId === leave.id
+                                  }
+                                  style={{
+                                    ...secondaryButtonStyle,
+                                    padding: "7px 12px",
+                                  }}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDelete(leave.id)}
+                                  disabled={
+                                    deletingId === leave.id ||
+                                    updatingStatusId === leave.id
+                                  }
+                                  style={{
+                                    padding: "7px 12px",
+                                    background: "#dc2626",
+                                    color: "#ffffff",
+                                    border: "none",
+                                    borderRadius: "5px",
+                                  }}
+                                >
+                                  {deletingId === leave.id ? "Deleting..." : "Delete"}
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1011,6 +1029,21 @@ function Leave() {
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+          {hasMoreLeaves && !isLoading && (
+            <div style={{ paddingTop: "18px", textAlign: "center" }}>
+              <button
+                type="button"
+                onClick={() => void loadLeaves(nextPage, true)}
+                disabled={isLoadingMore}
+                style={{
+                  ...secondaryButtonStyle,
+                  cursor: isLoadingMore ? "wait" : "pointer",
+                }}
+              >
+                {isLoadingMore ? "Loading..." : "Load more requests"}
+              </button>
             </div>
           )}
         </section>

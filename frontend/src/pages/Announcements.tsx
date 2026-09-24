@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
   type FormEvent,
@@ -14,7 +15,9 @@ import {
   type CreateAnnouncementRequest,
 } from "../api/announcements"
 
-import { useTheme } from "../context/ThemeContext"
+import { useTheme } from "../context/theme-context"
+import { useConfirm } from "../context/confirmation-context"
+import { useAuth } from "../context/auth-context"
 
 const targetAudiences = [
   {
@@ -42,10 +45,19 @@ const emptyForm = {
 }
 
 function Announcements() {
+  const confirm = useConfirm()
   const { isDarkMode } = useTheme()
+  const { user } = useAuth()
+  const canManageAnnouncements =
+    user?.role === "HR" || user?.role === "SUPER_ADMIN"
 
   const [announcements, setAnnouncements] =
     useState<AnnouncementRecord[]>([])
+
+  const [totalAnnouncements, setTotalAnnouncements] = useState(0)
+  const [nextPage, setNextPage] = useState(2)
+  const [hasMoreAnnouncements, setHasMoreAnnouncements] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const [isLoading, setIsLoading] =
     useState(true)
@@ -64,6 +76,8 @@ function Announcements() {
 
   const [success, setSuccess] =
     useState<string | null>(null)
+
+  const announcementRequestIdRef = useRef(0)
 
   const [form, setForm] =
     useState(emptyForm)
@@ -157,35 +171,73 @@ function Announcements() {
   }
 
   const loadAnnouncements =
-    async () => {
+    async (page = 1, append = false) => {
+      const requestId = ++announcementRequestIdRef.current
+
       try {
-        setIsLoading(true)
+        if (append) {
+          setIsLoadingMore(true)
+        } else {
+          setIsLoading(true)
+        }
         setError(null)
 
         const response =
-          await getAnnouncements()
+          await getAnnouncements({ page })
+
+        if (requestId !== announcementRequestIdRef.current) {
+          return
+        }
 
         if (Array.isArray(response)) {
-          setAnnouncements(response)
+          setAnnouncements((current) => append
+            ? [
+                ...current,
+                ...response.filter(
+                  (item) => !current.some((existing) => existing.id === item.id),
+                ),
+              ]
+            : response,
+          )
+          setTotalAnnouncements(response.length)
+          setHasMoreAnnouncements(false)
         } else {
           const paginated =
             response as AnnouncementListResponse
-
-          setAnnouncements(
-            paginated.results ?? [],
+          const results = paginated.results ?? []
+          setAnnouncements((current) => append
+            ? [
+                ...current,
+                ...results.filter(
+                  (item) => !current.some((existing) => existing.id === item.id),
+                ),
+              ]
+            : results,
           )
+          setTotalAnnouncements(paginated.count ?? results.length)
+          setHasMoreAnnouncements(Boolean(paginated.next))
+          setNextPage(page + 1)
         }
       } catch {
-        setError(
-          "Unable to load announcements.",
-        )
+        if (requestId === announcementRequestIdRef.current) {
+          setError(
+            "Unable to load announcements.",
+          )
+        }
       } finally {
-        setIsLoading(false)
+        if (requestId === announcementRequestIdRef.current) {
+          setIsLoading(false)
+          setIsLoadingMore(false)
+        }
       }
     }
 
   useEffect(() => {
     void loadAnnouncements()
+
+    return () => {
+      announcementRequestIdRef.current += 1
+    }
   }, [])
 
   const resetForm = () => {
@@ -283,6 +335,7 @@ function Announcements() {
           ...current,
         ],
       )
+      setTotalAnnouncements((current) => current + 1)
 
       setSuccess(
         "Announcement created successfully.",
@@ -301,11 +354,13 @@ function Announcements() {
   const handleDelete = async (
     id: number,
   ) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this announcement?",
-      )
-    ) {
+    const confirmed = await confirm({
+      title: "Delete announcement?",
+      message: "This announcement will be permanently deleted.",
+      confirmLabel: "Delete announcement",
+    })
+
+    if (!confirmed) {
       return
     }
 
@@ -315,14 +370,7 @@ function Announcements() {
       setSuccess(null)
 
       await deleteAnnouncement(id)
-
-      setAnnouncements(
-        (current) =>
-          current.filter(
-            (announcement) =>
-              announcement.id !== id,
-          ),
-      )
+      await loadAnnouncements(1)
 
       setSuccess(
         "Announcement deleted successfully.",
@@ -413,7 +461,7 @@ function Announcements() {
             </p>
           </div>
 
-          <button
+          {canManageAnnouncements && <button
             type="button"
             onClick={() => {
               setForm(emptyForm)
@@ -432,7 +480,7 @@ function Announcements() {
             }}
           >
             New Announcement
-          </button>
+          </button>}
         </header>
 
         {error && (
@@ -467,7 +515,7 @@ function Announcements() {
           </section>
         )}
 
-        {showForm && (
+        {canManageAnnouncements && showForm && (
           <section
             style={{
               backgroundColor:
@@ -838,7 +886,7 @@ function Announcements() {
                     "Expiry Date",
                     "Status",
                     "Created By",
-                    "Actions",
+                    ...(canManageAnnouncements ? ["Actions"] : []),
                   ].map((heading) => (
                     <th
                       key={heading}
@@ -1024,7 +1072,7 @@ function Announcements() {
                             "top",
                         }}
                       >
-                        <button
+                        {canManageAnnouncements && <button
                           type="button"
                           disabled={
                             deletingId ===
@@ -1062,13 +1110,35 @@ function Announcements() {
                           announcement.id
                             ? "Deleting..."
                             : "Delete"}
-                        </button>
+                        </button>}
                       </td>
                     </tr>
                   ),
                 )}
               </tbody>
             </table>
+          )}
+          {hasMoreAnnouncements && !isLoading && (
+            <div style={{ padding: "18px", textAlign: "center" }}>
+              <button
+                type="button"
+                onClick={() => void loadAnnouncements(nextPage, true)}
+                disabled={isLoadingMore}
+                style={{
+                  padding: "10px 18px",
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: "6px",
+                  backgroundColor: theme.secondaryButton,
+                  color: theme.text,
+                  cursor: isLoadingMore ? "wait" : "pointer",
+                }}
+              >
+                {isLoadingMore ? "Loading..." : "Load more announcements"}
+              </button>
+              <p style={{ margin: "8px 0 0", color: theme.mutedText, fontSize: "13px" }}>
+                Showing {announcements.length} of {totalAnnouncements}
+              </p>
+            </div>
           )}
         </section>
       </section>

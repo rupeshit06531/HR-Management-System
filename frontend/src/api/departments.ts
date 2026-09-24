@@ -46,12 +46,13 @@ export interface DesignationPayload {
   is_active: boolean
 }
 
-export const getDepartments = async (): Promise<
+export const getDepartments = async (params?: { page?: number }): Promise<
   DepartmentListResponse
 > => {
   const response =
     await apiClient.get<DepartmentListResponse>(
       "/departments/",
+      { params },
     )
 
   return response.data
@@ -90,12 +91,13 @@ export const deleteDepartment = async (
   )
 }
 
-export const getDesignations = async (): Promise<
+export const getDesignations = async (params?: { page?: number }): Promise<
   DesignationListResponse
 > => {
   const response =
     await apiClient.get<DesignationListResponse>(
       "/designations/",
+      { params },
     )
 
   return response.data

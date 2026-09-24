@@ -1,3 +1,6 @@
+import os
+import logging
+
 from django.contrib.auth import (
     authenticate,
     get_user_model,
@@ -6,8 +9,10 @@ from django.contrib.auth.models import update_last_login
 from django.contrib.auth.tokens import (
     default_token_generator,
 )
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
-from django.urls import reverse
+from django.db import transaction
 
 from rest_framework import status, viewsets
 from rest_framework.permissions import (
@@ -15,14 +20,34 @@ from rest_framework.permissions import (
     IsAuthenticated,
 )
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
 
 from .permissions import IsAdminOrSuperAdmin
 from .serializers import UserSerializer
 
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
+
+def revoke_user_refresh_tokens(user):
+    token_ids = OutstandingToken.objects.filter(
+        user=user,
+    ).values_list("id", flat=True)
+
+    BlacklistedToken.objects.bulk_create(
+        [
+            BlacklistedToken(token_id=token_id)
+            for token_id in token_ids
+        ],
+        ignore_conflicts=True,
+    )
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -58,6 +83,8 @@ class LoginViewSet(viewsets.ViewSet):
 
     authentication_classes = []
     permission_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
 
     def create(self, request):
         username = request.data.get("username")
@@ -226,17 +253,6 @@ class ChangePasswordViewSet(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if len(new_password) < 8:
-            return Response(
-                {
-                    "detail": (
-                        "New password must be at least "
-                        "8 characters long."
-                    )
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         if request.user.check_password(
             new_password
         ):
@@ -250,14 +266,29 @@ class ChangePasswordViewSet(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        try:
+            validate_password(
+                new_password,
+                user=request.user,
+            )
+        except ValidationError as error:
+            return Response(
+                {
+                    "detail": " ".join(error.messages)
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         request.user.set_password(new_password)
         request.user.must_change_password = False
-        request.user.save(
-            update_fields=[
-                "password",
-                "must_change_password",
-            ]
-        )
+        with transaction.atomic():
+            request.user.save(
+                update_fields=[
+                    "password",
+                    "must_change_password",
+                ]
+            )
+            revoke_user_refresh_tokens(request.user)
 
         return Response(
             {
@@ -283,6 +314,8 @@ class ForgotPasswordViewSet(viewsets.ViewSet):
 
     authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_forgot"
 
     def create(self, request):
         username = request.data.get("username")
@@ -328,39 +361,42 @@ class ForgotPasswordViewSet(viewsets.ViewSet):
             return Response(
                 {
                     "detail": (
-                        "This account does not have an "
-                        "email address configured."
+                        "If the account exists, password "
+                        "recovery instructions have been sent."
                     )
                 },
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_200_OK,
             )
 
         token = default_token_generator.make_token(
             user
         )
 
-        reset_url = request.build_absolute_uri(
-            reverse(
-                "password-reset",
-            )
-        )
-
+        frontend_base_url = os.getenv(
+            "FRONTEND_BASE_URL",
+            "http://localhost:5173",
+        ).strip().rstrip("/")
         reset_url = (
-            f"{reset_url}?uid={user.pk}&token={token}"
+            f"{frontend_base_url}/reset-password"
+            f"?uid={user.pk}&token={token}"
         )
 
-        send_mail(
-            subject="HRMS Password Reset",
-            message=(
-                "Your HRMS password reset request "
-                "has been received.\n\n"
-                f"Password reset link:\n{reset_url}\n\n"
-                "This link is for password recovery."
-            ),
-            from_email=None,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                subject="HRMS Password Reset",
+                message=(
+                    "Your HRMS password reset request "
+                    "has been received.\n\n"
+                    f"Password reset link:\n{reset_url}\n\n"
+                    "This link expires in one hour and can only be used once. "
+                    "If you did not request a password reset, you can ignore this email."
+                ),
+                from_email=None,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+        except Exception:
+            logger.exception("Failed to send a password reset email.")
 
         return Response(
             {
@@ -377,16 +413,18 @@ class ForgotPasswordViewSet(viewsets.ViewSet):
 class ResetPasswordViewSet(viewsets.ViewSet):
     """
     Completes password recovery after token verification.
-
-    The temporary recovery password is 1234.
     """
 
     authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_reset"
 
     def create(self, request):
         uid = request.data.get("uid")
         token = request.data.get("token")
+        new_password = request.data.get("new_password")
+        confirm_password = request.data.get("confirm_password")
 
         if not uid or not token:
             return Response(
@@ -426,26 +464,50 @@ class ResetPasswordViewSet(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        temporary_password = "1234"
+        if not new_password or not confirm_password:
+            return Response(
+                {
+                    "detail": "New password and confirmation are required."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if new_password != confirm_password:
+            return Response(
+                {
+                    "detail": "New password and confirmation do not match."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            validate_password(new_password, user=user)
+        except ValidationError as error:
+            return Response(
+                {
+                    "detail": " ".join(error.messages)
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         user.set_password(
-            temporary_password
+            new_password
         )
-        user.must_change_password = True
+        user.must_change_password = False
 
-        user.save(
-            update_fields=[
-                "password",
-                "must_change_password",
-            ]
-        )
+        with transaction.atomic():
+            user.save(
+                update_fields=[
+                    "password",
+                    "must_change_password",
+                ]
+            )
+            revoke_user_refresh_tokens(user)
 
         return Response(
             {
                 "detail": (
-                    "Password reset successfully. "
-                    "Use the temporary password 1234 "
-                    "to sign in, then change your password."
+                    "Password reset successfully. You can now sign in with your new password."
                 )
             },
             status=status.HTTP_200_OK,

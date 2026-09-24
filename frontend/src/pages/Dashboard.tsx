@@ -1,6 +1,8 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type CSSProperties,
@@ -18,8 +20,8 @@ import { getAnnouncements, type AnnouncementRecord } from "../api/announcements"
 import { getDashboard } from "../api/dashboard"
 import { getAnalytics, type AnalyticsData } from "../api/analytics"
 import { getHolidays, type Holiday } from "../api/holidays"
-import { useAuth } from "../context/AuthContext"
-import { useTheme } from "../context/ThemeContext"
+import { useAuth } from "../context/auth-context"
+import { useTheme } from "../context/theme-context"
 
 interface ModuleItem {
   label: string
@@ -126,12 +128,25 @@ const moduleItems: ModuleItem[] = [
   },
 ]
 
+function parseDashboardDate(value: string) {
+  const calendarDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  const date = calendarDate
+    ? new Date(
+        Number(calendarDate[1]),
+        Number(calendarDate[2]) - 1,
+        Number(calendarDate[3]),
+      )
+    : new Date(value)
+
+  return date
+}
+
 function formatDate(value: string | null | undefined) {
   if (!value) {
     return "Not available"
   }
 
-  const date = new Date(value)
+  const date = parseDashboardDate(value)
 
   if (Number.isNaN(date.getTime())) {
     return value
@@ -145,7 +160,7 @@ function formatDate(value: string | null | undefined) {
 }
 
 function formatDashboardDate(value: string) {
-  const date = new Date(value)
+  const date = parseDashboardDate(value)
 
   if (Number.isNaN(date.getTime())) {
     return value
@@ -159,7 +174,7 @@ function formatDashboardDate(value: string) {
 }
 
 function formatDashboardDay(value: string) {
-  const date = new Date(value)
+  const date = parseDashboardDate(value)
 
   if (Number.isNaN(date.getTime())) {
     return ""
@@ -188,6 +203,14 @@ function formatMetric(value: number) {
   return value.toLocaleString("en-IN")
 }
 
+function getLocalDateString(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
+}
+
 function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -209,8 +232,13 @@ function Dashboard() {
   const [contentError, setContentError] = useState("")
   const [isContentLoading, setIsContentLoading] = useState(true)
 
-  async function loadDashboard(options?: { refresh?: boolean }) {
+  const dashboardRequestIdRef = useRef(0)
+  const analyticsRequestIdRef = useRef(0)
+  const contentRequestIdRef = useRef(0)
+
+  const loadDashboard = useCallback(async (options?: { refresh?: boolean }) => {
     const refresh = options?.refresh ?? false
+    const requestId = ++dashboardRequestIdRef.current
 
     try {
       if (refresh) {
@@ -223,18 +251,29 @@ function Dashboard() {
 
       const data = await getDashboard()
 
+      if (requestId !== dashboardRequestIdRef.current) {
+        return
+      }
+
       setDashboard(data)
       setLastUpdated(new Date())
     } catch (requestError) {
+      if (requestId !== dashboardRequestIdRef.current) {
+        return
+      }
       console.error("Failed to load dashboard:", requestError)
       setError("Unable to load dashboard information.")
     } finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
+      if (requestId === dashboardRequestIdRef.current) {
+        setIsLoading(false)
+        setIsRefreshing(false)
+      }
     }
-  }
+  }, [])
 
-  async function loadAnalytics() {
+  const loadAnalytics = useCallback(async () => {
+    const requestId = ++analyticsRequestIdRef.current
+
     if (user?.role !== "SUPER_ADMIN" && user?.role !== "HR") {
       setAnalytics(null)
       return
@@ -242,72 +281,107 @@ function Dashboard() {
 
     try {
       const data = await getAnalytics()
+      if (requestId !== analyticsRequestIdRef.current) {
+        return
+      }
       setAnalytics(data)
     } catch (requestError) {
+      if (requestId !== analyticsRequestIdRef.current) {
+        return
+      }
       console.error("Failed to load workforce analytics:", requestError)
       setAnalytics(null)
     }
-  }
+  }, [user?.role])
 
-  async function loadDashboardContent() {
+  const loadDashboardContent = useCallback(async () => {
+    const requestId = ++contentRequestIdRef.current
+
     try {
       setIsContentLoading(true)
       setContentError("")
 
-      const [announcementResponse, holidayResponse] = await Promise.all([
+      const [announcementResult, holidayResult] = await Promise.allSettled([
         getAnnouncements({
           is_active: true,
+          is_published: true,
         }),
         getHolidays({
           is_active: true,
+          date__gte: getLocalDateString(new Date()),
         }),
       ])
 
-      const publishedAnnouncements = announcementResponse.results
-        .filter((announcement) => announcement.is_published)
-        .sort(
-          (first, second) =>
-            new Date(second.publish_date).getTime() -
-            new Date(first.publish_date).getTime(),
+      if (requestId !== contentRequestIdRef.current) {
+        return
+      }
+
+      const failures: string[] = []
+
+      if (announcementResult.status === "fulfilled") {
+        const publishedAnnouncements = announcementResult.value.results
+          .filter((announcement) => announcement.is_published)
+          .sort(
+            (first, second) =>
+              new Date(second.publish_date).getTime() -
+              new Date(first.publish_date).getTime(),
+          )
+        setAnnouncements(publishedAnnouncements)
+      } else {
+        failures.push("announcements")
+        console.error(
+          "Failed to load dashboard announcements:",
+          announcementResult.reason,
         )
+      }
 
-      const upcomingHolidays = holidayResponse.results
-        .filter((holiday) => {
-          const timestamp = new Date(holiday.date).getTime()
-          const today = new Date()
-          today.setHours(0, 0, 0, 0)
-
-          return Number.isFinite(timestamp) && timestamp >= today.getTime()
-        })
-        .sort(
-          (first, second) =>
-            new Date(first.date).getTime() -
-            new Date(second.date).getTime(),
+      if (holidayResult.status === "fulfilled") {
+        setHolidays(holidayResult.value.results)
+      } else {
+        failures.push("holidays")
+        console.error(
+          "Failed to load dashboard holidays:",
+          holidayResult.reason,
         )
+      }
 
-      setAnnouncements(publishedAnnouncements)
-      setHolidays(upcomingHolidays)
+      setContentError(
+        failures.length > 0
+          ? `Unable to load ${failures.join(" and ")}.`
+          : "",
+      )
     } catch (requestError) {
+      if (requestId !== contentRequestIdRef.current) {
+        return
+      }
       console.error("Failed to load dashboard content:", requestError)
       setContentError("Unable to load announcements and holidays.")
     } finally {
-      setIsContentLoading(false)
+      if (requestId === contentRequestIdRef.current) {
+        setIsContentLoading(false)
+      }
     }
-  }
+  }, [])
 
-  async function handleRefresh() {
+  const handleRefresh = useCallback(async () => {
     await Promise.all([
       loadDashboard({ refresh: true }),
       loadDashboardContent(),
       loadAnalytics(),
     ])
-  }
+  }, [loadDashboard, loadDashboardContent, loadAnalytics])
 
   useEffect(() => {
     void loadDashboard()
     void loadDashboardContent()
     void loadAnalytics()
-  }, [user?.role])
+
+    return () => {
+      dashboardRequestIdRef.current += 1
+      contentRequestIdRef.current += 1
+      analyticsRequestIdRef.current += 1
+    }
+  }, [loadDashboard, loadDashboardContent, loadAnalytics])
 
   const role = user?.role ?? ""
   const currentRole = roleLabels[role] || role || "User"
@@ -531,7 +605,7 @@ function Dashboard() {
                   disabled={isRefreshing}
                 >
                   <span className={isRefreshing ? "dashboard-refresh-icon is-spinning" : "dashboard-refresh-icon"}>
-                    \u21BB
+                    ↻
                   </span>
                   {isRefreshing ? "Refreshing..." : "Refresh Data"}
                 </button>
@@ -633,9 +707,9 @@ function Dashboard() {
 
         <footer className="dashboard-footer">
           <span>{personalName}</span>
-          <span className="dashboard-footer-dot">\u2022</span>
+          <span className="dashboard-footer-dot">•</span>
           <span>{currentRole}</span>
-          <span className="dashboard-footer-dot">\u2022</span>
+          <span className="dashboard-footer-dot">•</span>
           <span>HRMS Workspace</span>
         </footer>
       </div>
@@ -652,7 +726,7 @@ function DashboardLayout({
 }) {
   return (
     <div
-      className={`dashboard-page dashboard-compact ${
+      className={`dashboard-page dashboard-compact dashboard-refresh ${
         isDarkMode ? "dashboard-dark" : ""
       }`}
     >
@@ -840,13 +914,11 @@ function EmployeeTodayAttendance() {
       setIsLoading(true)
       setError(null)
 
-      const response = await getAttendance()
       const today = getTodayDate()
+      const response = await getAttendance({ date: today })
 
       const todayRecord =
-        response.results.find(
-          (record) => record.date === today,
-        ) ?? null
+        response.results.find((record) => record.date === today) ?? null
 
       setAttendance(todayRecord)
     } catch (requestError) {
@@ -1112,11 +1184,11 @@ function EmployeeTodayAttendance() {
       return
     }
 
-    if (!file.type.startsWith("image/")) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       setSelfieFile(null)
       setSelfiePreview(null)
       setError(
-        "Please select a valid image file for the selfie.",
+        "Choose a JPG, PNG or WEBP image for your selfie.",
       )
       return
     }
@@ -1249,7 +1321,7 @@ function EmployeeTodayAttendance() {
 
                   <input
                     type="file"
-                    accept="image/*"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                     capture="user"
                     onChange={handleSelfieChange}
                   />
@@ -1289,7 +1361,7 @@ function EmployeeTodayAttendance() {
                     onClick={() => void handlePunchIn()}
                     disabled={isPunchingIn}
                   >
-                    <span>\u25F7</span>
+                    <span>◷</span>
                     {isPunchingIn
                       ? "Punching In..."
                       : "Punch In"}
@@ -1304,7 +1376,7 @@ function EmployeeTodayAttendance() {
                       onClick={() => void handlePunchOut()}
                       disabled={isPunchingOut}
                     >
-                      <span>\u25F7</span>
+                      <span>◷</span>
                       {isPunchingOut
                         ? "Punching Out..."
                         : "Punch Out"}
@@ -1316,7 +1388,7 @@ function EmployeeTodayAttendance() {
 
           {attendance?.check_out && (
             <div className="dashboard-attendance-complete">
-              <span>\u2713</span>
+              <span>✓</span>
               <div>
                 <strong>Attendance completed for today</strong>
                 <small>
@@ -2114,7 +2186,7 @@ function QuickAction({
         <small>{item.description}</small>
       </span>
 
-      <span className="dashboard-quick-arrow">\u2192</span>
+      <span className="dashboard-quick-arrow">→</span>
     </button>
   )
 }
@@ -2215,7 +2287,7 @@ function ModuleGrid({
               </span>
 
               <span className="dashboard-module-open" aria-hidden="true">
-                \u2192
+                →
               </span>
             </div>
 
@@ -2629,14 +2701,15 @@ function DashboardActivityCenter({
         <div className="dashboard-activity-loading">
           <DashboardListLoading />
         </div>
-      ) : contentError ? (
-        <div className="dashboard-activity-empty">
-          <div className="dashboard-activity-empty-icon">!</div>
-          <strong>Activity information unavailable</strong>
-          <span>{contentError}</span>
-        </div>
       ) : (
         <div className="dashboard-activity-grid">
+          {contentError && (
+            <div className="dashboard-activity-empty" role="status">
+              <div className="dashboard-activity-empty-icon">!</div>
+              <strong>Some activity information is unavailable</strong>
+              <span>{contentError}</span>
+            </div>
+          )}
           <div className="dashboard-activity-card">
             <div className="dashboard-activity-card-top">
               <div className="dashboard-activity-icon dashboard-activity-icon-announcement">
@@ -6284,6 +6357,146 @@ const dashboardStyles = `
       transition-duration: 0.01ms !important;
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
+    }
+  }
+
+  /* Accessible dashboard sizing and calmer, more useful density. */
+  .dashboard-refresh {
+    font-size: 14px;
+  }
+
+  .dashboard-refresh :is(p, span, small, li, label, button) {
+    font-size: max(11px, 1em) !important;
+    line-height: 1.45;
+  }
+
+  .dashboard-refresh .dashboard-page-header h1 {
+    font-size: clamp(26px, 3vw, 34px) !important;
+  }
+
+  .dashboard-refresh .dashboard-welcome {
+    min-height: 150px;
+    padding: 24px 28px;
+    border-radius: 18px;
+  }
+
+  .dashboard-refresh .dashboard-welcome h2 {
+    font-size: clamp(23px, 3vw, 30px) !important;
+  }
+
+  .dashboard-refresh .dashboard-section-header {
+    margin: 22px 0 12px;
+  }
+
+  .dashboard-refresh .dashboard-section-header h2 {
+    font-size: 19px !important;
+  }
+
+  .dashboard-refresh .dashboard-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+    margin-bottom: 20px;
+  }
+
+  .dashboard-refresh .dashboard-kpi {
+    min-height: 132px;
+    padding: 17px;
+    border-radius: 15px;
+  }
+
+  .dashboard-refresh .dashboard-kpi > strong {
+    font-size: 27px !important;
+  }
+
+  .dashboard-refresh .dashboard-two-column {
+    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.9fr) !important;
+    gap: 16px !important;
+    margin-bottom: 16px;
+  }
+
+  .dashboard-refresh .dashboard-panel,
+  .dashboard-refresh .dashboard-list-panel,
+  .dashboard-refresh .dashboard-analytics-card,
+  .dashboard-refresh .dashboard-activity-card {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .dashboard-refresh .dashboard-action-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .dashboard-refresh .dashboard-quick-action {
+    min-height: 82px;
+    padding: 12px;
+  }
+
+  .dashboard-refresh .dashboard-quick-copy strong {
+    font-size: 13px !important;
+  }
+
+  .dashboard-refresh .dashboard-module-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .dashboard-refresh .dashboard-module {
+    min-height: 145px;
+    padding: 15px;
+    border-radius: 14px;
+  }
+
+  .dashboard-refresh .dashboard-module h3 {
+    font-size: 14px !important;
+  }
+
+  .dashboard-refresh .dashboard-module p {
+    font-size: 12px !important;
+  }
+
+  .dashboard-refresh .dashboard-bottom-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px;
+    margin-top: 18px;
+  }
+
+  .dashboard-refresh .dashboard-analytics-section,
+  .dashboard-refresh .dashboard-activity-center {
+    margin-top: 20px;
+  }
+
+  @media (max-width: 1100px) {
+    .dashboard-refresh .dashboard-kpi-grid,
+    .dashboard-refresh .dashboard-module-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .dashboard-refresh .dashboard-two-column {
+      grid-template-columns: 1fr !important;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .dashboard-refresh .dashboard-kpi-grid,
+    .dashboard-refresh .dashboard-module-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .dashboard-refresh .dashboard-bottom-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-refresh .dashboard-welcome {
+      padding: 20px;
+    }
+  }
+
+  @media (max-width: 440px) {
+    .dashboard-refresh .dashboard-kpi-grid,
+    .dashboard-refresh .dashboard-module-grid,
+    .dashboard-refresh .dashboard-action-grid {
+      grid-template-columns: 1fr !important;
     }
   }
 `

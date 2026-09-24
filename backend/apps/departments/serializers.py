@@ -94,18 +94,37 @@ class DesignationSerializer(serializers.ModelSerializer):
                 "Designation name cannot exceed 100 characters."
             )
 
-        duplicate_queryset = Designation.objects.filter(
-            name__iexact=value,
+        return value
+
+    def validate(self, attrs):
+        name = attrs.get(
+            "name",
+            getattr(self.instance, "name", ""),
+        )
+        department = attrs.get(
+            "department",
+            getattr(self.instance, "department", None),
         )
 
-        if self.instance is not None:
-            duplicate_queryset = duplicate_queryset.exclude(
-                pk=self.instance.pk,
+        if name and department:
+            duplicate_queryset = Designation.objects.filter(
+                department=department,
+                name__iexact=name,
             )
 
-        if duplicate_queryset.exists():
-            raise serializers.ValidationError(
-                "A designation with this name already exists."
-            )
+            if self.instance is not None:
+                duplicate_queryset = duplicate_queryset.exclude(
+                    pk=self.instance.pk,
+                )
 
-        return value
+            if duplicate_queryset.exists():
+                raise serializers.ValidationError(
+                    {
+                        "name": (
+                            "A designation with this name already "
+                            "exists in this department."
+                        )
+                    }
+                )
+
+        return attrs

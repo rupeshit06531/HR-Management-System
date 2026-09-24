@@ -3,13 +3,18 @@ import {
   useState,
   type FormEvent,
 } from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 
-import { useAuth } from "../context/AuthContext"
-import { useTheme } from "../context/ThemeContext"
+import { useAuth } from "../context/auth-context"
+import { useTheme } from "../context/theme-context"
 
 function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const notice =
+    typeof location.state?.notice === "string"
+      ? location.state.notice
+      : ""
 
   const {
     user,
@@ -24,6 +29,9 @@ function Login() {
 
   const [password, setPassword] =
     useState("")
+
+  const [isPasswordVisible, setIsPasswordVisible] =
+    useState(false)
 
   const [error, setError] =
     useState("")
@@ -366,8 +374,33 @@ function Login() {
             </p>
           </div>
 
+          {notice && (
+            <div
+              role="status"
+              style={{
+                marginBottom: "20px",
+                padding: "12px 14px",
+                border: isDarkMode
+                  ? "1px solid #166534"
+                  : "1px solid #bbf7d0",
+                borderRadius: "9px",
+                background: isDarkMode
+                  ? "#14532d"
+                  : "#f0fdf4",
+                color: isDarkMode
+                  ? "#bbf7d0"
+                  : "#166534",
+                fontSize: "13px",
+                lineHeight: 1.5,
+              }}
+            >
+              {notice}
+            </div>
+          )}
+
           {error && (
             <div
+              id="login-error"
               role="alert"
               style={{
                 marginBottom: "20px",
@@ -392,6 +425,7 @@ function Login() {
 
           <form
             onSubmit={handleSubmit}
+            aria-busy={isSubmitting}
             style={{
               padding: "26px",
               border: isDarkMode
@@ -425,15 +459,18 @@ function Login() {
               </span>
 
               <input
+                id="login-username"
                 type="text"
                 value={username}
-                onChange={(event) =>
-                  setUsername(
-                    event.target.value,
-                  )
-                }
+                onChange={(event) => {
+                  setUsername(event.target.value)
+                  setError("")
+                }}
                 autoComplete="username"
                 placeholder="Enter your username"
+                required
+                aria-invalid={Boolean(error)}
+                aria-describedby={error ? "login-error" : undefined}
                 disabled={isSubmitting}
                 style={{
                   width: "100%",
@@ -479,40 +516,67 @@ function Login() {
                 Password
               </span>
 
-              <input
-                type="password"
-                value={password}
-                onChange={(event) =>
-                  setPassword(
-                    event.target.value,
-                  )
-                }
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                disabled={isSubmitting}
-                style={{
-                  width: "100%",
-                  minHeight: "44px",
-                  padding: "10px 12px",
-                  border: isDarkMode
-                    ? "1px solid #475569"
-                    : "1px solid #cbd5e1",
-                  borderRadius: "9px",
-                  boxSizing: "border-box",
-                  background: isSubmitting
-                    ? isDarkMode
-                      ? "#334155"
-                      : "#f8fafc"
-                    : isDarkMode
-                      ? "#0f172a"
-                      : "#ffffff",
-                  color: isDarkMode
-                    ? "#f8fafc"
-                    : "#0f172a",
-                  fontSize: "14px",
-                  outline: "none",
-                }}
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  id="login-password"
+                  type={isPasswordVisible ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value)
+                    setError("")
+                  }}
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  required
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? "login-error" : undefined}
+                  disabled={isSubmitting}
+                  style={{
+                    width: "100%",
+                    minHeight: "44px",
+                    padding: "10px 76px 10px 12px",
+                    border: isDarkMode
+                      ? "1px solid #475569"
+                      : "1px solid #cbd5e1",
+                    borderRadius: "9px",
+                    boxSizing: "border-box",
+                    background: isSubmitting
+                      ? isDarkMode
+                        ? "#334155"
+                        : "#f8fafc"
+                      : isDarkMode
+                        ? "#0f172a"
+                        : "#ffffff",
+                    color: isDarkMode
+                      ? "#f8fafc"
+                      : "#0f172a",
+                    fontSize: "14px",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordVisible((visible) => !visible)}
+                  aria-label={isPasswordVisible ? "Hide password" : "Show password"}
+                  aria-pressed={isPasswordVisible}
+                  disabled={isSubmitting}
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    right: "10px",
+                    transform: "translateY(-50%)",
+                    border: 0,
+                    padding: "6px",
+                    background: "transparent",
+                    color: isDarkMode ? "#93c5fd" : "#1d4ed8",
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                  }}
+                >
+                  {isPasswordVisible ? "Hide" : "Show"}
+                </button>
+              </div>
             </label>
 
             <div

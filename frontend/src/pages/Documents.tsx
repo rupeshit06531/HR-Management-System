@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
   type FormEvent,
@@ -7,6 +8,7 @@ import {
 
 import {
   createDocument,
+  downloadDocument,
   deleteDocument,
   getDocuments,
   type CreateDocumentRequest,
@@ -14,7 +16,9 @@ import {
   type DocumentRecord,
 } from "../api/documents"
 
-import { useTheme } from "../context/ThemeContext"
+import { useTheme } from "../context/theme-context"
+import { useConfirm } from "../context/confirmation-context"
+import { useAuth } from "../context/auth-context"
 
 const documentTypes = [
   {
@@ -53,11 +57,20 @@ const emptyForm: Omit<
 }
 
 function Documents() {
+  const confirm = useConfirm()
+  const { user } = useAuth()
   const { isDarkMode } = useTheme()
+  const canManageDocuments =
+    user?.role === "HR" || user?.role === "SUPER_ADMIN"
 
   const [documents, setDocuments] = useState<
     DocumentRecord[]
   >([])
+
+  const [totalDocuments, setTotalDocuments] = useState(0)
+  const [nextPage, setNextPage] = useState(2)
+  const [hasMoreDocuments, setHasMoreDocuments] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const [isLoading, setIsLoading] =
     useState(true)
@@ -68,11 +81,16 @@ function Documents() {
   const [deletingId, setDeletingId] =
     useState<number | null>(null)
 
+  const [downloadingId, setDownloadingId] =
+    useState<number | null>(null)
+
   const [error, setError] =
     useState<string | null>(null)
 
   const [success, setSuccess] =
     useState<string | null>(null)
+
+  const documentRequestIdRef = useRef(0)
 
   const [showForm, setShowForm] =
     useState(false)
@@ -184,35 +202,73 @@ function Documents() {
     cursor: "pointer",
   }
 
-  const loadDocuments = async () => {
+  const loadDocuments = async (page = 1, append = false) => {
+    const requestId = ++documentRequestIdRef.current
+
     try {
-      setIsLoading(true)
+      if (append) {
+        setIsLoadingMore(true)
+      } else {
+        setIsLoading(true)
+      }
       setError(null)
 
       const response =
-        await getDocuments()
+        await getDocuments({ page })
+
+      if (requestId !== documentRequestIdRef.current) {
+        return
+      }
 
       if (Array.isArray(response)) {
-        setDocuments(response)
+        setDocuments((current) => append
+          ? [
+              ...current,
+              ...response.filter(
+                (item) => !current.some((existing) => existing.id === item.id),
+              ),
+            ]
+          : response,
+        )
+        setTotalDocuments(response.length)
+        setHasMoreDocuments(false)
       } else {
         const paginated =
           response as DocumentListResponse
-
-        setDocuments(
-          paginated.results ?? [],
+        const results = paginated.results ?? []
+        setDocuments((current) => append
+          ? [
+              ...current,
+              ...results.filter(
+                (item) => !current.some((existing) => existing.id === item.id),
+              ),
+            ]
+          : results,
         )
+        setTotalDocuments(paginated.count ?? results.length)
+        setHasMoreDocuments(Boolean(paginated.next))
+        setNextPage(page + 1)
       }
     } catch {
-      setError(
-        "Unable to load documents.",
-      )
+      if (requestId === documentRequestIdRef.current) {
+        setError(
+          "Unable to load documents.",
+        )
+      }
     } finally {
-      setIsLoading(false)
+      if (requestId === documentRequestIdRef.current) {
+        setIsLoading(false)
+        setIsLoadingMore(false)
+      }
     }
   }
 
   useEffect(() => {
     void loadDocuments()
+
+    return () => {
+      documentRequestIdRef.current += 1
+    }
   }, [])
 
   const resetForm = () => {
@@ -277,6 +333,7 @@ function Documents() {
           ...current,
         ],
       )
+      setTotalDocuments((current) => current + 1)
 
       setSuccess(
         "Document uploaded successfully.",
@@ -295,11 +352,13 @@ function Documents() {
   const handleDelete = async (
     id: number,
   ) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this document?",
-      )
-    ) {
+    const confirmed = await confirm({
+      title: "Delete document?",
+      message: "This document will be permanently deleted.",
+      confirmLabel: "Delete document",
+    })
+
+    if (!confirmed) {
       return
     }
 
@@ -309,14 +368,7 @@ function Documents() {
       setSuccess(null)
 
       await deleteDocument(id)
-
-      setDocuments(
-        (current) =>
-          current.filter(
-            (document) =>
-              document.id !== id,
-          ),
-      )
+      await loadDocuments(1)
 
       setSuccess(
         "Document deleted successfully.",
@@ -327,6 +379,25 @@ function Documents() {
       )
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const handleDownload = async (document: DocumentRecord) => {
+    try {
+      setDownloadingId(document.id)
+      setError(null)
+      const blob = await downloadDocument(document.id)
+      const objectUrl = URL.createObjectURL(blob)
+      const link = window.document.createElement("a")
+      const filename = document.file.split(/[\\/]/).pop() || `document-${document.id}`
+      link.href = objectUrl
+      link.download = filename
+      link.click()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+    } catch {
+      setError("Unable to download this document. Your access may have changed.")
+    } finally {
+      setDownloadingId(null)
     }
   }
 
@@ -386,11 +457,13 @@ function Documents() {
                 marginBottom: 0,
               }}
             >
-              Manage employee documents.
+              {canManageDocuments
+                ? "Manage employee documents and access uploaded files."
+                : "View your personal HR documents and uploaded files."}
             </p>
           </div>
 
-          <button
+          {canManageDocuments && <button
             type="button"
             onClick={() => {
               setForm({
@@ -406,7 +479,7 @@ function Documents() {
             }}
           >
             Upload Document
-          </button>
+          </button>}
         </header>
 
         {error && (
@@ -439,7 +512,7 @@ function Documents() {
           </section>
         )}
 
-        {showForm && (
+        {canManageDocuments && showForm && (
           <section
             style={{
               backgroundColor:
@@ -575,6 +648,7 @@ function Documents() {
 
                 <input
                   type="file"
+                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
                   onChange={(event) =>
                     setForm(
                       (current) => ({
@@ -589,6 +663,16 @@ function Documents() {
                   required
                   style={fileInputStyle}
                 />
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: "5px",
+                    color: theme.mutedText,
+                    fontSize: "11px",
+                  }}
+                >
+                  PDF, Word, TXT, JPG or PNG. Maximum 10 MB.
+                </span>
               </label>
 
               <label
@@ -731,7 +815,7 @@ function Documents() {
                     "Description",
                     "Uploaded At",
                     "File",
-                    "Actions",
+                    ...(canManageDocuments ? ["Actions"] : []),
                   ].map((heading) => (
                     <th
                       key={heading}
@@ -768,10 +852,7 @@ function Documents() {
                           color: theme.text,
                         }}
                       >
-                        Employee #
-                        {
-                          document.employee
-                        }
+                        {document.employee_name || `Employee #${document.employee}`}
                       </td>
 
                       <td
@@ -838,19 +919,22 @@ function Documents() {
                         }}
                       >
                         {document.file ? (
-                          <a
-                            href={
-                              document.file
-                            }
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => void handleDownload(document)}
+                            disabled={downloadingId === document.id}
                             style={{
+                              border: "none",
+                              padding: 0,
+                              background: "transparent",
                               color:
                                 "#60a5fa",
+                              cursor: downloadingId === document.id ? "wait" : "pointer",
+                              font: "inherit",
                             }}
                           >
-                            View File
-                          </a>
+                            {downloadingId === document.id ? "Downloading…" : "Download file"}
+                          </button>
                         ) : (
                           <span
                             style={{
@@ -863,6 +947,7 @@ function Documents() {
                         )}
                       </td>
 
+                      {canManageDocuments && (
                       <td
                         style={{
                           padding:
@@ -911,11 +996,30 @@ function Documents() {
                             : "Delete"}
                         </button>
                       </td>
+                      )}
                     </tr>
                   ),
                 )}
               </tbody>
             </table>
+          )}
+          {hasMoreDocuments && !isLoading && (
+            <div style={{ padding: "18px", textAlign: "center" }}>
+              <button
+                type="button"
+                onClick={() => void loadDocuments(nextPage, true)}
+                disabled={isLoadingMore}
+                style={{
+                  ...cancelButtonStyle,
+                  cursor: isLoadingMore ? "wait" : "pointer",
+                }}
+              >
+                {isLoadingMore ? "Loading..." : "Load more documents"}
+              </button>
+              <p style={{ margin: "8px 0 0", color: theme.mutedText, fontSize: "13px" }}>
+                Showing {documents.length} of {totalDocuments}
+              </p>
+            </div>
           )}
         </section>
       </section>

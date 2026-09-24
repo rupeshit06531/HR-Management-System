@@ -1,5 +1,8 @@
+from django.db.models import Count, Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from apps.accounts.models import User
 from apps.accounts.permissions import (
@@ -33,6 +36,8 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         "user__first_name",
         "user__last_name",
         "user__email",
+        "department__name",
+        "designation__name",
     ]
 
     ordering_fields = [
@@ -123,3 +128,38 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             )
 
         return queryset.none()
+
+    @action(detail=False, methods=["get"], url_path="summary")
+    def summary(self, request):
+        """Return employee totals within the caller's visibility scope."""
+        queryset = self.get_queryset()
+
+        totals = queryset.aggregate(
+            total=Count("id"),
+            active=Count(
+                "id",
+                filter=Q(
+                    employment_status=Employee.EmploymentStatus.ACTIVE,
+                ),
+            ),
+            inactive=Count(
+                "id",
+                filter=Q(
+                    employment_status=Employee.EmploymentStatus.INACTIVE,
+                ),
+            ),
+            resigned=Count(
+                "id",
+                filter=Q(
+                    employment_status=Employee.EmploymentStatus.RESIGNED,
+                ),
+            ),
+            terminated=Count(
+                "id",
+                filter=Q(
+                    employment_status=Employee.EmploymentStatus.TERMINATED,
+                ),
+            ),
+        )
+
+        return Response(totals)

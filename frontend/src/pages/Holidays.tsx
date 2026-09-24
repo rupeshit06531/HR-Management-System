@@ -1,6 +1,8 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type FormEvent,
@@ -16,7 +18,9 @@ import {
   type HolidayPayload,
 } from "../api/holidays"
 
-import { useTheme } from "../context/ThemeContext"
+import { useTheme } from "../context/theme-context"
+import { useConfirm } from "../context/confirmation-context"
+import { useAuth } from "../context/auth-context"
 
 const holidayTypes = [
   {
@@ -46,9 +50,16 @@ const emptyForm: HolidayPayload = {
 }
 
 function Holidays() {
+  const confirm = useConfirm()
   const { isDarkMode } = useTheme()
+  const { user } = useAuth()
+  const canManageHolidays = user?.role === "SUPER_ADMIN"
 
   const [holidays, setHolidays] = useState<Holiday[]>([])
+  const [totalHolidayCount, setTotalHolidayCount] = useState(0)
+  const [nextPage, setNextPage] = useState(2)
+  const [hasMoreHolidays, setHasMoreHolidays] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -58,8 +69,10 @@ function Holidays() {
   const [form, setForm] = useState<HolidayPayload>(emptyForm)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [yearFilter, setYearFilter] = useState("ALL")
   const [typeFilter, setTypeFilter] = useState("ALL")
   const [statusFilter, setStatusFilter] = useState("ALL")
+  const holidayRequestIdRef = useRef(0)
 
   const theme = {
     pageBackground: isDarkMode ? "#111827" : "#f5f7fa",
@@ -105,29 +118,82 @@ function Holidays() {
     boxSizing: "border-box",
   }
 
-  const loadHolidays = async () => {
+  const loadHolidays = useCallback(async (page = 1, append = false) => {
+    const requestId = ++holidayRequestIdRef.current
+
     try {
-      setIsLoading(true)
+      if (append) {
+        setIsLoadingMore(true)
+      } else {
+        setIsLoading(true)
+      }
       setError(null)
 
-      const response = await getHolidays()
+      const response = await getHolidays({
+        page,
+        search: searchTerm.trim() || undefined,
+        "date__year": yearFilter === "ALL" ? undefined : Number(yearFilter),
+        holiday_type: typeFilter === "ALL" ? undefined : typeFilter,
+        is_active:
+          statusFilter === "ALL"
+            ? undefined
+            : statusFilter === "ACTIVE",
+      })
+
+      if (requestId !== holidayRequestIdRef.current) {
+        return
+      }
 
       if (Array.isArray(response)) {
-        setHolidays(response)
+        setHolidays((current) => append
+          ? [
+              ...current,
+              ...response.filter(
+                (item) => !current.some((existing) => existing.id === item.id),
+              ),
+            ]
+          : response,
+        )
+        setTotalHolidayCount(response.length)
+        setHasMoreHolidays(false)
       } else {
         const paginated = response as HolidayListResponse
-        setHolidays(paginated.results ?? [])
+        const results = paginated.results ?? []
+        setHolidays((current) => append
+          ? [
+              ...current,
+              ...results.filter(
+                (item) => !current.some((existing) => existing.id === item.id),
+              ),
+            ]
+          : results,
+        )
+        setTotalHolidayCount(paginated.count ?? results.length)
+        setHasMoreHolidays(Boolean(paginated.next))
+        setNextPage(page + 1)
       }
     } catch {
-      setError("Unable to load holidays.")
+      if (requestId === holidayRequestIdRef.current) {
+        setError("Unable to load holidays.")
+      }
     } finally {
-      setIsLoading(false)
+      if (requestId === holidayRequestIdRef.current) {
+        setIsLoading(false)
+        setIsLoadingMore(false)
+      }
     }
-  }
+  }, [searchTerm, yearFilter, typeFilter, statusFilter])
 
   useEffect(() => {
-    void loadHolidays()
-  }, [])
+    const timeoutId = window.setTimeout(() => {
+      void loadHolidays(1)
+    }, 250)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      holidayRequestIdRef.current += 1
+    }
+  }, [loadHolidays])
 
   const resetForm = () => {
     setForm({
@@ -213,6 +279,7 @@ function Holidays() {
           created,
           ...current,
         ])
+        setTotalHolidayCount((current) => current + 1)
 
         setSuccess(
           "Holiday created successfully.",
@@ -232,9 +299,11 @@ function Holidays() {
   }
 
   const handleDelete = async (id: number) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this holiday?",
-    )
+    const confirmed = await confirm({
+      title: "Delete holiday?",
+      message: "This holiday will be permanently deleted.",
+      confirmLabel: "Delete holiday",
+    })
 
     if (!confirmed) {
       return
@@ -246,12 +315,7 @@ function Holidays() {
       setSuccess(null)
 
       await deleteHoliday(id)
-
-      setHolidays((current) =>
-        current.filter(
-          (holiday) => holiday.id !== id,
-        ),
-      )
+      await loadHolidays(1)
 
       setSuccess(
         "Holiday deleted successfully.",
@@ -315,6 +379,10 @@ function Holidays() {
         typeFilter === "ALL" ||
         holiday.holiday_type === typeFilter
 
+      const matchesYear =
+        yearFilter === "ALL" ||
+        holiday.date.slice(0, 4) === yearFilter
+
       const matchesStatus =
         statusFilter === "ALL" ||
         (statusFilter === "ACTIVE"
@@ -323,6 +391,7 @@ function Holidays() {
 
       return (
         matchesSearch &&
+        matchesYear &&
         matchesType &&
         matchesStatus
       )
@@ -330,6 +399,7 @@ function Holidays() {
   }, [
     holidays,
     searchTerm,
+    yearFilter,
     typeFilter,
     statusFilter,
   ])
@@ -394,7 +464,7 @@ function Holidays() {
             </p>
           </div>
 
-          <button
+          {canManageHolidays && <button
             type="button"
             onClick={openCreateForm}
             style={{
@@ -410,7 +480,7 @@ function Holidays() {
             }}
           >
             + Add Holiday
-          </button>
+          </button>}
         </header>
 
         {error && (
@@ -461,18 +531,18 @@ function Holidays() {
           {[
             {
               label: "Total Holidays",
-              value: holidays.length,
+              value: totalHolidayCount,
               valueColor: theme.text,
             },
             {
-              label: "Active Holidays",
+              label: "Active Holidays Shown",
               value: activeCount,
               valueColor: isDarkMode
                 ? "#86efac"
                 : "#166534",
             },
             {
-              label: "Inactive Holidays",
+              label: "Inactive Holidays Shown",
               value: inactiveCount,
               valueColor: theme.mutedText,
             },
@@ -510,7 +580,7 @@ function Holidays() {
           ))}
         </section>
 
-        {showForm && (
+        {canManageHolidays && showForm && (
           <section
             style={{
               backgroundColor:
@@ -855,7 +925,7 @@ function Holidays() {
                   }}
                 >
                   {filteredHolidays.length}{" "}
-                  of {holidays.length} holidays
+                  of {totalHolidayCount} holidays
                 </p>
               </div>
             </div>
@@ -863,14 +933,14 @@ function Holidays() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns:
-                  "minmax(220px, 1fr) 180px 180px",
+                gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
                 gap: "10px",
                 marginTop: "18px",
               }}
             >
               <input
                 type="search"
+                aria-label="Search holidays"
                 value={searchTerm}
                 onChange={(event) =>
                   setSearchTerm(
@@ -882,6 +952,24 @@ function Holidays() {
               />
 
               <select
+                aria-label="Filter holidays by year"
+                value={yearFilter}
+                onChange={(event) => setYearFilter(event.target.value)}
+                style={filterStyle}
+              >
+                <option value="ALL">All Years</option>
+                {Array.from(
+                  { length: 6 },
+                  (_, index) => new Date().getFullYear() - 1 + index,
+                ).map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                aria-label="Filter holidays by type"
                 value={typeFilter}
                 onChange={(event) =>
                   setTypeFilter(
@@ -907,6 +995,7 @@ function Holidays() {
               </select>
 
               <select
+                aria-label="Filter holidays by status"
                 value={statusFilter}
                 onChange={(event) =>
                   setStatusFilter(
@@ -1002,7 +1091,7 @@ function Holidays() {
                       "Type",
                       "Description",
                       "Status",
-                      "Actions",
+                      ...(canManageHolidays ? ["Actions"] : []),
                     ].map((heading) => (
                       <th
                         key={heading}
@@ -1150,7 +1239,7 @@ function Holidays() {
                               `1px solid ${theme.rowBorder}`,
                           }}
                         >
-                          <div
+                          {canManageHolidays && <div
                             style={{
                               display:
                                 "flex",
@@ -1225,13 +1314,35 @@ function Holidays() {
                                 ? "Deleting..."
                                 : "Delete"}
                             </button>
-                          </div>
+                          </div>}
                         </td>
                       </tr>
                     ),
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+          {hasMoreHolidays && !isLoading && (
+            <div style={{ padding: "18px", textAlign: "center" }}>
+              <button
+                type="button"
+                onClick={() => void loadHolidays(nextPage, true)}
+                disabled={isLoadingMore}
+                style={{
+                  padding: "10px 16px",
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: "7px",
+                  backgroundColor: theme.secondaryButtonBackground,
+                  color: theme.text,
+                  cursor: isLoadingMore ? "wait" : "pointer",
+                }}
+              >
+                {isLoadingMore ? "Loading..." : "Load more holidays"}
+              </button>
+              <p style={{ margin: "8px 0 0", color: theme.mutedText, fontSize: "13px" }}>
+                Showing {holidays.length} of {totalHolidayCount}
+              </p>
             </div>
           )}
         </section>

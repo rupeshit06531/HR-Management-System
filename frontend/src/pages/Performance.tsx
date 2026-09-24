@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useState,
   type CSSProperties,
@@ -11,7 +12,6 @@ import {
   getPerformanceReviews,
   updatePerformanceReview,
   type CreatePerformanceRequest,
-  type PerformanceListResponse,
   type PerformanceReview,
 } from "../api/performance"
 
@@ -20,7 +20,9 @@ import {
   type Employee,
 } from "../api/employees"
 
-import { useTheme } from "../context/ThemeContext"
+import { useTheme } from "../context/theme-context"
+import { useConfirm } from "../context/confirmation-context"
+import { useAuth } from "../context/auth-context"
 
 const createEmptyForm =
   (): CreatePerformanceRequest => ({
@@ -32,8 +34,39 @@ const createEmptyForm =
     review_date: "",
   })
 
+async function loadAllPages<T>(
+  fetchPage: (page: number) => Promise<
+    T[] | { results: T[]; next?: string | null }
+  >,
+): Promise<T[]> {
+  const items: T[] = []
+
+  for (let page = 1; page <= 1000; page += 1) {
+    const response = await fetchPage(page)
+
+    if (Array.isArray(response)) {
+      items.push(...response)
+      return items
+    }
+
+    items.push(...response.results)
+    if (!response.next) {
+      return items
+    }
+  }
+
+  throw new Error("Performance data exceeded the page safety limit.")
+}
+
 function Performance() {
+  const confirm = useConfirm()
   const { isDarkMode } = useTheme()
+  const { user } = useAuth()
+  const canManageReviews = [
+    "MANAGER",
+    "HR",
+    "SUPER_ADMIN",
+  ].includes(user?.role ?? "")
 
   const [reviews, setReviews] = useState<
     PerformanceReview[]
@@ -163,19 +196,11 @@ function Performance() {
       setIsLoading(true)
       setError(null)
 
-      const response =
-        await getPerformanceReviews()
-
-      if (Array.isArray(response)) {
-        setReviews(response)
-      } else {
-        const paginated =
-          response as PerformanceListResponse
-
-        setReviews(
-          paginated.results ?? [],
-        )
-      }
+      setReviews(
+        await loadAllPages((page) =>
+          getPerformanceReviews({ page }),
+        ),
+      )
     } catch {
       setError(
         "Unable to load performance reviews.",
@@ -185,20 +210,24 @@ function Performance() {
     }
   }
 
-  const loadEmployees = async () => {
+  const loadEmployees = useCallback(async () => {
+    if (!canManageReviews) {
+      setIsLoadingEmployees(false)
+      return
+    }
+
     try {
       setIsLoadingEmployees(true)
 
-      const response =
-        await getEmployees()
+      const employeeList = await loadAllPages((page) =>
+        getEmployees({ page }),
+      )
 
-      if (Array.isArray(response)) {
-        setEmployees(response)
-      } else {
-        setEmployees(
-          response.results ?? [],
-        )
-      }
+      setEmployees(
+        user?.role === "MANAGER"
+          ? employeeList.filter((employee) => employee.user !== user.id)
+          : employeeList,
+      )
     } catch {
       setError(
         "Unable to load employees.",
@@ -206,12 +235,12 @@ function Performance() {
     } finally {
       setIsLoadingEmployees(false)
     }
-  }
+  }, [canManageReviews, user?.id, user?.role])
 
   useEffect(() => {
     void loadReviews()
     void loadEmployees()
-  }, [])
+  }, [loadEmployees])
 
   const resetForm = () => {
     setForm(createEmptyForm())
@@ -351,10 +380,11 @@ function Performance() {
   const handleDelete = async (
     id: number,
   ) => {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this performance review?",
-      )
+    const confirmed = await confirm({
+      title: "Delete performance review?",
+      message: "This review will be permanently deleted.",
+      confirmLabel: "Delete review",
+    })
 
     if (!confirmed) {
       return
@@ -472,7 +502,7 @@ function Performance() {
             </p>
           </div>
 
-          <button
+          {canManageReviews && <button
             type="button"
             onClick={openCreateForm}
             style={{
@@ -487,7 +517,7 @@ function Performance() {
             }}
           >
             Add Review
-          </button>
+          </button>}
         </header>
 
         {error && (
@@ -528,7 +558,7 @@ function Performance() {
           </section>
         )}
 
-        {showForm && (
+        {canManageReviews && showForm && (
           <section
             style={{
               backgroundColor:
@@ -563,7 +593,7 @@ function Performance() {
                   : "Add Performance Review"}
               </h2>
 
-              <button
+              {canManageReviews && <button
                 type="button"
                 onClick={resetForm}
                 disabled={isSubmitting}
@@ -586,7 +616,7 @@ function Performance() {
                 }}
               >
                 Close
-              </button>
+              </button>}
             </div>
 
             <form
@@ -981,7 +1011,7 @@ function Performance() {
                 found.
               </p>
 
-              <button
+              {canManageReviews && <button
                 type="button"
                 onClick={
                   openCreateForm
@@ -1005,7 +1035,7 @@ function Performance() {
                 }}
               >
                 Add First Review
-              </button>
+              </button>}
             </div>
           ) : (
             <table
@@ -1028,7 +1058,7 @@ function Performance() {
                     "Strengths",
                     "Areas for Improvement",
                     "Manager Comments",
-                    "Actions",
+                    ...(canManageReviews ? ["Actions"] : []),
                   ].map(
                     (heading) => (
                       <th
@@ -1227,8 +1257,8 @@ function Performance() {
                               "wrap",
                           }}
                         >
-                          <button
-                            type="button"
+              {canManageReviews && <button
+                type="button"
                             disabled={
                               isSubmitting ||
                               deletingId !==
@@ -1265,9 +1295,9 @@ function Performance() {
                             }}
                           >
                             Edit
-                          </button>
+              </button>}
 
-                          <button
+                          {canManageReviews && <button
                             type="button"
                             disabled={
                               deletingId ===
@@ -1307,7 +1337,7 @@ function Performance() {
                             review.id
                               ? "Deleting..."
                               : "Delete"}
-                          </button>
+                          </button>}
                         </div>
                       </td>
                     </tr>

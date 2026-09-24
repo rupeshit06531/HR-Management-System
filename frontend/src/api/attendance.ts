@@ -87,10 +87,11 @@ export interface AttendanceLocationStop {
 }
 
 export const getAttendance =
-  async (): Promise<AttendanceListResponse> => {
+  async (params?: { page?: number; date?: string }): Promise<AttendanceListResponse> => {
     const response =
       await apiClient.get<AttendanceListResponse>(
         "/attendance/",
+        { params },
       )
 
     return response.data

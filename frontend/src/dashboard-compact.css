@@ -198,13 +198,15 @@
   font-size: 9px;
 }
 
-.dashboard-page.dashboard-compact .dashboard-profile-layout {
+.dashboard-page.dashboard-compact .dashboard-profile-layout,
+.dashboard-page.dashboard-compact .dashboard-employee-profile-layout {
   gap: 8px !important;
   margin-bottom: 8px;
 }
 
 .dashboard-page.dashboard-compact .dashboard-person-card,
-.dashboard-page.dashboard-compact .dashboard-profile-card {
+.dashboard-page.dashboard-compact .dashboard-profile-card,
+.dashboard-page.dashboard-compact .dashboard-employee-profile-card {
   padding: 10px 12px;
   border-radius: 10px;
 }
@@ -224,11 +226,13 @@
   font-size: 9px;
 }
 
-.dashboard-page.dashboard-compact .dashboard-profile-grid {
+.dashboard-page.dashboard-compact .dashboard-profile-grid,
+.dashboard-page.dashboard-compact .dashboard-employee-profile-grid {
   gap: 6px !important;
 }
 
-.dashboard-page.dashboard-compact .dashboard-profile-grid > * {
+.dashboard-page.dashboard-compact .dashboard-profile-grid > *,
+.dashboard-page.dashboard-compact .dashboard-employee-profile-grid > * {
   padding: 7px;
 }
 
@@ -557,27 +561,32 @@
 }
 
 @media (max-width: 900px) {
-  .dashboard-page.dashboard-compact .dashboard-profile-layout {
+  .dashboard-page.dashboard-compact .dashboard-profile-layout,
+  .dashboard-page.dashboard-compact .dashboard-employee-profile-layout {
     grid-template-columns: 170px minmax(0, 1fr) !important;
   }
 
-  .dashboard-page.dashboard-compact .dashboard-profile-grid {
+  .dashboard-page.dashboard-compact .dashboard-profile-grid,
+  .dashboard-page.dashboard-compact .dashboard-employee-profile-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
 @media (max-width: 700px) {
-  .dashboard-page.dashboard-compact .dashboard-profile-layout {
+  .dashboard-page.dashboard-compact .dashboard-profile-layout,
+  .dashboard-page.dashboard-compact .dashboard-employee-profile-layout {
     grid-template-columns: 1fr !important;
   }
 
-  .dashboard-page.dashboard-compact .dashboard-profile-grid {
+  .dashboard-page.dashboard-compact .dashboard-profile-grid,
+  .dashboard-page.dashboard-compact .dashboard-employee-profile-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
 @media (max-width: 430px) {
-  .dashboard-page.dashboard-compact .dashboard-profile-grid {
+  .dashboard-page.dashboard-compact .dashboard-profile-grid,
+  .dashboard-page.dashboard-compact .dashboard-employee-profile-grid {
     grid-template-columns: 1fr !important;
   }
 }

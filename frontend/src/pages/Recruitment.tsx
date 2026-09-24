@@ -1,6 +1,7 @@
 import {
+  useCallback,
   useEffect,
-  useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type FormEvent,
@@ -8,6 +9,7 @@ import {
 
 import {
   createCandidate,
+  downloadCandidateResume,
   deleteCandidate,
   getCandidates,
   updateCandidate,
@@ -16,7 +18,8 @@ import {
   type CandidatePayload,
 } from "../api/recruitment"
 
-import { useTheme } from "../context/ThemeContext"
+import { useTheme } from "../context/theme-context"
+import { useConfirm } from "../context/confirmation-context"
 
 const statuses = [
   { value: "APPLIED", label: "Applied" },
@@ -108,6 +111,7 @@ function getStatusStyle(status: string) {
 }
 
 function Recruitment() {
+  const confirm = useConfirm()
   const { isDarkMode } = useTheme()
 
   const colors = {
@@ -219,10 +223,25 @@ function Recruitment() {
   const [isLoading, setIsLoading] =
     useState(true)
 
+  const [isLoadingMore, setIsLoadingMore] =
+    useState(false)
+
+  const [totalCandidateCount, setTotalCandidateCount] =
+    useState(0)
+
+  const [hasMoreCandidates, setHasMoreCandidates] =
+    useState(false)
+
+  const [nextCandidatesPage, setNextCandidatesPage] =
+    useState(2)
+
   const [isSubmitting, setIsSubmitting] =
     useState(false)
 
   const [deletingId, setDeletingId] =
+    useState<number | null>(null)
+
+  const [downloadingResumeId, setDownloadingResumeId] =
     useState<number | null>(null)
 
   const [error, setError] =
@@ -240,41 +259,93 @@ function Recruitment() {
   const [form, setForm] =
     useState<CandidatePayload>(emptyForm)
 
+  const candidateRequestIdRef = useRef(0)
+
   const [searchTerm, setSearchTerm] =
     useState("")
 
   const [statusFilter, setStatusFilter] =
     useState("ALL")
 
-  const loadCandidates = async () => {
+  const loadCandidates = useCallback(async (
+    page = 1,
+    append = false,
+  ) => {
+    const requestId = ++candidateRequestIdRef.current
+
     try {
-      setIsLoading(true)
+      if (append) {
+        setIsLoadingMore(true)
+      } else {
+        setIsLoading(true)
+      }
       setError(null)
 
-      const response = await getCandidates()
+      const response = await getCandidates({
+        page,
+        search: searchTerm.trim() || undefined,
+        status: statusFilter === "ALL" ? undefined : statusFilter,
+      })
+
+      if (requestId !== candidateRequestIdRef.current) {
+        return
+      }
 
       if (Array.isArray(response)) {
-        setCandidates(response)
+        setCandidates((current) => append
+          ? [
+              ...current,
+              ...response.filter(
+                (candidate) => !current.some((item) => item.id === candidate.id),
+              ),
+            ]
+          : response,
+        )
+        setTotalCandidateCount(response.length)
+        setHasMoreCandidates(false)
+        setNextCandidatesPage(2)
       } else {
         const paginated =
           response as CandidateListResponse
 
-        setCandidates(
-          paginated.results ?? [],
+        const results = paginated.results ?? []
+        setCandidates((current) => append
+          ? [
+              ...current,
+              ...results.filter(
+                (candidate) => !current.some((item) => item.id === candidate.id),
+              ),
+            ]
+          : results,
         )
+        setTotalCandidateCount(paginated.count ?? results.length)
+        setHasMoreCandidates(Boolean(paginated.next))
+        setNextCandidatesPage(page + 1)
       }
     } catch {
-      setError(
-        "Unable to load candidates.",
-      )
+      if (requestId === candidateRequestIdRef.current) {
+        setError(
+          "Unable to load candidates.",
+        )
+      }
     } finally {
-      setIsLoading(false)
+      if (requestId === candidateRequestIdRef.current) {
+        setIsLoading(false)
+        setIsLoadingMore(false)
+      }
     }
-  }
+  }, [searchTerm, statusFilter])
 
   useEffect(() => {
-    void loadCandidates()
-  }, [])
+    const timeoutId = window.setTimeout(() => {
+      void loadCandidates(1)
+    }, 250)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      candidateRequestIdRef.current += 1
+    }
+  }, [loadCandidates])
 
   const resetForm = () => {
     setForm({
@@ -290,48 +361,9 @@ function Recruitment() {
     setShowForm(false)
   }
 
-  const filteredCandidates = useMemo(() => {
-    const search =
-      searchTerm.trim().toLowerCase()
+  const filteredCandidates = candidates
 
-    return candidates.filter((candidate) => {
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        candidate.status === statusFilter
-
-      if (!matchesStatus) {
-        return false
-      }
-
-      if (!search) {
-        return true
-      }
-
-      const searchableText = [
-        candidate.first_name,
-        candidate.last_name,
-        candidate.full_name,
-        candidate.email,
-        candidate.phone,
-        candidate.job_title,
-        candidate.department_name,
-        String(candidate.department),
-        candidate.status,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-
-      return searchableText.includes(search)
-    })
-  }, [
-    candidates,
-    searchTerm,
-    statusFilter,
-  ])
-
-  const totalCandidates =
-    candidates.length
+  const totalCandidates = totalCandidateCount
 
   const selectedCandidates =
     candidates.filter(
@@ -516,31 +548,19 @@ function Recruitment() {
       }
 
       if (editingId !== null) {
-        const updated =
-          await updateCandidate(
+        await updateCandidate(
             editingId,
             payload,
           )
 
-        setCandidates((current) =>
-          current.map((candidate) =>
-            candidate.id === editingId
-              ? updated
-              : candidate,
-          ),
-        )
+        await loadCandidates(1)
 
         setSuccess(
           "Candidate updated successfully.",
         )
       } else {
-        const created =
-          await createCandidate(payload)
-
-        setCandidates((current) => [
-          created,
-          ...current,
-        ])
+        await createCandidate(payload)
+        await loadCandidates(1)
 
         setSuccess(
           "Candidate created successfully.",
@@ -592,11 +612,13 @@ function Recruitment() {
   const handleDelete = async (
     id: number,
   ) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this candidate?",
-      )
-    ) {
+    const confirmed = await confirm({
+      title: "Delete candidate?",
+      message: "This candidate record will be permanently deleted.",
+      confirmLabel: "Delete candidate",
+    })
+
+    if (!confirmed) {
       return
     }
 
@@ -606,13 +628,7 @@ function Recruitment() {
       setSuccess(null)
 
       await deleteCandidate(id)
-
-      setCandidates((current) =>
-        current.filter(
-          (candidate) =>
-            candidate.id !== id,
-        ),
-      )
+      await loadCandidates(1)
 
       setSuccess(
         "Candidate deleted successfully.",
@@ -623,6 +639,27 @@ function Recruitment() {
       )
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const handleDownloadResume = async (candidate: Candidate) => {
+    if (!candidate.resume) return
+
+    try {
+      setDownloadingResumeId(candidate.id)
+      setError(null)
+      const blob = await downloadCandidateResume(candidate.id)
+      const objectUrl = URL.createObjectURL(blob)
+      const link = window.document.createElement("a")
+      const filename = candidate.resume.split(/[\\/]/).pop() || `candidate-${candidate.id}-resume`
+      link.href = objectUrl
+      link.download = filename
+      link.click()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+    } catch {
+      setError("Unable to download this resume. Your access may have changed.")
+    } finally {
+      setDownloadingResumeId(null)
     }
   }
 
@@ -831,17 +868,17 @@ function Recruitment() {
                 totalCandidates,
             },
             {
-              label: "Interviews",
+              label: "Interviews Shown",
               value:
                 interviewCandidates,
             },
             {
-              label: "Selected",
+              label: "Selected Shown",
               value:
                 selectedCandidates,
             },
             {
-              label: "Rejected",
+              label: "Rejected Shown",
               value:
                 rejectedCandidates,
             },
@@ -1565,15 +1602,7 @@ function Recruitment() {
                       "13px",
                   }}
                 >
-                  {
-                    filteredCandidates.length
-                  }{" "}
-                  candidate
-                  {filteredCandidates.length ===
-                  1
-                    ? ""
-                    : "s"}{" "}
-                  displayed
+                  Showing {filteredCandidates.length} of {totalCandidates} candidates
                 </p>
               </div>
 
@@ -1982,8 +2011,28 @@ function Recruitment() {
                               display:
                                 "flex",
                               gap: "7px",
+                              flexWrap: "wrap",
                             }}
                           >
+                            {candidate.resume && (
+                              <button
+                                type="button"
+                                onClick={() => void handleDownloadResume(candidate)}
+                                disabled={downloadingResumeId === candidate.id}
+                                style={{
+                                  padding: "7px 11px",
+                                  border: `1px solid ${colors.border}`,
+                                  borderRadius: "6px",
+                                  backgroundColor: colors.cardBackground,
+                                  color: colors.secondaryText,
+                                  cursor: downloadingResumeId === candidate.id ? "wait" : "pointer",
+                                  fontSize: "12px",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {downloadingResumeId === candidate.id ? "Downloading…" : "Resume"}
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() =>
@@ -2061,6 +2110,27 @@ function Recruitment() {
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+          {hasMoreCandidates && !isLoading && (
+            <div style={{ padding: "18px", textAlign: "center" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  void loadCandidates(nextCandidatesPage, true)
+                }}
+                disabled={isLoadingMore}
+                style={{
+                  padding: "10px 18px",
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: "7px",
+                  backgroundColor: colors.cardBackground,
+                  color: colors.text,
+                  cursor: isLoadingMore ? "wait" : "pointer",
+                }}
+              >
+                {isLoadingMore ? "Loading..." : "Load more candidates"}
+              </button>
             </div>
           )}
         </section>

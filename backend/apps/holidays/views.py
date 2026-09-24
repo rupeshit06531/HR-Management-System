@@ -23,6 +23,8 @@ class HolidayViewSet(viewsets.ModelViewSet):
     filterset_fields = [
         "holiday_type",
         "date",
+        "date__gte",
+        "date__year",
         "is_active",
     ]
 

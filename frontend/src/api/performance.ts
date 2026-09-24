@@ -32,10 +32,10 @@ export interface PerformanceListResponse {
 
 const PERFORMANCE_URL = "/performance/"
 
-export const getPerformanceReviews = async () => {
+export const getPerformanceReviews = async (params?: { page?: number }) => {
   const response = await apiClient.get<
     PerformanceReview[] | PerformanceListResponse
-  >(PERFORMANCE_URL)
+  >(PERFORMANCE_URL, { params })
 
   return response.data
 }

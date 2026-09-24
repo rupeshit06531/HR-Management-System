@@ -1,3 +1,5 @@
+import django_filters
+from django.utils import timezone
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -17,6 +19,40 @@ from .serializers import (
 )
 
 
+class AnnouncementFilter(django_filters.FilterSet):
+    is_published = django_filters.BooleanFilter(
+        method="filter_published",
+    )
+
+    class Meta:
+        model = Announcement
+        fields = [
+            "target_audience",
+            "department",
+            "is_active",
+            "publish_date",
+            "expiry_date",
+        ]
+
+    def filter_published(self, queryset, name, value):
+        if value is None:
+            return queryset
+
+        now = timezone.now()
+        published = Q(
+            is_active=True,
+            publish_date__lte=now,
+        ) & (
+            Q(expiry_date__isnull=True)
+            | Q(expiry_date__gte=now)
+        )
+
+        if value:
+            return queryset.filter(published)
+
+        return queryset.exclude(published)
+
+
 class AnnouncementViewSet(viewsets.ModelViewSet):
     serializer_class = AnnouncementSerializer
 
@@ -26,13 +62,7 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         filters.OrderingFilter,
     ]
 
-    filterset_fields = [
-        "target_audience",
-        "department",
-        "is_active",
-        "publish_date",
-        "expiry_date",
-    ]
+    filterset_class = AnnouncementFilter
 
     search_fields = [
         "title",

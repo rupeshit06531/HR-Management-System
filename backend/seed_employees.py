@@ -1,5 +1,8 @@
+import os
 from datetime import date, timedelta
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from apps.departments.models import Department, Designation
 from apps.employees.models import Employee
 
@@ -76,7 +79,19 @@ designation_map = {
     "Sales and Marketing": "Sales Executive",
 }
 
-password = "Test@1234"
+password = os.environ.get("HRMS_SEED_PASSWORD", "")
+if not password:
+    raise SystemExit(
+        "Set HRMS_SEED_PASSWORD to a strong temporary password before seeding."
+    )
+
+try:
+    validate_password(password)
+except ValidationError as error:
+    raise SystemExit(
+        "HRMS_SEED_PASSWORD does not meet the password policy: "
+        + " ".join(error.messages)
+    ) from error
 
 created = 0
 skipped = 0

@@ -1,3 +1,6 @@
+from pathlib import Path
+from zipfile import BadZipFile, ZipFile, is_zipfile
+
 from rest_framework import serializers
 
 from .models import Candidate
@@ -5,6 +8,11 @@ from .models import Candidate
 
 class CandidateSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
+    resume = serializers.FileField(
+        required=False,
+        allow_null=True,
+        use_url=False,
+    )
 
     department_name = serializers.CharField(
         source="department.name",
@@ -49,6 +57,42 @@ class CandidateSerializer(serializers.ModelSerializer):
 
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}".strip()
+
+    def validate_resume(self, value):
+        if value is None:
+            return value
+
+        if value.size <= 0:
+            raise serializers.ValidationError("Resume file cannot be empty.")
+        if value.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError("Resume file cannot exceed 10 MB.")
+
+        extension = Path(value.name).suffix.lower()
+        if extension not in {".pdf", ".doc", ".docx"}:
+            raise serializers.ValidationError("Resume must be a PDF, DOC or DOCX file.")
+
+        value.seek(0)
+        header = value.read(8)
+        value.seek(0)
+        try:
+            if extension == ".pdf" and not header.startswith(b"%PDF-"):
+                raise serializers.ValidationError("File contents do not match the PDF extension.")
+            if extension == ".doc" and not header.startswith(bytes.fromhex("D0CF11E0A1B11AE1")):
+                raise serializers.ValidationError("File contents do not match the DOC extension.")
+            if extension == ".docx":
+                if not is_zipfile(value):
+                    raise serializers.ValidationError("File contents do not match the DOCX extension.")
+                value.seek(0)
+                with ZipFile(value) as document:
+                    names = set(document.namelist())
+                if not {"[Content_Types].xml", "word/document.xml"}.issubset(names):
+                    raise serializers.ValidationError("The DOCX file is missing required document content.")
+        except (OSError, ValueError, BadZipFile) as error:
+            raise serializers.ValidationError("The resume file is damaged or invalid.") from error
+        finally:
+            value.seek(0)
+
+        return value
 
     def validate(self, attrs):
         first_name = self._get_value(

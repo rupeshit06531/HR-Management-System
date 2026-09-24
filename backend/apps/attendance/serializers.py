@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from PIL import Image, UnidentifiedImageError
 from rest_framework import serializers
 
 from apps.accounts.models import User
@@ -7,6 +10,14 @@ from .models import Attendance, AttendanceLocationStop
 
 class AttendanceSerializer(serializers.ModelSerializer):
     employee_name = serializers.SerializerMethodField()
+    check_in_selfie = serializers.ImageField(
+        read_only=True,
+        use_url=False,
+    )
+    check_out_selfie = serializers.ImageField(
+        read_only=True,
+        use_url=False,
+    )
 
     employee_id = serializers.CharField(
         source="employee.employee_id",
@@ -163,12 +174,7 @@ class AttendancePunchInSerializer(serializers.Serializer):
         return value
 
     def validate_selfie(self, value):
-        if value.size <= 0:
-            raise serializers.ValidationError(
-                "Selfie file cannot be empty."
-            )
-
-        return value
+        return validate_selfie_upload(value)
 
 
 class AttendancePunchOutSerializer(serializers.Serializer):
@@ -224,12 +230,42 @@ class AttendancePunchOutSerializer(serializers.Serializer):
         return value
 
     def validate_selfie(self, value):
-        if value.size <= 0:
-            raise serializers.ValidationError(
-                "Selfie file cannot be empty."
-            )
+        return validate_selfie_upload(value)
 
-        return value
+
+def validate_selfie_upload(value):
+    if value.size <= 0:
+        raise serializers.ValidationError("Selfie file cannot be empty.")
+    if value.size > 10 * 1024 * 1024:
+        raise serializers.ValidationError("Selfie cannot exceed 10 MB.")
+
+    extension = Path(value.name).suffix.lower()
+    if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+        raise serializers.ValidationError("Selfie must be a JPG, PNG or WEBP image.")
+
+    value.seek(0)
+    try:
+        image = Image.open(value)
+        expected_format = {
+            ".jpg": "JPEG",
+            ".jpeg": "JPEG",
+            ".png": "PNG",
+            ".webp": "WEBP",
+        }[extension]
+        if image.format != expected_format:
+            raise serializers.ValidationError("Selfie content does not match its file extension.")
+        image.verify()
+    except (
+        OSError,
+        ValueError,
+        UnidentifiedImageError,
+        Image.DecompressionBombError,
+    ) as error:
+        raise serializers.ValidationError("The selfie image is damaged or invalid.") from error
+    finally:
+        value.seek(0)
+
+    return value
 
 
 class AttendanceLocationStopSerializer(

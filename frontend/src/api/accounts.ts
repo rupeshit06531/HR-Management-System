@@ -91,10 +91,11 @@ export const getCurrentUser =
   }
 
 export const getUsers =
-  async (): Promise<UserListResponse> => {
+  async (params?: { page?: number }): Promise<UserListResponse> => {
     const response =
       await apiClient.get<UserListResponse>(
         "/users/",
+        { params },
       )
 
     return response.data

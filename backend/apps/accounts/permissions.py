@@ -162,6 +162,18 @@ class IsSuperAdmin(RolePermission):
     }
 
 
+class IsPayrollViewer(RolePermission):
+    """Allows payroll reads for HR, Super Admin and employees."""
+
+    message = "Payroll access is required."
+
+    allowed_roles = {
+        User.Role.EMPLOYEE,
+        User.Role.HR,
+        User.Role.SUPER_ADMIN,
+    }
+
+
 # Backward-compatible aliases.
 #
 # These names are kept so existing app imports continue

@@ -27,10 +27,11 @@ export interface CreateDocumentRequest {
 }
 
 export const getDocuments =
-  async (): Promise<DocumentListResponse> => {
+  async (params?: { page?: number }): Promise<DocumentListResponse> => {
     const response =
       await apiClient.get<DocumentListResponse>(
         "/documents/",
+        { params },
       )
 
     return response.data
@@ -81,4 +82,15 @@ export const deleteDocument = async (
   await apiClient.delete(
     `/documents/${id}/`,
   )
+}
+
+export const downloadDocument = async (
+  id: number,
+): Promise<Blob> => {
+  const response = await apiClient.get<Blob>(
+    `/documents/${id}/download/`,
+    { responseType: "blob" },
+  )
+
+  return response.data
 }

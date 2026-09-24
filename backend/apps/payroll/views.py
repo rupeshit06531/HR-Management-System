@@ -3,9 +3,11 @@ from rest_framework import filters, status, viewsets
 from rest_framework.response import Response
 
 from apps.accounts.permissions import (
-    IsHROrSuperAdmin,
+    IsPayrollViewer,
     IsSuperAdmin,
 )
+from apps.accounts.models import User
+from apps.employees.models import Employee
 
 from .models import Payroll
 from .serializers import PayrollSerializer
@@ -77,13 +79,27 @@ class PayrollViewSet(viewsets.ModelViewSet):
             ]
         else:
             permission_classes = [
-                IsHROrSuperAdmin,
+                IsPayrollViewer,
             ]
 
         return [
             permission()
             for permission in permission_classes
         ]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+
+        if user.role == User.Role.EMPLOYEE:
+            try:
+                employee = user.employee_profile
+            except Employee.DoesNotExist:
+                return queryset.none()
+
+            return queryset.filter(employee=employee)
+
+        return queryset
 
     def destroy(self, request, *args, **kwargs):
         payroll = self.get_object()

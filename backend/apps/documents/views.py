@@ -1,5 +1,10 @@
+from pathlib import Path
+
+from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 
 from apps.accounts.models import User
 from apps.accounts.permissions import (
@@ -104,3 +109,29 @@ class DocumentViewSet(viewsets.ModelViewSet):
             )
 
         return queryset.none()
+
+    @action(detail=True, methods=["get"], url_path="download")
+    def download(self, request, pk=None):
+        document = self.get_object()
+
+        try:
+            document.file.open("rb")
+        except (OSError, ValueError) as error:
+            raise NotFound("Document file is unavailable.") from error
+
+        response = FileResponse(
+            document.file,
+            as_attachment=True,
+            filename=Path(document.file.name).name,
+            content_type="application/octet-stream",
+        )
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+
+def deny_public_private_media(request, path=""):
+    """Sensitive HR files must use their authenticated download endpoints."""
+    from django.http import HttpResponseNotFound
+
+    return HttpResponseNotFound()

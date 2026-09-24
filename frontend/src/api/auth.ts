@@ -50,6 +50,8 @@ export interface ForgotPasswordResponse {
 export interface ResetPasswordRequest {
   uid: string
   token: string
+  new_password: string
+  confirm_password: string
 }
 
 export interface ResetPasswordResponse {

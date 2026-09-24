@@ -27,7 +27,14 @@ export interface HolidayPayload {
 }
 
 export const getHolidays = async (
-  params?: Record<string, string | number | boolean>,
+  params?: {
+    page?: number
+    search?: string
+    holiday_type?: string
+    is_active?: boolean
+    "date__gte"?: string
+    "date__year"?: number
+  },
 ): Promise<HolidayListResponse> => {
   const response = await apiClient.get<HolidayListResponse>(
     "/holidays/",

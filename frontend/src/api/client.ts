@@ -154,6 +154,10 @@ apiClient.interceptors.response.use(
         "refresh_token",
       )
 
+      window.dispatchEvent(
+        new Event("hrms:session-expired"),
+      )
+
       return Promise.reject(
         refreshError,
       )

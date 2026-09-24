@@ -27,10 +27,11 @@ export interface CreateLeaveRequest {
 }
 
 export const getLeaves =
-  async (): Promise<LeaveListResponse> => {
+  async (params?: { page?: number }): Promise<LeaveListResponse> => {
     const response =
       await apiClient.get<LeaveListResponse>(
         "/leaves/",
+        { params },
       )
 
     return response.data
@@ -57,6 +58,18 @@ export const updateLeave = async (
       `/leaves/${id}/`,
       data,
     )
+
+  return response.data
+}
+
+export const updateLeaveStatus = async (
+  id: number,
+  status: "approved" | "rejected",
+): Promise<LeaveRecord> => {
+  const response = await apiClient.patch<LeaveRecord>(
+    `/leaves/${id}/`,
+    { status },
+  )
 
   return response.data
 }

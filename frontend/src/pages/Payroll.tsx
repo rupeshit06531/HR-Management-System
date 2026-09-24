@@ -1,6 +1,8 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type FormEvent,
@@ -14,13 +16,16 @@ import {
   type Payroll,
   type PayrollPayload,
 } from "../api/payroll"
+import "./payroll-print.css"
 
 import {
   getEmployees,
   type Employee,
 } from "../api/employees"
 
-import { useTheme } from "../context/ThemeContext"
+import { useTheme } from "../context/theme-context"
+import { useConfirm } from "../context/confirmation-context"
+import { useAuth } from "../context/auth-context"
 
 interface PayrollForm {
   employee: number
@@ -43,9 +48,13 @@ const emptyForm: PayrollForm = {
 }
 
 function PayrollPage() {
+  const confirm = useConfirm()
   const { isDarkMode } = useTheme()
+  const { user } = useAuth()
+  const canManagePayroll = user?.role === "SUPER_ADMIN"
 
   const [records, setRecords] = useState<Payroll[]>([])
+  const [selectedSlip, setSelectedSlip] = useState<Payroll | null>(null)
   const [totalRecords, setTotalRecords] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -63,6 +72,8 @@ function PayrollPage() {
 
   const [success, setSuccess] =
     useState<string | null>(null)
+
+  const payrollRequestIdRef = useRef(0)
 
   const [showForm, setShowForm] =
     useState(false)
@@ -213,16 +224,34 @@ function PayrollPage() {
       ),
     )
 
-  const loadEmployees = async () => {
+  const loadEmployees = useCallback(async () => {
+    if (!canManagePayroll) {
+      setIsLoadingEmployees(false)
+      return
+    }
+
     try {
       setIsLoadingEmployees(true)
 
-      const response = await getEmployees({
-        employment_status: "ACTIVE",
-        ordering: "full_name",
-      })
+      const activeEmployees: Employee[] = []
 
-      setEmployees(response.results ?? [])
+      for (let page = 1; page <= 1000; page += 1) {
+        const response = await getEmployees({
+          page,
+          employment_status: "ACTIVE",
+          ordering: "employee_id",
+        })
+
+        activeEmployees.push(...(response.results ?? []))
+        if (!response.next) {
+          break
+        }
+        if (page === 1000) {
+          throw new Error("Employee list exceeded the page safety limit.")
+        }
+      }
+
+      setEmployees(activeEmployees)
     } catch {
       setError(
         "Unable to load active employees.",
@@ -230,11 +259,13 @@ function PayrollPage() {
     } finally {
       setIsLoadingEmployees(false)
     }
-  }
+  }, [canManagePayroll])
 
-  const loadPayroll = async (
+  const loadPayroll = useCallback(async (
     page = currentPage,
   ) => {
+    const requestId = ++payrollRequestIdRef.current
+
     try {
       setIsLoading(true)
       setError(null)
@@ -248,25 +279,40 @@ function PayrollPage() {
             ? undefined
             : statusFilter,
         month:
-          monthFilter || undefined,
+          monthFilter
+            ? `${monthFilter}-01`
+            : undefined,
         ordering:
           "-month,-created_at,-id",
       })
 
+      if (requestId !== payrollRequestIdRef.current) {
+        return
+      }
+
       setRecords(response.results ?? [])
       setTotalRecords(response.count ?? 0)
     } catch {
-      setError(
-        "Unable to load payroll records.",
-      )
+      if (requestId === payrollRequestIdRef.current) {
+        setError(
+          "Unable to load payroll records.",
+        )
+      }
     } finally {
-      setIsLoading(false)
+      if (requestId === payrollRequestIdRef.current) {
+        setIsLoading(false)
+      }
     }
-  }
+  }, [
+    currentPage,
+    searchTerm,
+    statusFilter,
+    monthFilter,
+  ])
 
   useEffect(() => {
     void loadEmployees()
-  }, [])
+  }, [loadEmployees])
 
   useEffect(() => {
     const timeoutId =
@@ -277,12 +323,7 @@ function PayrollPage() {
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [
-    currentPage,
-    searchTerm,
-    statusFilter,
-    monthFilter,
-  ])
+  }, [loadPayroll, currentPage])
 
   useEffect(() => {
     if (
@@ -516,10 +557,11 @@ function PayrollPage() {
   const handleDelete = async (
     id: number,
   ) => {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this payroll record?",
-      )
+    const confirmed = await confirm({
+      title: "Delete payroll record?",
+      message: "This payroll record will be permanently deleted.",
+      confirmLabel: "Delete record",
+    })
 
     if (!confirmed) {
       return
@@ -666,6 +708,17 @@ function PayrollPage() {
     )
   }
 
+  useEffect(() => {
+    if (!selectedSlip) return
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedSlip(null)
+    }
+
+    window.addEventListener("keydown", handleEscape)
+    return () => window.removeEventListener("keydown", handleEscape)
+  }, [selectedSlip])
+
   const statistics =
     useMemo(() => {
       const paidRecords =
@@ -767,7 +820,7 @@ function PayrollPage() {
             </p>
           </div>
 
-          <button
+          {canManagePayroll && <button
             type="button"
             onClick={
               openCreateForm
@@ -787,7 +840,7 @@ function PayrollPage() {
             }}
           >
             + Add Payroll
-          </button>
+          </button>}
         </header>
 
         {error && (
@@ -970,7 +1023,7 @@ function PayrollPage() {
           </div>
         </section>
 
-        {showForm && (
+        {canManagePayroll && showForm && (
           <section
             style={{
               backgroundColor:
@@ -1770,7 +1823,8 @@ function PayrollPage() {
                         "Net Salary",
                         "Status",
                         "Paid At",
-                        "Actions",
+                        "Salary Slip",
+                        ...(canManagePayroll ? ["Actions"] : []),
                       ].map(
                         (heading) => (
                           <th
@@ -2012,6 +2066,27 @@ function PayrollPage() {
                             )}
                           </td>
 
+                          <td style={{ padding: "15px 16px", borderBottom: `1px solid ${theme.rowBorder}` }}>
+                            <button
+                              type="button"
+                              aria-label={`View salary slip for ${record.employee_name} - ${formatMonth(record.month)}`}
+                              onClick={() => setSelectedSlip(record)}
+                              style={{
+                                padding: "7px 10px",
+                                border: `1px solid ${theme.primary}`,
+                                borderRadius: "6px",
+                                background: isDarkMode ? "#172554" : "#eff6ff",
+                                color: isDarkMode ? "#bfdbfe" : theme.primary,
+                                cursor: "pointer",
+                                fontWeight: 650,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              View slip
+                            </button>
+                          </td>
+
+                          {canManagePayroll && (
                           <td
                             style={{
                               padding:
@@ -2102,6 +2177,7 @@ function PayrollPage() {
                               </button>
                             </div>
                           </td>
+                          )}
                         </tr>
                       ),
                     )}
@@ -2247,6 +2323,69 @@ function PayrollPage() {
           )}
         </section>
       </section>
+
+      {selectedSlip && (
+        <div
+          className="salary-slip-overlay"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSelectedSlip(null)
+          }}
+        >
+          <section
+            className="salary-slip-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="salary-slip-title"
+          >
+            <div className="salary-slip-toolbar">
+              <div>
+                <p className="salary-slip-eyebrow">PAYROLL DOCUMENT</p>
+                <h2 id="salary-slip-title">Salary slip preview</h2>
+              </div>
+              <div className="salary-slip-actions">
+                <button type="button" className="salary-slip-close" onClick={() => setSelectedSlip(null)}>
+                  Close
+                </button>
+                <button type="button" className="salary-slip-download" onClick={() => window.print()}>
+                  Download PDF
+                </button>
+              </div>
+            </div>
+            <p className="salary-slip-hint">Print dialog mein “Save as PDF” choose karke slip download karein.</p>
+
+            <article id="salary-slip-printable" className="salary-slip-document">
+              <header className="salary-slip-document-header">
+                <div className="salary-slip-brand-mark" aria-hidden="true">HR</div>
+                <div>
+                  <p>HR Management System</p>
+                  <h1>Salary Slip</h1>
+                </div>
+                <span className={`salary-slip-status ${selectedSlip.payment_status}`}>
+                  {formatStatus(selectedSlip.payment_status)}
+                </span>
+              </header>
+
+              <div className="salary-slip-meta">
+                <div><span>Employee</span><strong>{selectedSlip.employee_name || "Employee"}</strong></div>
+                <div><span>Employee ID</span><strong>{selectedSlip.employee_id || `EMP-${selectedSlip.employee}`}</strong></div>
+                <div><span>Pay period</span><strong>{formatMonth(selectedSlip.month)}</strong></div>
+                <div><span>Payment date</span><strong>{formatPaidAt(selectedSlip.paid_at)}</strong></div>
+                <div><span>Slip reference</span><strong>PAY-{selectedSlip.id}</strong></div>
+              </div>
+
+              <div className="salary-slip-section-title">Earnings &amp; deductions</div>
+              <div className="salary-slip-line"><span>Basic salary</span><strong>{formatCurrency(selectedSlip.basic_salary)}</strong></div>
+              <div className="salary-slip-line"><span>Allowances</span><strong>{formatCurrency(selectedSlip.allowances)}</strong></div>
+              <div className="salary-slip-line salary-slip-subtotal"><span>Gross earnings</span><strong>{formatCurrency(selectedSlip.gross_salary)}</strong></div>
+              <div className="salary-slip-line"><span>Deductions</span><strong>− {formatCurrency(selectedSlip.deductions)}</strong></div>
+              <div className="salary-slip-net"><span>Net salary</span><strong>{formatCurrency(selectedSlip.net_salary)}</strong></div>
+
+              <footer className="salary-slip-footer">This is a system-generated salary slip. For payroll questions, contact your HR administrator.</footer>
+            </article>
+          </section>
+        </div>
+      )}
     </main>
   )
 }

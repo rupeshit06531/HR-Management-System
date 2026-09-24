@@ -50,10 +50,15 @@ export interface CandidatePayload {
 }
 
 export const getCandidates =
-  async (): Promise<CandidateListResponse> => {
+  async (params?: {
+    page?: number
+    search?: string
+    status?: string
+  }): Promise<CandidateListResponse> => {
     const response =
       await apiClient.get<CandidateListResponse>(
         "/recruitment/",
+        { params },
       )
 
     return response.data
@@ -268,4 +273,15 @@ export const deleteCandidate = async (
   await apiClient.delete(
     `/recruitment/${id}/`,
   )
+}
+
+export const downloadCandidateResume = async (
+  id: number,
+): Promise<Blob> => {
+  const response = await apiClient.get<Blob>(
+    `/recruitment/${id}/download-resume/`,
+    { responseType: "blob" },
+  )
+
+  return response.data
 }

@@ -5,6 +5,7 @@ import {
 import type {
   FormEvent,
 } from "react"
+import { useNavigate } from "react-router-dom"
 
 import {
   changePassword,
@@ -12,9 +13,12 @@ import {
 
 import {
   useTheme,
-} from "../context/ThemeContext"
+} from "../context/theme-context"
+import { useAuth } from "../context/auth-context"
 
 function ChangePassword() {
+  const navigate = useNavigate()
+  const { logout } = useAuth()
   const {
     isDarkMode,
   } = useTheme()
@@ -102,6 +106,20 @@ function ChangePassword() {
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
+
+      try {
+        await logout()
+      } catch {
+        // The auth provider clears local credentials even if the
+        // server has already blacklisted this refresh token.
+      }
+
+      navigate("/login", {
+        replace: true,
+        state: {
+          notice: "Password updated. Please sign in again.",
+        },
+      })
     } catch (requestError: any) {
       const responseData =
         requestError?.response?.data
@@ -312,6 +330,8 @@ function ChangePassword() {
                 )
               }
               autoComplete="current-password"
+              required
+              disabled={isLoading}
               placeholder="Enter current password"
               style={{
                 width: "100%",
@@ -350,6 +370,9 @@ function ChangePassword() {
                 )
               }
               autoComplete="new-password"
+              minLength={8}
+              required
+              disabled={isLoading}
               placeholder="Enter new password"
               style={{
                 width: "100%",
@@ -388,6 +411,9 @@ function ChangePassword() {
                 )
               }
               autoComplete="new-password"
+              minLength={8}
+              required
+              disabled={isLoading}
               placeholder="Confirm new password"
               style={{
                 width: "100%",
@@ -442,8 +468,7 @@ function ChangePassword() {
             lineHeight: 1.6,
           }}
         >
-          Your new password must contain
-          at least 8 characters.
+          Use at least 8 characters. The password cannot be common, all numbers, or too similar to your account details.
         </div>
       </form>
     </div>

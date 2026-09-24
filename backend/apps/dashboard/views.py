@@ -7,6 +7,8 @@ from rest_framework import status
 from apps.accounts.models import User
 from apps.employees.models import Employee
 
+MAX_GLOBAL_SEARCH_RESULTS = 10
+
 
 class DashboardView(APIView):
     permission_classes = [
@@ -20,14 +22,21 @@ class DashboardView(APIView):
 
         employee_profile = None
 
-        if user.role == User.Role.MANAGER:
+        if user.role in {
+            User.Role.SUPER_ADMIN,
+            User.Role.HR,
+        }:
+            pass
+
+        elif user.role == User.Role.MANAGER:
             try:
                 employee_profile = user.employee_profile
             except Employee.DoesNotExist:
                 employee_queryset = employee_queryset.none()
             else:
                 employee_queryset = employee_queryset.filter(
-                    manager=employee_profile,
+                    Q(manager=employee_profile)
+                    | Q(id=employee_profile.id),
                 )
 
         elif user.role == User.Role.EMPLOYEE:
@@ -39,6 +48,9 @@ class DashboardView(APIView):
                 employee_queryset = employee_queryset.filter(
                     id=employee_profile.id,
                 )
+
+        else:
+            employee_queryset = employee_queryset.none()
 
         employee_metrics = employee_queryset.aggregate(
             total=Count("id"),
@@ -180,7 +192,8 @@ class GlobalSearchView(APIView):
                 employee_queryset = employee_queryset.none()
             else:
                 employee_queryset = employee_queryset.filter(
-                    manager=manager_profile,
+                    Q(manager=manager_profile)
+                    | Q(id=manager_profile.id),
                 )
 
         elif user.role == User.Role.EMPLOYEE:
@@ -210,6 +223,7 @@ class GlobalSearchView(APIView):
             "employee_id",
         )
 
+        total = employee_queryset.count()
         results = [
             {
                 "id": employee.id,
@@ -231,13 +245,13 @@ class GlobalSearchView(APIView):
                     employee.get_employment_status_display()
                 ),
             }
-            for employee in employee_queryset
+            for employee in employee_queryset[:MAX_GLOBAL_SEARCH_RESULTS]
         ]
 
         return Response(
             {
                 "query": query,
-                "total": len(results),
+                "total": total,
                 "results": results,
             }
         )
@@ -265,7 +279,8 @@ class AnalyticsView(APIView):
                 employee_queryset = employee_queryset.none()
             else:
                 employee_queryset = employee_queryset.filter(
-                    manager=manager_profile,
+                    Q(manager=manager_profile)
+                    | Q(id=manager_profile.id),
                 )
 
         elif user.role == User.Role.EMPLOYEE:

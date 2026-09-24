@@ -16,7 +16,7 @@ import {
 
 import {
   useTheme,
-} from "../context/ThemeContext"
+} from "../context/theme-context"
 
 function ForgotPassword() {
   const {

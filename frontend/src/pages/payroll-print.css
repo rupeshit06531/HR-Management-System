@@ -1,0 +1,285 @@
+.salary-slip-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.68);
+}
+
+.salary-slip-modal {
+  width: min(100%, 760px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 24px;
+  border: 1px solid #dbe2ea;
+  border-radius: 16px;
+  background: #f1f5f9;
+  color: #172033;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+}
+
+.salary-slip-toolbar,
+.salary-slip-actions,
+.salary-slip-document-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.salary-slip-eyebrow {
+  margin: 0 0 4px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.salary-slip-toolbar h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.salary-slip-actions button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  color: #172033;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.salary-slip-actions .salary-slip-download {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: white;
+}
+
+.salary-slip-hint {
+  margin: 12px 0;
+  color: #475569;
+  font-size: 13px;
+}
+
+.salary-slip-document {
+  margin-top: 16px;
+  padding: 36px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  color: #172033;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+.salary-slip-document-header {
+  justify-content: flex-start;
+  padding-bottom: 22px;
+  border-bottom: 2px solid #1e3a8a;
+}
+
+.salary-slip-brand-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 12px;
+  background: #1e3a8a;
+  color: white;
+  font-weight: 900;
+}
+
+.salary-slip-document-header p {
+  margin: 0 0 4px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.salary-slip-document-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.salary-slip-status {
+  margin-left: auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.salary-slip-status.paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.salary-slip-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.salary-slip-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+  padding: 24px 0;
+}
+
+.salary-slip-meta div,
+.salary-slip-line,
+.salary-slip-net {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.salary-slip-meta div {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.salary-slip-meta span,
+.salary-slip-line span,
+.salary-slip-net span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.salary-slip-meta strong,
+.salary-slip-line strong,
+.salary-slip-net strong {
+  font-size: 14px;
+}
+
+.salary-slip-section-title {
+  padding: 12px 0;
+  border-bottom: 1px solid #cbd5e1;
+  color: #1e3a8a;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.salary-slip-line {
+  padding: 13px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.salary-slip-subtotal {
+  font-weight: 800;
+}
+
+.salary-slip-net {
+  align-items: center;
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 10px;
+  background: #eff6ff;
+}
+
+.salary-slip-net span,
+.salary-slip-net strong {
+  color: #1e3a8a;
+  font-weight: 850;
+}
+
+.salary-slip-net strong {
+  font-size: 20px;
+}
+
+.salary-slip-footer {
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 560px) {
+  .salary-slip-overlay {
+    padding: 10px;
+  }
+
+  .salary-slip-modal {
+    max-height: calc(100vh - 20px);
+    padding: 16px;
+  }
+
+  .salary-slip-toolbar,
+  .salary-slip-actions {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .salary-slip-document {
+    padding: 20px;
+  }
+
+  .salary-slip-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 16mm;
+}
+
+@media print {
+  html,
+  body {
+    min-width: 0 !important;
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #salary-slip-printable,
+  #salary-slip-printable * {
+    visibility: visible !important;
+  }
+
+  #salary-slip-printable {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .salary-slip-overlay,
+  .salary-slip-modal {
+    position: static !important;
+    width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .salary-slip-toolbar,
+  .salary-slip-hint {
+    display: none !important;
+  }
+
+  .salary-slip-document {
+    page-break-inside: avoid;
+  }
+}

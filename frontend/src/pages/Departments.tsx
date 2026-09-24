@@ -16,14 +16,13 @@ import {
   updateDepartment,
   updateDesignation,
   type Department,
-  type DepartmentListResponse,
   type DepartmentPayload,
   type Designation,
-  type DesignationListResponse,
   type DesignationPayload,
 } from "../api/departments"
 
-import { useTheme } from "../context/ThemeContext"
+import { useTheme } from "../context/theme-context"
+import { useConfirm } from "../context/confirmation-context"
 
 const createEmptyDepartment = (): DepartmentPayload => ({
   name: "",
@@ -37,7 +36,32 @@ const createEmptyDesignation = (): DesignationPayload => ({
   is_active: true,
 })
 
+async function loadAllPages<T>(
+  fetchPage: (page: number) => Promise<
+    T[] | { results: T[]; next: string | null }
+  >,
+): Promise<T[]> {
+  const items: T[] = []
+
+  for (let page = 1; page <= 1000; page += 1) {
+    const response = await fetchPage(page)
+
+    if (Array.isArray(response)) {
+      items.push(...response)
+      return items
+    }
+
+    items.push(...response.results)
+    if (!response.next) {
+      return items
+    }
+  }
+
+  throw new Error("Department data exceeded the page safety limit.")
+}
+
 function Departments() {
+  const confirm = useConfirm()
   const { isDarkMode } = useTheme()
 
   const theme = isDarkMode
@@ -217,26 +241,12 @@ function Departments() {
         departmentResponse,
         designationResponse,
       ] = await Promise.all([
-        getDepartments(),
-        getDesignations(),
+        loadAllPages((page) => getDepartments({ page })),
+        loadAllPages((page) => getDesignations({ page })),
       ])
 
-      const departmentData =
-        Array.isArray(departmentResponse)
-          ? departmentResponse
-          : (
-              departmentResponse as DepartmentListResponse
-            ).results ?? []
-
-      const designationData =
-        Array.isArray(designationResponse)
-          ? designationResponse
-          : (
-              designationResponse as DesignationListResponse
-            ).results ?? []
-
-      setDepartments(departmentData)
-      setDesignations(designationData)
+      setDepartments(departmentResponse)
+      setDesignations(designationResponse)
     } catch {
       setError(
         "Unable to load departments and designations. Please try again.",
@@ -582,7 +592,13 @@ function Departments() {
         ? `This department has ${relatedDesignationCount} related designation${relatedDesignationCount === 1 ? "" : "s"}. Deleting it may fail if the server prevents deletion of related records. Continue?`
         : "Are you sure you want to delete this department?"
 
-    if (!window.confirm(warning)) {
+    const confirmed = await confirm({
+      title: "Delete department?",
+      message: warning,
+      confirmLabel: "Delete department",
+    })
+
+    if (!confirmed) {
       return
     }
 
@@ -643,11 +659,13 @@ function Departments() {
       return
     }
 
-    if (
-      !window.confirm(
-        `Are you sure you want to delete "${designation.name}"?`,
-      )
-    ) {
+    const confirmed = await confirm({
+      title: "Delete designation?",
+      message: `“${designation.name}” will be permanently deleted.`,
+      confirmLabel: "Delete designation",
+    })
+
+    if (!confirmed) {
       return
     }
 

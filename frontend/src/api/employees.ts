@@ -34,6 +34,14 @@ export interface EmployeeListResponse {
   results: Employee[]
 }
 
+export interface EmployeeSummary {
+  total: number
+  active: number
+  inactive: number
+  resigned: number
+  terminated: number
+}
+
 export interface EmployeeQueryParams {
   page?: number
   search?: string
@@ -68,6 +76,24 @@ export const getEmployees = async (
         params,
       },
     )
+
+  return response.data
+}
+
+export const getEmployeeById = async (
+  employeeId: number,
+): Promise<Employee> => {
+  const response = await apiClient.get<Employee>(
+    `/employees/${employeeId}/`,
+  )
+
+  return response.data
+}
+
+export const getEmployeeSummary = async (): Promise<EmployeeSummary> => {
+  const response = await apiClient.get<EmployeeSummary>(
+    "/employees/summary/",
+  )
 
   return response.data
 }

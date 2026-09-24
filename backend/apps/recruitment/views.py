@@ -1,5 +1,10 @@
+from pathlib import Path
+
+from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 
 from apps.accounts.permissions import IsAdminOrSuperAdmin
 
@@ -68,3 +73,24 @@ class CandidateViewSet(viewsets.ModelViewSet):
             )
             .all()
         )
+
+    @action(detail=True, methods=["get"], url_path="download-resume")
+    def download_resume(self, request, pk=None):
+        candidate = self.get_object()
+        if not candidate.resume:
+            raise NotFound("No resume is attached to this candidate.")
+
+        try:
+            candidate.resume.open("rb")
+        except (OSError, ValueError) as error:
+            raise NotFound("Resume file is unavailable.") from error
+
+        response = FileResponse(
+            candidate.resume,
+            as_attachment=True,
+            filename=Path(candidate.resume.name).name,
+            content_type="application/octet-stream",
+        )
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response

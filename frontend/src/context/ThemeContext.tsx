@@ -1,19 +1,9 @@
 import {
-  createContext,
-  useContext,
   useEffect,
   useState,
   type ReactNode,
 } from "react"
-
-interface ThemeContextValue {
-  isDarkMode: boolean
-  toggleDarkMode: () => void
-}
-
-const ThemeContext = createContext<
-  ThemeContextValue | undefined
->(undefined)
+import { ThemeContext } from "./theme-context"
 
 interface ThemeProviderProps {
   children: ReactNode
@@ -34,7 +24,6 @@ function storeTheme(isDark: boolean): void {
     isDark ? "dark" : "light",
   )
 }
-
 export function ThemeProvider({
   children,
 }: ThemeProviderProps) {
@@ -74,16 +63,4 @@ export function ThemeProvider({
       {children}
     </ThemeContext.Provider>
   )
-}
-
-export function useTheme(): ThemeContextValue {
-  const context = useContext(ThemeContext)
-
-  if (!context) {
-    throw new Error(
-      "useTheme must be used within ThemeProvider",
-    )
-  }
-
-  return context
 }

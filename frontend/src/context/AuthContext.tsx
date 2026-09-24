@@ -1,6 +1,4 @@
 import {
-  createContext,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -15,20 +13,7 @@ import {
   type AuthUser,
   type LoginRequest,
 } from "../api/auth"
-
-interface AuthContextValue {
-  user: AuthUser | null
-  accessToken: string | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  login: (credentials: LoginRequest) => Promise<void>
-  logout: () => Promise<void>
-}
-
-const AuthContext =
-  createContext<AuthContextValue | undefined>(
-    undefined,
-  )
+import { AuthContext, type AuthContextValue } from "./auth-context"
 
 interface AuthProviderProps {
   children: ReactNode
@@ -42,7 +27,6 @@ function getStoredAccessToken(): string | null {
     ACCESS_TOKEN_KEY,
   )
 }
-
 function getStoredRefreshToken(): string | null {
   return localStorage.getItem(
     REFRESH_TOKEN_KEY,
@@ -192,6 +176,27 @@ export function AuthProvider({
     }
   }, [])
 
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      clearStoredTokens()
+      setAccessToken(null)
+      setUser(null)
+      setIsLoading(false)
+    }
+
+    window.addEventListener(
+      "hrms:session-expired",
+      handleSessionExpired,
+    )
+
+    return () => {
+      window.removeEventListener(
+        "hrms:session-expired",
+        handleSessionExpired,
+      )
+    }
+  }, [])
+
   const login = async (
     credentials: LoginRequest,
   ): Promise<void> => {
@@ -255,17 +260,4 @@ export function AuthProvider({
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth(): AuthContextValue {
-  const context =
-    useContext(AuthContext)
-
-  if (!context) {
-    throw new Error(
-      "useAuth must be used inside AuthProvider.",
-    )
-  }
-
-  return context
 }

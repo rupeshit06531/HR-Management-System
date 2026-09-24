@@ -1,6 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 
 from apps.accounts.models import User
@@ -10,6 +11,23 @@ from apps.accounts.permissions import (
 
 from .models import PerformanceReview
 from .serializers import PerformanceReviewSerializer
+
+
+class IsPerformanceViewer(BasePermission):
+    """Allows review reads for all HRMS roles."""
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.is_active
+            and request.user.role in {
+                User.Role.EMPLOYEE,
+                User.Role.MANAGER,
+                User.Role.HR,
+                User.Role.SUPER_ADMIN,
+            }
+        )
 
 
 class PerformanceReviewViewSet(viewsets.ModelViewSet):
@@ -51,9 +69,18 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
         "-created_at",
     ]
 
-    permission_classes = [
-        IsManagerOrHROrSuperAdmin,
-    ]
+    def get_permissions(self):
+        if self.action in {
+            "create",
+            "update",
+            "partial_update",
+            "destroy",
+        }:
+            permission_classes = [IsManagerOrHROrSuperAdmin]
+        else:
+            permission_classes = [IsPerformanceViewer]
+
+        return [permission() for permission in permission_classes]
 
     def get_queryset(self):
         queryset = (
@@ -88,6 +115,13 @@ class PerformanceReviewViewSet(viewsets.ModelViewSet):
             return queryset.filter(
                 employee__manager=manager_employee,
             )
+
+        if user.role == User.Role.EMPLOYEE:
+            employee = getattr(user, "employee_profile", None)
+            if employee is None:
+                return queryset.none()
+
+            return queryset.filter(employee=employee)
 
         return queryset.none()
 

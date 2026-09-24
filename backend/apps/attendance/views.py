@@ -1,7 +1,12 @@
+from pathlib import Path
+
+from django.http import FileResponse
 from django.utils import timezone
+from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import NotFound
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 
@@ -150,6 +155,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             FormParser,
         ],
     )
+    @transaction.atomic
     def punch_in(self, request):
         user = request.user
 
@@ -303,6 +309,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             FormParser,
         ],
     )
+    @transaction.atomic
     def punch_out(self, request):
         user = request.user
 
@@ -545,6 +552,33 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @action(detail=True, methods=["get"], url_path="selfie")
+    def selfie(self, request, pk=None):
+        attendance = self.get_object()
+        selfie_kind = request.query_params.get("kind", "check_in")
+        selfie_fields = {
+            "check_in": attendance.check_in_selfie,
+            "check_out": attendance.check_out_selfie,
+        }
+        selfie_file = selfie_fields.get(selfie_kind)
+        if selfie_file is None:
+            raise NotFound("Attendance selfie is unavailable.")
+
+        try:
+            selfie_file.open("rb")
+        except (OSError, ValueError) as error:
+            raise NotFound("Attendance selfie is unavailable.") from error
+
+        response = FileResponse(
+            selfie_file,
+            as_attachment=True,
+            filename=Path(selfie_file.name).name,
+            content_type="application/octet-stream",
+        )
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
     @action(
         detail=False,
         methods=["get"],
@@ -592,6 +626,17 @@ class AttendanceViewSet(viewsets.ModelViewSet):
             "-recorded_at",
             "-id",
         )
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = AttendanceLocationStopSerializer(
+                page,
+                many=True,
+                context={
+                    "request": request,
+                },
+            )
+            return self.get_paginated_response(serializer.data)
 
         serializer = AttendanceLocationStopSerializer(
             queryset,

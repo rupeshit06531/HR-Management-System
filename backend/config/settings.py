@@ -79,6 +79,11 @@ CSRF_TRUSTED_ORIGINS = [
     if origin.strip()
 ]
 
+FRONTEND_BASE_URL = os.getenv(
+    "FRONTEND_BASE_URL",
+    "http://localhost:5173",
+).strip().rstrip("/")
+
 # ============================================================
 # APPLICATIONS
 # ============================================================
@@ -252,6 +257,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+PASSWORD_RESET_TIMEOUT = 60 * 60
+
 
 # ============================================================
 # INTERNATIONALIZATION
@@ -296,10 +303,68 @@ EMAIL_BACKEND = os.getenv(
     "django.core.mail.backends.console.EmailBackend",
 )
 
+EMAIL_HOST = os.getenv("EMAIL_HOST", "")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").strip().lower() in {
+    "true",
+    "1",
+    "yes",
+}
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").strip().lower() in {
+    "true",
+    "1",
+    "yes",
+}
+
 DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL",
     "HRMS <noreply@example.com>",
 )
+
+
+# ============================================================
+# LOGGING
+# ============================================================
+
+DJANGO_LOG_LEVEL = os.getenv(
+    "DJANGO_LOG_LEVEL",
+    "INFO" if ENVIRONMENT == "production" else "DEBUG",
+).upper()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "console": {
+            "format": "{levelname} {asctime} {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "console",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": DJANGO_LOG_LEVEL,
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": DJANGO_LOG_LEVEL,
+            "propagate": False,
+        },
+        "apps": {
+            "handlers": ["console"],
+            "level": DJANGO_LOG_LEVEL,
+            "propagate": False,
+        },
+    },
+}
 
 
 # ============================================================
@@ -322,10 +387,16 @@ REST_FRAMEWORK = {
     ),
 
     "DEFAULT_PAGINATION_CLASS": (
-        "rest_framework.pagination.PageNumberPagination"
+        "config.pagination.StandardPageNumberPagination"
     ),
 
     "PAGE_SIZE": 10,
+
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "10/hour",
+        "password_forgot": "5/hour",
+        "password_reset": "10/hour",
+    },
 
     "DEFAULT_RENDERER_CLASSES": (
         "rest_framework.renderers.JSONRenderer",
@@ -350,6 +421,8 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
 
     "BLACKLIST_AFTER_ROTATION": True,
+
+    "CHECK_REVOKE_TOKEN": True,
 
     "UPDATE_LAST_LOGIN": True,
 
@@ -414,6 +487,11 @@ else:
 
 # Production environment validation
 if ENVIRONMENT == "production":
+    if DEBUG:
+        raise RuntimeError(
+            "DJANGO_DEBUG must be False in production."
+        )
+
     if not SECRET_KEY:
         raise RuntimeError(
             "DJANGO_SECRET_KEY must be configured in production."
@@ -422,6 +500,26 @@ if ENVIRONMENT == "production":
     if not ALLOWED_HOSTS:
         raise RuntimeError(
             "DJANGO_ALLOWED_HOSTS must be configured in production."
+        )
+
+    if "*" in ALLOWED_HOSTS:
+        raise RuntimeError(
+            "DJANGO_ALLOWED_HOSTS cannot contain '*' in production."
+        )
+
+    insecure_origins = [
+        origin
+        for origin in CORS_ALLOWED_ORIGINS + CSRF_TRUSTED_ORIGINS
+        if not origin.startswith("https://")
+    ]
+    if insecure_origins:
+        raise RuntimeError(
+            "Production CORS and CSRF origins must use HTTPS."
+        )
+
+    if not FRONTEND_BASE_URL.startswith("https://"):
+        raise RuntimeError(
+            "FRONTEND_BASE_URL must use HTTPS in production."
         )
 
     if DATABASE_ENGINE != "django.db.backends.postgresql":

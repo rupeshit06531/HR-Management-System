@@ -108,7 +108,7 @@ const roleDescriptions: Record<string, string> = {
     "Your personal HR workspace and employment information",
 }
 
-const styles = `
+const _styles = `
   .dashboard-page {
     min-height: 100vh;
     padding: 28px;

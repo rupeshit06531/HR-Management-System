@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type CSSProperties,
@@ -24,8 +25,9 @@ import {
   type Employee,
 } from "../api/employees"
 
-import { useAuth } from "../context/AuthContext"
-import { useTheme } from "../context/ThemeContext"
+import { useAuth } from "../context/auth-context"
+import { useTheme } from "../context/theme-context"
+import { useConfirm } from "../context/confirmation-context"
 
 const emptyForm: AttendancePayload = {
   employee: 0,
@@ -63,12 +65,18 @@ const formatStatus = (status: string) =>
     )
 
 function Attendance() {
+  const confirm = useConfirm()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { isDarkMode } = useTheme()
 
   const [records, setRecords] =
     useState<AttendanceRecord[]>([])
+
+  const [totalRecordCount, setTotalRecordCount] = useState(0)
+  const [nextAttendancePage, setNextAttendancePage] = useState(2)
+  const [hasMoreAttendance, setHasMoreAttendance] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   const [employees, setEmployees] =
     useState<Employee[]>([])
@@ -107,6 +115,8 @@ function Attendance() {
     useState<AttendancePayload>({
       ...emptyForm,
     })
+
+  const attendanceRequestIdRef = useRef(0)
 
   const canManageAttendance =
     user?.role === "SUPER_ADMIN" ||
@@ -254,13 +264,19 @@ function Attendance() {
       return
     }
 
+    const requestId = ++attendanceRequestIdRef.current
+
     const loadData = async () => {
       try {
         setIsLoading(true)
         setError(null)
 
         const attendanceResponse =
-          await getAttendance()
+          await getAttendance({ page: 1 })
+
+        if (requestId !== attendanceRequestIdRef.current) {
+          return
+        }
 
         const attendanceData =
           Array.isArray(attendanceResponse)
@@ -269,20 +285,46 @@ function Attendance() {
 
         setRecords(attendanceData)
 
-        if (canManageAttendance) {
-          const employeesResponse =
-            await getEmployees()
+        if (!Array.isArray(attendanceResponse)) {
+          setTotalRecordCount(attendanceResponse.count)
+          setHasMoreAttendance(Boolean(attendanceResponse.next))
+          setNextAttendancePage(2)
+        } else {
+          setTotalRecordCount(attendanceData.length)
+          setHasMoreAttendance(false)
+        }
 
-          const employeeData =
-            Array.isArray(employeesResponse)
-              ? employeesResponse
-              : employeesResponse.results
+        if (canManageAttendance) {
+          const employeeData: Employee[] = []
+
+          for (let page = 1; page <= 1000; page += 1) {
+            const employeesResponse = await getEmployees({
+              page,
+              ordering: "employee_id",
+            })
+
+            if (requestId !== attendanceRequestIdRef.current) {
+              return
+            }
+
+            employeeData.push(...employeesResponse.results)
+            if (!employeesResponse.next) {
+              break
+            }
+            if (page === 1000) {
+              throw new Error("Employee list exceeded the page safety limit.")
+            }
+          }
 
           setEmployees(employeeData)
         } else {
           setEmployees([])
         }
       } catch (loadError) {
+        if (requestId !== attendanceRequestIdRef.current) {
+          return
+        }
+
         console.error(
           "Attendance loading error:",
           loadError,
@@ -292,12 +334,52 @@ function Attendance() {
           "Unable to load attendance records.",
         )
       } finally {
-        setIsLoading(false)
+        if (requestId === attendanceRequestIdRef.current) {
+          setIsLoading(false)
+        }
       }
     }
 
     void loadData()
+
+    return () => {
+      if (requestId === attendanceRequestIdRef.current) {
+        attendanceRequestIdRef.current += 1
+      }
+    }
   }, [user, canManageAttendance])
+
+  const loadMoreAttendance = async () => {
+    const requestId = attendanceRequestIdRef.current
+
+    try {
+      setIsLoadingMore(true)
+      setError(null)
+      const response = await getAttendance({ page: nextAttendancePage })
+
+      if (requestId !== attendanceRequestIdRef.current) {
+        return
+      }
+
+      setRecords((current) => [
+        ...current,
+        ...response.results.filter(
+          (record) => !current.some((item) => item.id === record.id),
+        ),
+      ])
+      setTotalRecordCount(response.count)
+      setHasMoreAttendance(Boolean(response.next))
+      setNextAttendancePage((current) => current + 1)
+    } catch {
+      if (requestId === attendanceRequestIdRef.current) {
+        setError("Unable to load more attendance records.")
+      }
+    } finally {
+      if (requestId === attendanceRequestIdRef.current) {
+        setIsLoadingMore(false)
+      }
+    }
+  }
 
   const summary = useMemo(() => {
     const present = records.filter(
@@ -327,9 +409,13 @@ function Attendance() {
 
   const todayAttendance = useMemo(() => {
     const today =
-      new Date()
-        .toISOString()
-        .split("T")[0]
+      (() => {
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, "0")
+        const day = String(now.getDate()).padStart(2, "0")
+        return `${year}-${month}-${day}`
+      })()
 
     return records.find(
       (record) => record.date === today,
@@ -476,6 +562,7 @@ function Attendance() {
           created,
           ...current,
         ])
+        setTotalRecordCount((current) => current + 1)
 
         setSuccess(
           "Attendance record created successfully.",
@@ -502,10 +589,11 @@ function Attendance() {
   const handleDelete = async (
     id: number,
   ) => {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this attendance record?",
-      )
+    const confirmed = await confirm({
+      title: "Delete attendance record?",
+      message: "This attendance record will be permanently deleted.",
+      confirmLabel: "Delete record",
+    })
 
     if (!confirmed) {
       return
@@ -523,6 +611,7 @@ function Attendance() {
           (record) => record.id !== id,
         ),
       )
+      setTotalRecordCount((current) => Math.max(0, current - 1))
 
       if (editingId === id) {
         resetForm()
@@ -1416,7 +1505,7 @@ function Attendance() {
           {[
             {
               label: "Total Records",
-              value: summary.total,
+              value: totalRecordCount,
               icon: "▦",
               background:
                 isDarkMode
@@ -1432,7 +1521,7 @@ function Attendance() {
                   : "#ea580c",
             },
             {
-              label: "Present",
+              label: "Present Shown",
               value: summary.present,
               icon: "✓",
               background:
@@ -1449,7 +1538,7 @@ function Attendance() {
                   : "#16a34a",
             },
             {
-              label: "Late",
+              label: "Late Shown",
               value: summary.late,
               icon: "◷",
               background:
@@ -1466,7 +1555,7 @@ function Attendance() {
                   : "#d97706",
             },
             {
-              label: "Absent",
+              label: "Absent Shown",
               value: summary.absent,
               icon: "×",
               background:
@@ -1483,7 +1572,7 @@ function Attendance() {
                   : "#dc2626",
             },
             {
-              label: "Half Day",
+              label: "Half Day Shown",
               value: summary.halfDay,
               icon: "◐",
               background:
@@ -2132,7 +2221,7 @@ function Attendance() {
                 fontWeight: 800,
               }}
             >
-              {records.length} Records
+              Showing {records.length} of {totalRecordCount} records
             </div>
           </div>
 
@@ -2607,6 +2696,25 @@ function Attendance() {
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+          {hasMoreAttendance && !isLoading && (
+            <div style={{ padding: "18px", textAlign: "center" }}>
+              <button
+                type="button"
+                onClick={() => void loadMoreAttendance()}
+                disabled={isLoadingMore}
+                style={{
+                  padding: "10px 16px",
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: "8px",
+                  backgroundColor: theme.cardBackground,
+                  color: theme.text,
+                  cursor: isLoadingMore ? "wait" : "pointer",
+                }}
+              >
+                {isLoadingMore ? "Loading..." : "Load more records"}
+              </button>
             </div>
           )}
         </section>

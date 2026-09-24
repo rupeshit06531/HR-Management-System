@@ -1,37 +1,42 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type FormEvent,
 } from "react"
+import { useSearchParams } from "react-router-dom"
 
 import {
   createEmployee,
   deleteEmployee,
+  getEmployeeById,
   getEmployees,
+  getEmployeeSummary,
   updateEmployee,
   type Employee,
   type EmployeeListResponse,
   type EmployeePayload,
+  type EmployeeSummary,
 } from "../api/employees"
 
 import {
   getDepartments,
   getDesignations,
   type Department,
-  type DepartmentListResponse,
   type Designation,
-  type DesignationListResponse,
 } from "../api/departments"
 
 import {
   getUsers,
   type AuthUser,
-  type UserListResponse,
 } from "../api/accounts"
 
-import { useTheme } from "../context/ThemeContext"
+import { useTheme } from "../context/theme-context"
+import { useConfirm } from "../context/confirmation-context"
+import { useAuth } from "../context/auth-context"
 
 const emptyForm: EmployeePayload = {
   user: 0,
@@ -65,6 +70,26 @@ const containerStyle: CSSProperties = {
   width: "100%",
   maxWidth: "1480px",
   margin: "0 auto",
+}
+
+async function loadAllPages<T>(
+  fetchPage: (page: number) => Promise<{
+    results: T[]
+    next: string | null
+  }>,
+) {
+  const items: T[] = []
+  let page = 1
+  let hasNextPage = true
+
+  while (hasNextPage) {
+    const response = await fetchPage(page)
+    items.push(...response.results)
+    hasNextPage = Boolean(response.next)
+    page += 1
+  }
+
+  return items
 }
 
 function formatValue(value: string) {
@@ -111,7 +136,13 @@ function formatDate(date: string) {
 }
 
 function Employees() {
+  const confirm = useConfirm()
   const { isDarkMode } = useTheme()
+  const { user } = useAuth()
+  const canManageEmployees =
+    user?.role === "HR" || user?.role === "SUPER_ADMIN"
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedEmployeeId = searchParams.get("employee")
 
   const [employees, setEmployees] = useState<Employee[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
@@ -119,6 +150,8 @@ function Employees() {
   const [users, setUsers] = useState<AuthUser[]>([])
 
   const [totalEmployees, setTotalEmployees] = useState(0)
+  const [employeeSummary, setEmployeeSummary] =
+    useState<EmployeeSummary | null>(null)
   const [nextPage, setNextPage] = useState<string | null>(null)
   const [previousPage, setPreviousPage] =
     useState<string | null>(null)
@@ -143,6 +176,7 @@ function Employees() {
 
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const employeeRequestIdRef = useRef(0)
 
   const [showForm, setShowForm] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -157,72 +191,37 @@ function Employees() {
     useState<EmployeePayload>(emptyForm)
 
   const theme = useMemo(() => {
-    if (isDarkMode) {
-      return {
-        pageBackground: "#0f172a",
-        cardBackground: "#111827",
-        cardBackgroundAlt: "#172033",
-        inputBackground: "#0f172a",
-        inputBackgroundDisabled: "#182235",
-        border: "#273449",
-        borderSoft: "#334155",
-        borderTable: "#243044",
-        borderRow: "#1f2937",
-        textPrimary: "#f1f5f9",
-        textHeading: "#f8fafc",
-        textSecondary: "#cbd5e1",
-        textMuted: "#94a3b8",
-        textSubtle: "#64748b",
-        placeholder: "#64748b",
-        blueBackground: "#172554",
-        blueSoft: "#1e3a8a",
-        blueText: "#93c5fd",
-        blueBorder: "#315efb",
-        white: "#ffffff",
-        dangerBackground: "#2a1515",
-        dangerBorder: "#5f2929",
-        dangerText: "#fca5a5",
-        successBackground: "#10251b",
-        successBorder: "#23583b",
-        successText: "#86efac",
-        disabledBackground: "#1e293b",
-        disabledText: "#64748b",
-        avatarBackground: "#172554",
-        avatarText: "#93c5fd",
-      }
-    }
-
     return {
-      pageBackground: "#f5f7fb",
-      cardBackground: "#ffffff",
-      cardBackgroundAlt: "#fafbfc",
-      inputBackground: "#ffffff",
-      inputBackgroundDisabled: "#f7f8fa",
-      border: "#e8ebf2",
-      borderSoft: "#dfe3eb",
-      borderTable: "#e8ebf2",
-      borderRow: "#f0f2f5",
-      textPrimary: "#293347",
-      textHeading: "#202939",
-      textSecondary: "#596579",
-      textMuted: "#7b8495",
-      textSubtle: "#929bab",
-      placeholder: "#9aa3b2",
-      blueBackground: "#eef3ff",
-      blueSoft: "#f3f6ff",
-      blueText: "#315efb",
-      blueBorder: "#cdd8ff",
-      white: "#ffffff",
-      dangerBackground: "#fff7f6",
-      dangerBorder: "#f2c5c1",
-      dangerText: "#b42318",
-      successBackground: "#f1fbf5",
-      successBorder: "#b8e5ca",
-      successText: "#18794e",
-      disabledBackground: "#f7f8fa",
-      disabledText: "#b1b8c4",
-      avatarBackground: "#eef3ff",
-      avatarText: "#315efb",
+      pageBackground: "var(--app-bg)",
+      cardBackground: "var(--surface)",
+      cardBackgroundAlt: "var(--surface-subtle)",
+      inputBackground: "var(--surface)",
+      inputBackgroundDisabled: "var(--surface-subtle)",
+      border: "var(--border)",
+      borderSoft: "var(--border-strong)",
+      borderTable: "var(--border)",
+      borderRow: "var(--border-light)",
+      textPrimary: "var(--text-primary)",
+      textHeading: "var(--text-primary)",
+      textSecondary: "var(--text-secondary)",
+      textMuted: "var(--text-muted)",
+      textSubtle: "var(--text-muted)",
+      placeholder: "var(--text-placeholder)",
+      blueBackground: "var(--app-primary-soft)",
+      blueSoft: "var(--surface-subtle)",
+      blueText: "var(--app-primary)",
+      blueBorder: "var(--border-focus)",
+      white: "var(--white)",
+      dangerBackground: isDarkMode ? "#2a1515" : "var(--danger-50)",
+      dangerBorder: isDarkMode ? "#5f2929" : "var(--danger-100)",
+      dangerText: isDarkMode ? "#fca5a5" : "var(--danger-700)",
+      successBackground: isDarkMode ? "#10251b" : "var(--success-50)",
+      successBorder: isDarkMode ? "#23583b" : "var(--success-100)",
+      successText: isDarkMode ? "#86efac" : "var(--success-700)",
+      disabledBackground: "var(--surface-subtle)",
+      disabledText: "var(--text-muted)",
+      avatarBackground: "var(--app-primary-soft)",
+      avatarText: "var(--app-primary)",
     }
   }, [isDarkMode])
 
@@ -241,7 +240,7 @@ function Employees() {
   const cardStyle: CSSProperties = {
     background: theme.cardBackground,
     border: `1px solid ${theme.border}`,
-    borderRadius: "10px",
+    borderRadius: "14px",
     boxShadow: isDarkMode
       ? "0 1px 3px rgba(0, 0, 0, 0.2)"
       : "0 1px 3px rgba(15, 23, 42, 0.04)",
@@ -253,7 +252,7 @@ function Employees() {
     padding: "0 12px",
     boxSizing: "border-box",
     border: `1px solid ${theme.borderSoft}`,
-    borderRadius: "7px",
+    borderRadius: "10px",
     background: theme.inputBackground,
     color: theme.textPrimary,
     fontSize: "13px",
@@ -349,30 +348,14 @@ function Employees() {
     )
   }, [designations, form.department])
 
-  const activeCount = useMemo(
-    () =>
-      employees.filter(
-        (employee) =>
-          employee.employment_status === "ACTIVE",
-      ).length,
-    [employees],
-  )
-
-  const inactiveCount = useMemo(
-    () =>
-      employees.filter(
-        (employee) =>
-          employee.employment_status !== "ACTIVE",
-      ).length,
-    [employees],
-  )
-
   const totalPages = Math.max(
     1,
     Math.ceil(totalEmployees / pageSize),
   )
 
-  const loadEmployees = async () => {
+  const loadEmployees = useCallback(async () => {
+    const requestId = ++employeeRequestIdRef.current
+
     try {
       setIsLoading(true)
       setError(null)
@@ -389,8 +372,12 @@ function Employees() {
         employment_type:
           employmentTypeFilter || undefined,
         employment_status:
-          statusFilter || undefined,
+        statusFilter || undefined,
       })
+
+      if (requestId !== employeeRequestIdRef.current) {
+        return
+      }
 
       if (Array.isArray(response)) {
         setEmployees(response)
@@ -407,53 +394,14 @@ function Employees() {
         setPreviousPage(paginated.previous)
       }
     } catch {
-      setError("Unable to load employee data.")
+      if (requestId === employeeRequestIdRef.current) {
+        setError("Unable to load employee data.")
+      }
     } finally {
-      setIsLoading(false)
+      if (requestId === employeeRequestIdRef.current) {
+        setIsLoading(false)
+      }
     }
-  }
-
-  const loadDepartments = async () => {
-    const response = await getDepartments()
-
-    if (Array.isArray(response)) {
-      setDepartments(response)
-    } else {
-      const paginated =
-        response as DepartmentListResponse
-
-      setDepartments(paginated.results ?? [])
-    }
-  }
-
-  const loadDesignations = async () => {
-    const response = await getDesignations()
-
-    if (Array.isArray(response)) {
-      setDesignations(response)
-    } else {
-      const paginated =
-        response as DesignationListResponse
-
-      setDesignations(paginated.results ?? [])
-    }
-  }
-
-  const loadUsers = async () => {
-    const response = await getUsers()
-
-    if (Array.isArray(response)) {
-      setUsers(response)
-    } else {
-      const paginated =
-        response as UserListResponse
-
-      setUsers(paginated.results ?? [])
-    }
-  }
-
-  useEffect(() => {
-    void loadEmployees()
   }, [
     page,
     search,
@@ -463,13 +411,49 @@ function Employees() {
     statusFilter,
   ])
 
+  const loadDepartments = async () => {
+    setDepartments(
+      await loadAllPages((pageNumber) =>
+        getDepartments({ page: pageNumber }),
+      ),
+    )
+  }
+
+  const loadDesignations = async () => {
+    setDesignations(
+      await loadAllPages((pageNumber) =>
+        getDesignations({ page: pageNumber }),
+      ),
+    )
+  }
+
+  const loadUsers = async () => {
+    setUsers(
+      await loadAllPages((pageNumber) =>
+        getUsers({ page: pageNumber }),
+      ),
+    )
+  }
+
+  const loadEmployeeSummary = async () => {
+    try {
+      setEmployeeSummary(await getEmployeeSummary())
+    } catch {
+      setEmployeeSummary(null)
+    }
+  }
+
+  useEffect(() => {
+    void loadEmployees()
+  }, [loadEmployees])
+
   useEffect(() => {
     const loadSupportingData = async () => {
       try {
         await Promise.all([
           loadDepartments(),
           loadDesignations(),
-          loadUsers(),
+          ...(canManageEmployees ? [loadUsers()] : []),
         ])
       } catch {
         setError(
@@ -479,7 +463,8 @@ function Employees() {
     }
 
     void loadSupportingData()
-  }, [])
+    void loadEmployeeSummary()
+  }, [canManageEmployees])
 
   const resetForm = () => {
     setForm({ ...emptyForm })
@@ -526,6 +511,49 @@ function Employees() {
     setShowForm(false)
     setShowDetails(true)
   }
+
+  useEffect(() => {
+    if (!requestedEmployeeId) return
+
+    const employeeId = Number(requestedEmployeeId)
+    let isCurrentRequest = true
+
+    const clearEmployeeQuery = () => {
+      setSearchParams((current) => {
+        const next = new URLSearchParams(current)
+        next.delete("employee")
+        return next
+      }, { replace: true })
+    }
+
+    if (!Number.isInteger(employeeId) || employeeId < 1) {
+      clearEmployeeQuery()
+      return
+    }
+
+    const openRequestedEmployee = async () => {
+      try {
+        const employee = await getEmployeeById(employeeId)
+        if (!isCurrentRequest) return
+
+        setSelectedEmployee(employee)
+        setShowForm(false)
+        setShowDetails(true)
+      } catch {
+        if (isCurrentRequest) {
+          setError("Unable to open the selected employee record.")
+        }
+      } finally {
+        if (isCurrentRequest) clearEmployeeQuery()
+      }
+    }
+
+    void openRequestedEmployee()
+
+    return () => {
+      isCurrentRequest = false
+    }
+  }, [requestedEmployeeId, setSearchParams])
 
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>,
@@ -615,9 +643,11 @@ function Employees() {
   }
 
   const handleDelete = async (id: number) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this employee?",
-    )
+    const confirmed = await confirm({
+      title: "Delete employee?",
+      message: "This employee record will be permanently deleted.",
+      confirmLabel: "Delete employee",
+    })
 
     if (!confirmed) {
       return
@@ -729,7 +759,7 @@ function Employees() {
   )
 
   return (
-    <main style={pageStyle}>
+    <main className="employees-page" style={pageStyle}>
       <section style={containerStyle}>
         <header
           style={{
@@ -783,7 +813,7 @@ function Employees() {
             </p>
           </div>
 
-          <button
+          {canManageEmployees && <button
             type="button"
             onClick={handleAdd}
             style={{
@@ -791,7 +821,7 @@ function Employees() {
               padding: "0 18px",
               border: "none",
               borderRadius: "7px",
-              background: "#315efb",
+              background: "var(--app-primary)",
               color: "#ffffff",
               cursor: "pointer",
               fontSize: "13px",
@@ -818,10 +848,11 @@ function Employees() {
               +
             </span>
             Add Employee
-          </button>
+          </button>}
         </header>
 
         <section
+          className="employees-stats"
           style={{
             display: "grid",
             gridTemplateColumns:
@@ -833,25 +864,23 @@ function Employees() {
           {[
             {
               label: "Total Employees",
-              value: totalEmployees,
+              value: employeeSummary?.total ?? "—",
               description:
-                "Total employee records",
+                "In your organization or team",
             },
             {
               label: "Active Employees",
-              value:
-                totalEmployees > 0
-                  ? activeCount
-                  : 0,
+              value: employeeSummary?.active ?? "—",
               description:
-                "Currently active",
+                "Currently active employees",
             },
             {
               label: "Other Status",
-              value:
-                totalEmployees > 0
-                  ? inactiveCount
-                  : 0,
+              value: employeeSummary
+                ? employeeSummary.inactive +
+                  employeeSummary.resigned +
+                  employeeSummary.terminated
+                : "—",
               description:
                 "Inactive, resigned or terminated",
             },
@@ -934,6 +963,7 @@ function Employees() {
         )}
 
         <section
+          className="employees-filters"
           style={{
             ...cardStyle,
             marginBottom: "16px",
@@ -1134,7 +1164,7 @@ function Employees() {
           </div>
         </section>
 
-        {showForm && (
+        {canManageEmployees && showForm && (
           <section
             style={{
               ...cardStyle,
@@ -1201,6 +1231,7 @@ function Employees() {
             </div>
 
             <form
+              className="employees-form"
               onSubmit={handleSubmit}
               style={{
                 display: "grid",
@@ -1764,6 +1795,7 @@ function Employees() {
           )}
 
         <section
+          className="employees-directory"
           style={{
             ...cardStyle,
             overflow: "hidden",
@@ -1890,7 +1922,7 @@ function Employees() {
                         "Joining Date",
                         "Type",
                         "Status",
-                        "Actions",
+                        ...(canManageEmployees ? ["Actions"] : []),
                       ].map((heading) => (
                         <th
                           key={heading}
@@ -2201,7 +2233,7 @@ function Employees() {
                                 View
                               </button>
 
-                              <button
+                              {canManageEmployees && <button
                                 type="button"
                                 onClick={() =>
                                   handleEdit(
@@ -2230,9 +2262,9 @@ function Employees() {
                                 }}
                               >
                                 Edit
-                              </button>
+                              </button>}
 
-                              <button
+                              {canManageEmployees && <button
                                 type="button"
                                 disabled={
                                   deletingId ===
@@ -2271,7 +2303,7 @@ function Employees() {
                                 employee.id
                                   ? "..."
                                   : "Delete"}
-                              </button>
+                              </button>}
                             </div>
                           </td>
                         </tr>
@@ -2377,7 +2409,7 @@ function Employees() {
                       justifyContent:
                         "center",
                       borderRadius: "6px",
-                      background: "#315efb",
+                      background: "var(--app-primary)",
                       color: "#ffffff",
                       fontSize: "11px",
                       fontWeight: 700,
@@ -2429,25 +2461,25 @@ function Employees() {
 
       <style>
         {`
-          input::placeholder,
-          textarea::placeholder {
+          .employees-page input::placeholder,
+          .employees-page textarea::placeholder {
             color: ${theme.placeholder};
             opacity: 1;
           }
 
-          select option {
+          .employees-page select option {
             background: ${theme.inputBackground};
             color: ${theme.textPrimary};
           }
 
-          input:focus,
-          select:focus,
-          textarea:focus {
-            border-color: #315efb !important;
-            box-shadow: 0 0 0 2px rgba(49, 94, 251, 0.12);
+          .employees-page input:focus,
+          .employees-page select:focus,
+          .employees-page textarea:focus {
+            border-color: var(--app-primary) !important;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.14);
           }
 
-          button {
+          .employees-page button {
             transition:
               background-color 0.15s ease,
               border-color 0.15s ease,
@@ -2455,50 +2487,61 @@ function Employees() {
           }
 
           @media (max-width: 1200px) {
-            main section {
+            .employees-page section {
               max-width: 100%;
             }
 
-            main > section > section:nth-child(4) > div {
+            .employees-filters > div {
               grid-template-columns:
                 repeat(3, minmax(0, 1fr)) !important;
             }
           }
 
           @media (max-width: 900px) {
-            main {
+            .employees-page {
               padding: 16px !important;
             }
 
-            main > section > section:nth-child(2) {
+            .employees-stats {
               grid-template-columns:
-                1fr !important;
+                repeat(3, minmax(0, 1fr)) !important;
             }
 
-            main > section > section:nth-child(4) > div {
+            .employees-filters > div {
               grid-template-columns:
                 repeat(2, minmax(0, 1fr)) !important;
             }
 
-            form {
+            .employees-form {
               grid-template-columns:
                 repeat(2, minmax(0, 1fr)) !important;
             }
           }
 
           @media (max-width: 600px) {
-            main {
+            .employees-page {
               padding: 12px !important;
             }
 
-            main > section > section:nth-child(4) > div {
+            .employees-filters > div {
               grid-template-columns:
                 1fr !important;
             }
 
-            form {
+            .employees-form {
               grid-template-columns:
                 1fr !important;
+            }
+
+            .employees-stats {
+              grid-template-columns:
+                1fr !important;
+            }
+
+            .employees-directory > div:first-child {
+              align-items: flex-start !important;
+              flex-direction: column !important;
+              padding: 14px !important;
             }
           }
         `}

@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models.functions import Lower
 
 
 class Department(models.Model):
@@ -33,7 +34,6 @@ class Department(models.Model):
 class Designation(models.Model):
     name = models.CharField(
         max_length=100,
-        unique=True,
     )
 
     department = models.ForeignKey(
@@ -56,6 +56,13 @@ class Designation(models.Model):
 
     class Meta:
         ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                Lower("name"),
+                "department",
+                name="unique_designation_name_department_ci",
+            ),
+        ]
 
     def __str__(self):
         return self.name

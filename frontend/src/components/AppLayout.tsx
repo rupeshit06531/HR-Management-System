@@ -1,9 +1,11 @@
 import {
   NavLink,
   Outlet,
+  useLocation,
   useNavigate,
 } from "react-router-dom"
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -14,8 +16,8 @@ import {
   type GlobalSearchResult,
 } from "../api/search"
 
-import { useAuth } from "../context/AuthContext"
-import { useTheme } from "../context/ThemeContext"
+import { useAuth } from "../context/auth-context"
+import { useTheme } from "../context/theme-context"
 
 import {
   getNotifications,
@@ -168,6 +170,21 @@ const roleLabels: Record<string, string> = {
   EMPLOYEE: "Employee",
 }
 
+const pageDescriptions: Record<string, string> = {
+  "/dashboard": "Your workforce overview and daily priorities.",
+  "/change-password": "Keep your account credentials up to date.",
+  "/employees": "People records, roles, and team information.",
+  "/departments": "Organize teams, departments, and positions.",
+  "/attendance": "Daily presence, time records, and attendance actions.",
+  "/leave": "Requests, approvals, and leave history.",
+  "/payroll": "Payroll records and compensation details.",
+  "/performance": "Reviews, goals, and employee development.",
+  "/recruitment": "Candidates, vacancies, and hiring progress.",
+  "/documents": "Shared HR files and employee documents.",
+  "/holidays": "Upcoming holidays and calendar dates.",
+  "/announcements": "Company updates and important notices.",
+}
+
 function formatNotificationTime(
   value: string,
 ): string {
@@ -243,6 +260,7 @@ function getNotificationShortCode(
 }
 
 function AppLayout() {
+  const location = useLocation()
   const navigate = useNavigate()
 
   const {
@@ -276,6 +294,11 @@ function AppLayout() {
   ] = useState(false)
 
   const [
+    notificationError,
+    setNotificationError,
+  ] = useState("")
+
+  const [
     isMarkingAllRead,
     setIsMarkingAllRead,
   ] = useState(false)
@@ -307,13 +330,22 @@ function AppLayout() {
     setIsSearchLoading,
   ] = useState(false)
 
+  const [searchError, setSearchError] =
+    useState(false)
+
+  const [searchTotal, setSearchTotal] =
+    useState(0)
+
   const searchRef =
     useRef<HTMLDivElement | null>(null)
 
   const searchTimeoutRef =
     useRef<number | null>(null)
 
-  const loadNotificationCount =
+  const searchRequestIdRef =
+    useRef(0)
+
+  const loadNotificationCount = useCallback(
     async () => {
       if (!user) {
         setUnreadNotificationCount(0)
@@ -329,7 +361,9 @@ function AppLayout() {
         // Notification failures should never
         // break the main application layout.
       }
-    }
+    },
+    [user],
+  )
 
   const loadNotifications =
     async () => {
@@ -340,6 +374,7 @@ function AppLayout() {
       }
 
       setIsNotificationLoading(true)
+      setNotificationError("")
 
       try {
         const response =
@@ -357,8 +392,9 @@ function AppLayout() {
 
         setUnreadNotificationCount(count)
       } catch {
-        // Keep the existing notification state
-        // when the request fails.
+        setNotificationError(
+          "Notifications could not be loaded. Check your connection and try again.",
+        )
       } finally {
         setIsNotificationLoading(false)
       }
@@ -375,7 +411,7 @@ function AppLayout() {
     return () => {
       window.clearInterval(intervalId)
     }
-  }, [user])
+  }, [loadNotificationCount])
 
   useEffect(() => {
     const handleDocumentClick = (
@@ -435,11 +471,49 @@ function AppLayout() {
     }
   }, [])
 
+  useEffect(() => {
+    const handleAppShortcuts = (
+      event: KeyboardEvent,
+    ) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "k"
+      ) {
+        event.preventDefault()
+        setIsSearchOpen(true)
+        window.requestAnimationFrame(() => {
+          searchRef.current
+            ?.querySelector("input")
+            ?.focus()
+        })
+      }
+
+      if (event.key === "Escape") {
+        setIsSearchOpen(false)
+        setIsNotificationOpen(false)
+      }
+    }
+
+    document.addEventListener(
+      "keydown",
+      handleAppShortcuts,
+    )
+
+    return () => {
+      document.removeEventListener(
+        "keydown",
+        handleAppShortcuts,
+      )
+    }
+  }, [])
+
   /*
    * Debounced global employee search.
    */
 
   useEffect(() => {
+    const requestId = ++searchRequestIdRef.current
+
     if (searchTimeoutRef.current !== null) {
       window.clearTimeout(
         searchTimeoutRef.current,
@@ -451,11 +525,14 @@ function AppLayout() {
 
     if (trimmedQuery.length < 2) {
       setSearchResults([])
+      setSearchTotal(0)
       setIsSearchLoading(false)
+      setSearchError(false)
       return
     }
 
     setIsSearchLoading(true)
+    setSearchError(false)
     setIsSearchOpen(true)
 
     searchTimeoutRef.current =
@@ -466,13 +543,25 @@ function AppLayout() {
               trimmedQuery,
             )
 
+          if (requestId !== searchRequestIdRef.current) {
+            return
+          }
+
           setSearchResults(
             response.results,
           )
+          setSearchTotal(response.total)
         } catch {
+          if (requestId !== searchRequestIdRef.current) {
+            return
+          }
           setSearchResults([])
+          setSearchTotal(0)
+          setSearchError(true)
         } finally {
-          setIsSearchLoading(false)
+          if (requestId === searchRequestIdRef.current) {
+            setIsSearchLoading(false)
+          }
         }
       }, 300)
 
@@ -483,6 +572,9 @@ function AppLayout() {
         window.clearTimeout(
           searchTimeoutRef.current,
         )
+      }
+      if (requestId === searchRequestIdRef.current) {
+        searchRequestIdRef.current += 1
       }
     }
   }, [searchQuery])
@@ -606,6 +698,25 @@ function AppLayout() {
         user?.role ?? "",
       ),
     )
+  const canSearchEmployees = [
+    "SUPER_ADMIN",
+    "HR",
+    "MANAGER",
+  ].includes(user?.role ?? "")
+
+  const currentPath =
+    location.pathname.replace(/\/+$/, "") || "/"
+  const currentPage = navigationItems.find(
+    (item) => item.path === currentPath,
+  )
+  const pageTitle = currentPage?.label ?? "Human Resources"
+  const pageSubtitle =
+    pageDescriptions[currentPath] ??
+    "Workforce management platform"
+
+  useEffect(() => {
+    document.title = `${pageTitle} | HR Management`
+  }, [pageTitle])
 
   const displayName =
     user?.first_name?.trim() ||
@@ -629,6 +740,7 @@ function AppLayout() {
 
   return (
     <div
+      className="app-shell"
       style={{
         minHeight: "100vh",
         display: "flex",
@@ -642,7 +754,11 @@ function AppLayout() {
           '"Inter", "Segoe UI", Arial, sans-serif',
       }}
     >
+      <a className="skip-link" href="#main-content">
+        Skip to main content
+      </a>
       <aside
+        className="app-sidebar"
         style={{
           width: "245px",
           minWidth: "245px",
@@ -917,6 +1033,7 @@ function AppLayout() {
       </aside>
 
       <div
+        className="app-main-column"
         style={{
           flex: 1,
           minWidth: 0,
@@ -925,6 +1042,7 @@ function AppLayout() {
         }}
       >
         <header
+          className="app-topbar"
           style={{
             minHeight: "68px",
             background: isDarkMode
@@ -957,7 +1075,7 @@ function AppLayout() {
                   : "#0f172a",
               }}
             >
-              Human Resources
+              {pageTitle}
             </div>
 
             <div
@@ -969,17 +1087,18 @@ function AppLayout() {
                   : "#64748b",
               }}
             >
-              Workforce management
-              platform
+              {pageSubtitle}
             </div>
           </div>
 
           <div
             ref={searchRef}
+            className="app-global-search"
             style={{
               position: "relative",
               flex: 1,
               maxWidth: "430px",
+              display: canSearchEmployees ? "block" : "none",
             }}
           >
             <div
@@ -1035,6 +1154,8 @@ function AppLayout() {
                 }}
                 placeholder="Search employees..."
                 aria-label="Search employees"
+                aria-keyshortcuts="Control+K Meta+K"
+                title="Search employees (Ctrl+K)"
                 style={{
                   width: "100%",
                   minWidth: 0,
@@ -1049,6 +1170,7 @@ function AppLayout() {
                     "inherit",
                 }}
               />
+              <kbd aria-hidden="true">Ctrl K</kbd>
             </div>
 
             {isSearchOpen && (
@@ -1085,6 +1207,18 @@ function AppLayout() {
                   >
                     Searching...
                   </div>
+                ) : searchError ? (
+                  <div
+                    role="alert"
+                    style={{
+                      padding: "20px",
+                      textAlign: "center",
+                      color: isDarkMode ? "#fecaca" : "#991b1b",
+                      fontSize: "11px",
+                    }}
+                  >
+                    Search is unavailable. Try again in a moment.
+                  </div>
                 ) : searchResults.length ===
                   0 ? (
                   <div
@@ -1100,7 +1234,8 @@ function AppLayout() {
                     No employees found.
                   </div>
                 ) : (
-                  searchResults.map(
+                  <div>
+                    {searchResults.map(
                     (result) => (
                       <button
                         key={result.id}
@@ -1208,7 +1343,20 @@ function AppLayout() {
                         </span>
                       </button>
                     ),
-                  )
+                    )}
+                    {searchTotal > searchResults.length && (
+                      <div
+                        aria-live="polite"
+                        style={{
+                          padding: "9px 13px",
+                          color: isDarkMode ? "#94a3b8" : "#64748b",
+                          fontSize: "10px",
+                        }}
+                      >
+                        Showing {searchResults.length} of {searchTotal} matches. Refine your search to see others.
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -1429,6 +1577,36 @@ function AppLayout() {
                         }}
                       >
                         Loading notifications...
+                      </div>
+                    ) : notificationError ? (
+                      <div
+                        role="alert"
+                        style={{
+                          padding: "24px 20px",
+                          textAlign: "center",
+                          color: isDarkMode ? "#fecaca" : "#991b1b",
+                          fontSize: "11px",
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        <div>{notificationError}</div>
+                        <button
+                          type="button"
+                          onClick={() => void loadNotifications()}
+                          style={{
+                            marginTop: "12px",
+                            border: "none",
+                            borderRadius: "7px",
+                            padding: "7px 12px",
+                            background: isDarkMode ? "#334155" : "#e2e8f0",
+                            color: isDarkMode ? "#f8fafc" : "#0f172a",
+                            cursor: "pointer",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                          }}
+                        >
+                          Try again
+                        </button>
                       </div>
                     ) : notifications.length ===
                       0 ? (
@@ -1755,6 +1933,9 @@ function AppLayout() {
         </header>
 
         <main
+          id="main-content"
+          tabIndex={-1}
+          className="app-main-content"
           style={{
             flex: 1,
             minWidth: 0,
