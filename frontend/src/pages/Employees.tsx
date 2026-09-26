@@ -38,102 +38,16 @@ import { useTheme } from "../context/theme-context"
 import { useConfirm } from "../context/confirmation-context"
 import { useAuth } from "../context/auth-context"
 
-const emptyForm: EmployeePayload = {
-  user: 0,
-  employee_id: "",
-  department: null,
-  designation: null,
-  joining_date: "",
-  employment_type: "FULL_TIME",
-  employment_status: "ACTIVE",
-  manager: null,
-  date_of_birth: null,
-  address: "",
-  emergency_contact: "",
-}
-
-const employmentTypes = [
-  "FULL_TIME",
-  "PART_TIME",
-  "CONTRACT",
-  "INTERN",
-]
-
-const employmentStatuses = [
-  "ACTIVE",
-  "INACTIVE",
-  "RESIGNED",
-  "TERMINATED",
-]
-
-const containerStyle: CSSProperties = {
-  width: "100%",
-  maxWidth: "1480px",
-  margin: "0 auto",
-}
-
-async function loadAllPages<T>(
-  fetchPage: (page: number) => Promise<{
-    results: T[]
-    next: string | null
-  }>,
-) {
-  const items: T[] = []
-  let page = 1
-  let hasNextPage = true
-
-  while (hasNextPage) {
-    const response = await fetchPage(page)
-    items.push(...response.results)
-    hasNextPage = Boolean(response.next)
-    page += 1
-  }
-
-  return items
-}
-
-function formatValue(value: string) {
-  return value
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (character) =>
-      character.toUpperCase(),
-    )
-}
-
-function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/)
-
-  if (!parts.length) {
-    return "E"
-  }
-
-  if (parts.length === 1) {
-    return parts[0].charAt(0).toUpperCase()
-  }
-
-  return (
-    parts[0].charAt(0) +
-    parts[parts.length - 1].charAt(0)
-  ).toUpperCase()
-}
-
-function formatDate(date: string) {
-  if (!date) {
-    return "-"
-  }
-
-  const parsed = new Date(`${date}T00:00:00`)
-
-  if (Number.isNaN(parsed.getTime())) {
-    return date
-  }
-
-  return parsed.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  })
-}
+import {
+  containerStyle,
+  emptyForm,
+  employmentStatuses,
+  employmentTypes,
+  formatDate,
+  formatValue,
+  getInitials,
+  loadAllPages,
+} from "./employees/employee-utils"
 
 function Employees() {
   const confirm = useConfirm()
