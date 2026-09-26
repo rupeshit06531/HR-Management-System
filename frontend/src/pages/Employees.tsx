@@ -902,26 +902,28 @@ function Employees() {
           clearFilters={clearFilters}
         />
 
-        <EmployeeForm
-          theme={theme}
-          cardStyle={cardStyle}
-          inputStyle={inputStyle}
-          labelStyle={labelStyle}
-          editingId={editingId}
-          isSubmitting={isSubmitting}
-          form={form}
-          setForm={setForm}
-          users={users}
-          employees={employees}
-          departments={departments}
-          filteredDesignations={filteredDesignations}
-          employmentTypes={employmentTypes}
-          employmentStatuses={employmentStatuses}
-          formatValue={formatValue}
-          getUserName={getUserName}
-          handleSubmit={handleSubmit}
-          resetForm={resetForm}
-        />
+        {canManageEmployees && showForm && (
+          <EmployeeForm
+            theme={theme}
+            cardStyle={cardStyle}
+            inputStyle={inputStyle}
+            labelStyle={labelStyle}
+            editingId={editingId}
+            isSubmitting={isSubmitting}
+            form={form}
+            setForm={setForm}
+            users={users}
+            employees={employees}
+            departments={departments}
+            filteredDesignations={filteredDesignations}
+            employmentTypes={employmentTypes}
+            employmentStatuses={employmentStatuses}
+            formatValue={formatValue}
+            getUserName={getUserName}
+            handleSubmit={handleSubmit}
+            resetForm={resetForm}
+          />
+        )}
 
         {showDetails &&
           selectedEmployee && (
