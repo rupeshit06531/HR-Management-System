@@ -1,10 +1,8 @@
 import type { CSSProperties } from "react"
 
 import type { Department, Designation } from "../../api/departments"
-import type { Employee } from "../../api/employees"
 
 export interface EmployeeFiltersTheme {
-  cardBackground: string
   inputBackground: string
   borderSoft: string
   textSecondary: string
@@ -33,7 +31,6 @@ interface EmployeeFiltersProps {
   setStatusFilter: (value: string) => void
   setPage: (page: number) => void
   clearFilters: () => void
-  getDepartmentName?: (employee: Employee) => string
 }
 
 function EmployeeFilters({
@@ -60,6 +57,14 @@ function EmployeeFilters({
   clearFilters,
 }: EmployeeFiltersProps) {
   return (
+    <section
+      className="employees-filters"
+      style={{
+        ...cardStyle,
+        marginBottom: "16px",
+        padding: "15px",
+      }}
+    >
           <div
             style={{
               display: "grid",
@@ -253,6 +258,7 @@ function EmployeeFilters({
             </button>
           </div>
         
+    </section>
   )
 }
 
